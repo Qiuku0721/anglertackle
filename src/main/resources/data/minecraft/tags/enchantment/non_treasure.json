@@ -1,0 +1,10 @@
+{
+  "replace": false,
+  "values": [
+    "anglertackle:drag",
+    "anglertackle:load_bearing",
+    "anglertackle:precise_hunt",
+    "anglertackle:reinforced",
+    "anglertackle:rescue"
+  ]
+}

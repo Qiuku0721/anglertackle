@@ -1,0 +1,6 @@
+{
+  "parent": "anglertackle:item/rod_grip_cast",
+  "textures": {
+    "layer0": "anglertackle:item/diamond_float_rod_cast"
+  }
+}

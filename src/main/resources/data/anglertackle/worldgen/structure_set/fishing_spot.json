@@ -1,0 +1,15 @@
+{
+  "placement": {
+    "type": "minecraft:random_spread",
+    "spacing": 6,
+    "separation": 2,
+    "salt": 1283003,
+    "spread_type": "linear"
+  },
+  "structures": [
+    {
+      "structure": "anglertackle:fishing_spot",
+      "weight": 1
+    }
+  ]
+}

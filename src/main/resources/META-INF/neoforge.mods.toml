@@ -1,0 +1,43 @@
+modLoader = "javafml"
+loaderVersion = "${loader_version_range}"
+license = "${mod_license}"
+
+[[mods]]
+modId = "${mod_id}"
+version = "${version}"
+displayName = "${mod_name}"
+authors = "${mod_authors}"
+description = '''
+${mod_description}
+
+A fishing mod built around feel: view-angle casting, bobber reading, and a
+line-tension fight you steer with A/D. 21 fish species across six quality
+tiers, six-slot tackle customization through vanilla containers, and chum
+that actually changes what bites.
+
+以「手感优先」为核心的钓鱼模组。
+
+· 视角抛投：低头近抛约 8 米、平视约 16 米、抬头约 24 米
+· 浮漂读秒：抖两下是试探，整个沉下去才是提竿时机
+· 张力对抗：按住左键收线、松开放线，A/D 控杆绕开鱼的挣扎方向
+· 品质六档：白 绿 蓝 紫 金 红，颜色直接作用在鱼名上
+· 21 种鱼：台钓与路亚各有专属鱼种，体重按三次方分布（大鱼少）
+· 六槽改装：线 / 轮 / 钩 / 拟饵在铁砧与工作台上组装，砂轮可拆解
+· 打窝：窝料抛出后浮在水面冒泡，白圈半径 10 格内的浮漂享受加成
+· 配件耐久：有耐久定义的配件会在 HUD 上实时显示，提前收竿不消耗耐久
+'''
+logoFile = "icon.png"
+
+[[dependencies.${mod_id}]]
+modId = "neoforge"
+type = "required"
+versionRange = "${neo_version_range}"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies.${mod_id}]]
+modId = "minecraft"
+type = "required"
+versionRange = "${minecraft_version_range}"
+ordering = "NONE"
+side = "BOTH"

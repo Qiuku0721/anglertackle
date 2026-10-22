@@ -1,0 +1,963 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>《垂纶》调参器</title>
+<style>
+  :root{--bg:#14161c;--panel:#1c1f28;--line:#2c3140;--fg:#e6e8ee;--dim:#8b93a7;
+        --accent:#4da3ff;--ok:#3ddc84;--warn:#ffb84d;--changed:#ffd93d;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);
+       font:14px/1.65 "Microsoft YaHei",system-ui,sans-serif;}
+  header{padding:18px 24px;border-bottom:1px solid var(--line);background:var(--panel);
+         position:sticky;top:0;z-index:10}
+  h1{margin:0 0 4px;font-size:18px;font-weight:600}
+  .sub{color:var(--dim);font-size:12px}
+  .bar{display:flex;gap:10px;align-items:center;margin-top:12px;flex-wrap:wrap}
+  /* 第二、三行（搜索 / 批量）与第一行之间画一条分隔线，视觉上分成「文件操作」
+     和「找项·改项」两组。滚动时整个 header 是 sticky 的，搜索和批量条始终可用。 */
+  .bar.wrap{border-top:1px solid var(--line);padding-top:10px}
+  .lb{color:var(--dim);font-size:12px}
+  button{background:var(--accent);color:#05121f;border:0;border-radius:6px;
+         padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer}
+  button.ghost{background:transparent;color:var(--fg);border:1px solid var(--line)}
+  button:disabled{opacity:.35;cursor:not-allowed}
+  /* 分组标题右上角的「全选本组」：小、低对比，不抢标题的注意力 */
+  button.mini{float:right;background:transparent;color:var(--dim);border:1px solid var(--line);
+              border-radius:5px;padding:2px 9px;font-size:11px;font-weight:400;cursor:pointer}
+  button.mini:hover{color:var(--fg);border-color:var(--accent)}
+  main{padding:20px 24px 40px;max-width:1000px}
+  section{background:var(--panel);border:1px solid var(--line);border-radius:10px;
+          margin-bottom:16px;overflow:hidden}
+  section > h2{margin:0;padding:12px 16px;font-size:15px;font-weight:600;
+               background:#20242f;border-bottom:1px solid var(--line)}
+  section > h2 small{color:var(--dim);font-weight:400;font-size:12px}
+  section > p{margin:0;padding:10px 16px;color:var(--dim);font-size:12px;
+              border-bottom:1px solid var(--line)}
+  /* 首列是勾选框（批量修改用），第二列是标签，第三列滑块，第四列数字与默认值。 */
+  .row{display:grid;grid-template-columns:26px 250px 1fr 96px;gap:14px;align-items:center;
+       padding:10px 16px;border-bottom:1px solid #232733;
+       /* 左边留一条 3px 的透明边，选中时点亮成蓝色。
+          边框一直存在（只是透明），所以勾选不会让整行左右跳动。 */
+       border-left:3px solid transparent}
+  .row:last-child{border-bottom:0}
+  .row.changed{background:rgba(255,217,61,.08)}
+  /* 勾选态必须一眼看得见：只靠 10% 的底色太淡，21 项散在两屏里根本认不出来。 */
+  .row.sel{background:rgba(77,163,255,.14);border-left-color:var(--accent)}
+  .row.sel .lbl{color:#cfe6ff}
+  /* 两行同时成立时（既改过又勾上）以勾选色为准，否则看不出选没选 */
+  .row.sel.changed{background:rgba(77,163,255,.20)}
+  .row.hidden{display:none}
+  section.emptied{display:none}
+  /* 第一列是三行：中文标签 / 配置键 / 说明。
+     容器本身不能再是等宽字体，否则中文会变形 —— 等宽只留给配置键那一行。 */
+  .key{word-break:break-word}
+  .lbl{display:block;font-family:"Microsoft YaHei",sans-serif;font-size:13px;color:var(--fg);
+       font-weight:600;line-height:1.35}
+  .k{display:inline-block;font-family:Consolas,monospace;font-size:11px;color:var(--dim);
+     margin-top:2px;word-break:break-all}
+  /* 没有中文标签时（老配置项的注释不带分隔符），配置键就是唯一标题 */
+  .k-main{font-size:13px;color:var(--fg)}
+  .hint{display:block;color:var(--dim);font-size:11px;font-family:"Microsoft YaHei",sans-serif;
+        margin-top:3px;line-height:1.45}
+  input[type=range]{width:100%;accent-color:var(--accent)}
+  input[type=number]{width:96px;background:#0e1015;color:var(--fg);
+                     border:1px solid var(--line);border-radius:5px;padding:5px 7px;
+                     font-family:Consolas,monospace;font-size:13px}
+  input[type=checkbox]{width:18px;height:18px;accent-color:var(--accent)}
+  input[type=text]{flex:1;min-width:280px;background:#0e1015;color:var(--fg);
+                   border:1px solid var(--line);border-radius:5px;padding:7px 10px;font-size:13px}
+  input[type=text]:focus{outline:0;border-color:var(--accent)}
+  select{background:#0e1015;color:var(--fg);border:1px solid var(--line);border-radius:5px;
+         padding:6px 8px;font-size:13px;max-width:250px}
+  label.chk{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--dim);
+            cursor:pointer;user-select:none}
+  label.chk input{width:15px;height:15px}
+  /* 搜索命中高亮。用 <mark> 而不是 innerHTML 拼字符串 —— 配置说明里带 < > & 的
+     内容一旦走 innerHTML 就会被当成标签吃掉，配置键也可能被吃掉半截。 */
+  mark{background:rgba(255,217,61,.30);color:var(--changed);border-radius:2px;padding:0 1px}
+  .def{color:var(--dim);font-size:11px;text-align:right;margin-top:3px}
+  /* 只读分组（[partsStats]）：整组压暗 + 禁止交互。
+     这些项运行期没人读，做成可调只会让玩家白花时间。 */
+  .ro-group{opacity:.62}
+  .ro-group .ro-warn{color:#ffb454;font-weight:600}
+  .ro-row input{filter:grayscale(1);cursor:not-allowed}
+  #selinfo{font-size:12px;color:var(--dim);white-space:nowrap}
+  #selinfo b{color:var(--accent);font-size:14px}
+  #selhint{font-size:12px;color:var(--accent);white-space:nowrap}
+  /* 「已选清单」：粘性头里只有一个数字，看不出选的是哪几项。
+     这块把选中项逐条列出来，每条都能单独 × 掉，勾一个就变一次 ——
+     选了什么、改的是不是你要的，不用靠记忆。 */
+  .selpanel{margin:0 0 16px;background:var(--panel);border:1px solid var(--line);
+            border-radius:10px;padding:11px 16px}
+  .selpanel.empty{opacity:.75}
+  #selpaneltext{font-size:12px;color:var(--dim);line-height:1.6}
+  #selpaneltext b{color:var(--accent)}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}
+  .chips:empty{margin-top:0}
+  .chip{display:flex;align-items:center;gap:4px;background:#0e1015;border:1px solid var(--line);
+        border-radius:12px;padding:1px 3px 1px 10px;font-size:11px;color:var(--fg)}
+  .chip > span{max-width:250px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .chip > button{background:transparent;color:var(--dim);border:0;padding:0 5px;font-size:14px;
+                 line-height:1.2;font-weight:400;cursor:pointer}
+  .chip > button:hover{color:var(--warn)}
+  .chip.more{color:var(--dim);padding-right:10px}
+  #logwrap{display:none;max-width:1000px;padding:0 24px 60px}
+  #log{background:#0e1015;border:1px solid var(--line);border-radius:10px;
+       padding:14px 16px;white-space:pre-wrap;font-family:Consolas,monospace;
+       font-size:12px;max-height:360px;overflow:auto}
+  .status{font-size:12px;color:var(--dim)}
+  .status.ok{color:var(--ok)} .status.warn{color:var(--warn)}
+  .tip{color:var(--dim);font-size:12px;margin:0 0 16px;line-height:1.7}
+  code{background:#0e1015;padding:1px 5px;border-radius:4px;font-size:12px}
+</style>
+</head>
+<body>
+<header>
+  <h1>《垂纶》调参器</h1>
+  <div class="sub">改完点保存 —— 会同时写入游戏配置和一份变更日志（后者给开发者看，避免把你的调整改回去）</div>
+  <div class="bar">
+    <button id="open">① 打开配置文件</button>
+    <button id="save" disabled>② 保存修改</button>
+    <button id="reset" class="ghost" disabled>全部还原默认</button>
+    <span id="status" class="status">尚未打开文件</span>
+  </div>
+
+  <!-- 搜索：446 项靠肉眼翻是翻不动的。这里按 中文标签 / 配置键 / 说明 / 组名 做
+       子串匹配，空格分词（全部命中才算匹配）。默认「只看匹配」= 直接把不匹配的
+       行藏掉，剩下的就是你要找的那几行。 -->
+  <div class="bar wrap">
+    <span class="lb">🔍 搜索</span>
+    <input id="q" type="text" placeholder="中文名 / 配置键 / 说明，空格分词（例：鱼 拉力）">
+    <span id="qcount" class="status">—</span>
+    <label class="chk"><input id="qhide" type="checkbox" checked>只看匹配</label>
+    <button id="qclear" class="ghost">清空</button>
+  </div>
+
+  <!-- 批量修改：先「选」，再填倍数点「应用」。
+       选的方式有四种，都会落到同一个选中集合里：
+         ① 逐行勾选   ② 分组标题右上角「全选本组」   ③「全选匹配项」（配合搜索）
+         ④「同属性 / 同对象」下拉 —— 例：同属性「体力上限」= 21 条鱼一次全选。 -->
+  <div class="bar wrap">
+    <span id="selinfo">已选 <b>0</b> 项</span>
+    <span id="selhint"></span>
+    <span class="lb">同属性</span><select id="kindAttr" title="例：体力上限 = 所有鱼的那一项，一次全选"></select>
+    <span class="lb">同对象</span><select id="kindObj" title="例：鲫鱼 = 这条鱼的全部 13 项，一次全选"></select>
+    <label class="chk"><input id="append" type="checkbox">追加</label>
+    <button id="selmatch" class="ghost">全选匹配项</button>
+    <button id="selnone" class="ghost" disabled>清空选择</button>
+    <span class="lb">×</span>
+    <input id="factor" type="number" value="1.5" step="0.05" min="0" title="每个选中项都乘以这个数">
+    <button id="applymul" disabled>应用到已选 0 项</button>
+    <!-- 用户 2026-10-08："可以在调参加一个改回默认的功能"。
+         以前只有全局的「全部还原默认」（一按 860 项全回去，没法只还原几项 ✗）。
+         这个按钮把**选中的那几项**逐项改回各自的默认值，并且走同一套撤销/日志。 -->
+    <button id="revertdef" class="ghost" disabled
+            title="把选中的项逐项改回它自己的默认值（可以撤销，也会记进变更日志）">还原已选为默认值</button>
+    <button id="undobatch" class="ghost" disabled title="把上一次批量乘改回去（逐项恢复到乘之前的数值）">撤销上次批量</button>
+  </div>
+</header>
+
+<main>
+  <!-- 已选清单：勾一下就重画一次，选了什么一目了然，每条还能单独取消。
+       只靠粘性头里那个数字的话，"我选的是哪 21 项"要靠记忆，很容易改错。 -->
+  <div id="selpanel" class="selpanel empty">
+    <div id="selpaneltext">还没选任何项 —— 用每行最前面的勾选框，或用上面「同属性 / 同对象」下拉。</div>
+    <div id="sellist" class="chips"></div>
+  </div>
+  <p class="tip">
+    配置文件在 <code>.minecraft\versions\&lt;版本名&gt;\config\anglertackle-common.toml</code>（PCL2 的话右键版本 → 打开版本文件夹）。
+    改完保存后<b>重启游戏</b>生效。<br>
+    黄色高亮 = 相对打开时改过的项。保存会同时弹出一个「调参变更记录.md」的保存框，把它存到工程目录或者直接发给我都行。<br>
+    项太多找不着？上面搜索框搜 <code>拉力</code> 之类的词；想把 21 条鱼的同一项一起改，
+    用「同属性」下拉选一下，再填倍数点应用，不用挨个拖。<br>
+    改坏了想退回去：<b>「还原已选为默认值」</b>把选中的那几项改回默认（不必用「全部还原默认」把
+    860 项一起清掉）；点完还能用<b>「撤销上次批量」</b>反悔 —— 两个按钮共用同一套撤销与变更日志。
+  </p>
+  <div id="main"></div>
+</main>
+<div id="logwrap"><h2 style="font-size:15px">本次变更（同样写进了变更日志）</h2><div id="log"></div></div>
+
+<script>
+const SCHEMA = __SCHEMA_JSON__;
+const GROUP_META = __GROUP_META_JSON__;
+const $ = (s) => document.querySelector(s);
+
+let cfgHandle = null;
+let values = {}, defaults = {}, original = {}, inputEls = {};
+let order = [];                 // 全部配置键，按界面顺序（批量处理与日志都按它走，结果稳定）
+const GROUP_OF = {};            // key -> 分组 id
+const HAY = {};                 // key -> 搜索用的小写串（中文标签 + 键 + 说明 + 组名）
+const READONLY = new Set();     // 只读分组（运行期不读的组，绝不能被批量改到）
+
+let selected = new Set();       // 勾选的配置键
+let selSource = '';             // 当前这堆选择是怎么来的（"同属性：体力上限" / "本组 张力模型"…）
+const groupBtns = [];           // 每个分组标题右上角的「全选本组 / 取消本组」按钮
+let lastBatch = null;           // { desc, items:[{key,before}] }  —— 「撤销上次批量」用
+let batchNotes = [];            // 写进变更日志的批量操作记录
+let query = '';                 // 当前搜索词（原样，小写化在 tokens() 里做）
+
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+const round = (v) => Math.round(v * 1e6) / 1e6;
+
+// 「同属性 / 同对象」两个索引：把标签 "鲫鱼（crucian_carp） · 拉力（不挣扎）"
+// 按 " · " 切成两段 —— 前段是对象，后段是属性。
+// 这样「所有鱼的拉力」和「鲫鱼的全部项」都变成一次选择，正是批量改最常用的两种切法。
+const ATTR_KINDS = new Map();   // 属性名 -> [key]
+const OBJ_KINDS = new Map();    // 对象名 -> [key]
+function kindOf(label) {
+  if (!label) return null;
+  const i = label.indexOf(' · ');
+  if (i <= 0) return null;
+  const obj = label.slice(0, i).trim();
+  const attr = label.slice(i + 3).trim();
+  return obj && attr ? { obj, attr } : null;
+}
+const push = (m, k, v) => { if (!m.has(k)) m.set(k, []); m.get(k).push(v); };
+
+// ------------------------------------------------------------------ 建界面
+function build() {
+  const main = $('#main');
+
+  for (const g of SCHEMA.groups) {
+    const meta = GROUP_META[g.id] || { title: g.id, desc: '' };
+    if (meta.readonly) READONLY.add(g.id);
+
+    const sec = document.createElement('section');
+    sec.dataset.group = g.id;
+
+    const h2 = document.createElement('h2');
+    h2.appendChild(document.createTextNode(meta.title + ' '));
+    const sm = document.createElement('small');
+    sm.textContent = '[' + g.id + ']';
+    h2.appendChild(sm);
+    // 只读分组不给「全选本组」：它们根本没有勾选框。
+    // 这个按钮是**开关**：整组已全选时显示「取消本组」（文案在 renderStatusLine 里刷新）。
+    if (!meta.readonly) {
+      const all = document.createElement('button');
+      all.className = 'mini';
+      all.textContent = '全选本组';
+      all.title = '勾上这一组全部 ' + g.fields.length + ' 项（再点一次可整组取消）';
+      all.addEventListener('click', () => {
+        const keys = g.fields.map((f) => f.key).filter(selectable);
+        const on = keys.length > 0 && keys.every((k) => selected.has(k));
+        if (on) {
+          for (const k of keys) selected.delete(k);
+          selSource = '';
+          render();
+          setStatus('已取消本组「' + meta.title + '」' + keys.length + ' 项');
+        } else {
+          pickKeys(keys, '本组 ' + meta.title);
+        }
+      });
+      h2.appendChild(all);
+      groupBtns.push({ btn: all, keys: g.fields.map((f) => f.key).filter(selectable) });
+    }
+    sec.appendChild(h2);
+
+    if (meta.desc) {
+      const p = document.createElement('p');
+      p.textContent = meta.desc;
+      if (meta.readonly) { p.className = 'ro-warn'; }
+      sec.appendChild(p);
+    }
+
+    // readonly 分组：把整组做成**只读**。
+    //
+    // 为什么要有这个状态：有些配置项在运行期根本没人读
+    //（典型例子：[partsStats] —— 配件属性是物品注册时烘进 PART_STATS 数据组件的，
+    //  运行期读的是组件而不是配置）。把它们做成可拖动的滑块，
+    // 等于邀请玩家白花时间去调一个永远不生效的东西 —— 那种工具比没有更坏。
+    // 所以这里显式禁用整组，并在说明里写清原因和该改哪一组。
+    if (meta.readonly) { sec.classList.add('ro-group'); }
+
+    for (const f of g.fields) {
+      const row = document.createElement('div');
+      row.className = 'row';
+      GROUP_OF[f.key] = g.id;
+      order.push(f.key);
+      HAY[f.key] = [f.label, f.key, f.comment, meta.title, g.id]
+        .filter(Boolean).join(' ').toLowerCase();
+
+      // ① 勾选框（只读分组留个占位 div，否则网格会错位）
+      const cbox = document.createElement('div');
+      let chk = null;
+      if (!meta.readonly) {
+        chk = document.createElement('input');
+        chk.type = 'checkbox';
+        chk.title = '勾上它，然后用上面的 × 批量改';
+        chk.addEventListener('change', () => {
+          if (chk.checked) selected.add(f.key); else selected.delete(f.key);
+          // 手动勾过之后，"这堆是怎么选出来的"就没法用一个来源描述了，清掉提示
+          selSource = '';
+          render();
+        });
+        cbox.appendChild(chk);
+      }
+      row.appendChild(cbox);
+
+      const label = document.createElement('div');
+      label.className = 'key';
+
+      // 三行结构，从上到下：
+      //   ① 中文标签（加粗）—— 一眼看懂是哪个配件的哪个属性
+      //   ② 配置键（等宽小字）—— 手改 toml、写变更记录时要用它
+      //   ③ 说明 —— 这个数值变大/变小意味着什么
+      // 早年只显示 ②，玩家看到的是 hempTensionCeiling 这种词，完全对不上号。
+      let lblEl = null;
+      if (f.label) {
+        lblEl = document.createElement('span');
+        lblEl.className = 'lbl';
+        lblEl.textContent = f.label;
+        label.appendChild(lblEl);
+      }
+      const kn = document.createElement('span');
+      kn.className = 'k';
+      kn.textContent = f.key;
+      // 没有中文标签时（手写的老配置项注释不带分隔符），配置键就是唯一的标题，
+      // 这时把它当主标题显示，别让它缩成一小行。
+      if (!f.label) { kn.classList.add('k-main'); }
+      label.appendChild(kn);
+      let hintEl = null;
+      if (f.comment) {
+        hintEl = document.createElement('span');
+        hintEl.className = 'hint';
+        hintEl.textContent = f.comment;
+        label.appendChild(hintEl);
+      }
+      row.appendChild(label);
+
+      const mid = document.createElement('div');
+      const right = document.createElement('div');
+      let inp, num = null;
+      if (f.type === 'bool') {
+        inp = document.createElement('input');
+        inp.type = 'checkbox';
+      } else {
+        const isInt = Number.isInteger(f.def);
+        inp = document.createElement('input');
+        inp.type = 'range';
+        inp.min = f.min; inp.max = f.max;
+        inp.step = isInt ? 1 : (f.max - f.min) / 500;
+        num = document.createElement('input');
+        num.type = 'number';
+        num.min = f.min; num.max = f.max;
+        num.step = 'any';
+        right.appendChild(num);
+      }
+      mid.appendChild(inp);
+      const d = document.createElement('div');
+      d.className = 'def';
+      d.textContent = '默认 ' + f.def + '　范围 ' + f.min + '~' + f.max;
+      right.appendChild(d);
+      row.appendChild(mid);
+      row.appendChild(right);
+      sec.appendChild(row);
+
+      // readonly 分组：禁用输入控件，但仍把值读进 values（保存时原样写回，
+      // 不会因为禁用而把已有数值冲掉）。
+      if (meta.readonly) {
+        inp.disabled = true;
+        if (num) num.disabled = true;
+        row.classList.add('ro-row');
+      }
+
+      // set() 是**唯一的**赋值入口：手动拖动、批量乘、还原默认、撤销，全走它。
+      // 集中在一处才能保证：边界一律 clamp、int 项保持整数、改过的高亮同步。
+      const set = (v) => {
+        const val = f.type === 'bool' ? !!v : clamp(Number(v), f.min, f.max);
+        if (f.type !== 'bool' && Number.isNaN(val)) return false;
+        values[f.key] = val;
+        if (f.type === 'bool') inp.checked = val;
+        else {
+          if (document.activeElement !== inp) inp.value = val;
+          if (document.activeElement !== num) num.value = round(val);
+        }
+        markChanged(f.key);
+        return true;
+      };
+      if (f.type === 'bool') inp.addEventListener('change', () => set(inp.checked));
+      else {
+        inp.addEventListener('input', () => set(inp.value));
+        num.addEventListener('input', () => set(num.value));
+      }
+
+      inputEls[f.key] = {
+        range: inp, num: num, field: f, row: row, keyEl: kn, chk: chk, set: set, sec: sec,
+        lblEl: lblEl, lblText: f.label || '',
+        keyText: f.key,
+        hintEl: hintEl, hintText: f.comment || '',
+      };
+
+      // 先把三个表按默认值填好。
+      // 不填的话，在「还没打开配置文件」的状态下 values[key] 是 undefined ——
+      // 那时点批量乘会算出 NaN，表现为"点了没反应"，跟工具坏了没区别。
+      // 打开文件会整体覆盖这三个表，所以这里填默认值没有任何副作用
+      //（反而让"没打开文件时拖动滑块"也能正常高亮）。
+      values[f.key] = f.def; original[f.key] = f.def; defaults[f.key] = f.def;
+
+      const kd = kindOf(f.label);
+      if (kd) { push(ATTR_KINDS, kd.attr, f.key); push(OBJ_KINDS, kd.obj, f.key); }
+    }
+    main.appendChild(sec);
+  }
+
+  render();
+  applySearch();
+}
+
+// 下拉里按「命中项数」从多到少排 —— 最常用的（21 条鱼的拉力…）排最前面。
+//
+// ⚠️ 每次 render 都会**重建**这两个下拉，重建后 value 回到占位项。
+//    这不是随手写的：下拉如果保留着上一次的选择，再点同一个选项就不会触发
+//    change 事件（值没变），表现成"选了没反应，得先选别的再选回来"。
+//    重建顺带把「已经全选中的」那一类标上 ✓，一眼能看出哪些已经选过了。
+function fillKindSelect(sel, map, tip) {
+  sel.textContent = '';
+  const ph = document.createElement('option');
+  ph.value = '';
+  ph.textContent = '— ' + tip + '（共 ' + map.size + ' 种）—';
+  sel.appendChild(ph);
+  const list = [...map].sort((a, b) => b[1].length - a[1].length || a[0].localeCompare(b[0], 'zh'));
+  for (const [name, keys] of list) {
+    const o = document.createElement('option');
+    o.value = name;
+    const on = keys.length > 0 && keys.every((k) => selected.has(k));
+    o.textContent = (on ? '✓ ' : '') + name + ' ×' + keys.length;
+    sel.appendChild(o);
+  }
+  sel.value = '';
+}
+
+function markChanged(key) {
+  const el = inputEls[key];
+  const diff = values[key] !== original[key];
+  el.row.classList.toggle('changed', diff);
+  el.keyEl.style.color = diff ? 'var(--changed)' : '';
+}
+
+// ------------------------------------------------------------------ 选择
+// 只读分组的项**永远不能进入选中集合**。否则「全选匹配项」会把 partsStats 那 79 项
+// 也选进来，批量一乘就写进了配置文件 —— 那 79 项运行期没人读，改了纯属误导。
+const selectable = (key) => !READONLY.has(GROUP_OF[key]);
+
+function syncRow(key) {
+  const el = inputEls[key];
+  if (!el || !el.chk) return;
+  const on = selected.has(key);
+  el.chk.checked = on;
+  el.row.classList.toggle('sel', on);
+}
+
+// 选择相关的界面**只有这三条重画路径**，任何改动选中的地方都必须调其中一条 ——
+// 之前就是漏了「下拉选完不重置」和「勾了框但清单不刷新」，才出现
+// "选了没反应 / 看不出选了什么"。现在统一成：
+//   render()          勾选集合变了  → 全量重画（行、计数、按钮、下拉、清单）
+//   renderStatusLine() 只改了倍数   → 轻量重画（不用扫 446 行）
+//   renderPanel()      清单本身要变 → 只重画清单
+function render() {
+  for (const key of order) syncRow(key);
+  renderStatusLine();
+  fillKindSelect($('#kindAttr'), ATTR_KINDS, '同属性');
+  fillKindSelect($('#kindObj'), OBJ_KINDS, '同对象');
+  renderPanel();
+}
+
+function renderStatusLine() {
+  const n = selected.size;
+  $('#selinfo').innerHTML = '已选 <b>' + n + '</b> 项';
+  // 来源提示：让你知道这 N 项是怎么来的（手动勾的还是某个「同属性」一秒选的）
+  $('#selhint').textContent = n && selSource ? '· ' + selSource : '';
+  $('#selnone').disabled = n === 0;
+  const k = $('#factor').value;
+  $('#applymul').disabled = n === 0;
+  $('#applymul').textContent = n ? '应用 ×' + k + ' 到已选 ' + n + ' 项' : '应用到已选 0 项';
+  $('#revertdef').disabled = n === 0;
+  // 整组已全选时，分组标题右上角那个按钮变成「取消本组」
+  for (const gb of groupBtns) {
+    const on = gb.keys.length > 0 && gb.keys.every((x) => selected.has(x));
+    gb.btn.textContent = on ? '取消本组' : '全选本组';
+  }
+}
+
+function renderPanel() {
+  const n = selected.size;
+  $('#selpanel').classList.toggle('empty', n === 0);
+  if (!n) {
+    $('#selpaneltext').textContent =
+      '还没选任何项 —— 用每行最前面的勾选框，或用上面「同属性 / 同对象」下拉。';
+  } else {
+    const k = $('#factor').value;
+    $('#selpaneltext').textContent =
+      '已选 ' + n + ' 项' + (selSource ? '（' + selSource + '）' : '（手动勾选）') +
+      ' —— 点上面的「应用 ×' + k + ' 到已选 ' + n + ' 项」批量乘，' +
+      '或点「还原已选为默认值」把这几项改回默认；下面每条都能单独取消。';
+  }
+  const box = $('#sellist');
+  box.textContent = '';
+  const CAP = 40;
+  for (const key of [...selected].slice(0, CAP)) {
+    const f = inputEls[key].field;
+    const chip = document.createElement('div');
+    chip.className = 'chip';
+    const t = document.createElement('span');
+    // 有中文标签就显示标签（人才看得懂），没有就退回配置键
+    t.textContent = (f.label || ('[' + GROUP_OF[key] + '] ' + key));
+    t.title = '[' + GROUP_OF[key] + '] ' + key + '：' +
+      (values[key] === undefined ? '' : values[key]) +
+      (f.comment ? ' —— ' + f.comment : '');
+    chip.appendChild(t);
+    const x = document.createElement('button');
+    x.textContent = '×';
+    x.title = '把这一项移出选择';
+    x.addEventListener('click', () => {
+      selected.delete(key);
+      selSource = '';
+      render();
+    });
+    chip.appendChild(x);
+    box.appendChild(chip);
+  }
+  if (n > CAP) {
+    const more = document.createElement('div');
+    more.className = 'chip more';
+    more.textContent = '… 还有 ' + (n - CAP) + ' 项（用「清空选择」或上面的下拉重新选）';
+    box.appendChild(more);
+  }
+}
+
+/** 由下拉 / 全选按钮调用：默认**替换**当前选择，勾了「追加」则并入。 */
+function pickKeys(keys, label) {
+  const add = $('#append').checked;
+  if (!add) selected.clear();
+  let n = 0;
+  for (const k of keys) {
+    if (selectable(k) && !selected.has(k)) { selected.add(k); n++; }
+  }
+  selSource = label + (add ? '，追加 ' + n + ' 项' : '');
+  render();
+  setStatus('已选 ' + selected.size + ' 项' + (label ? '：' + label : '') +
+            (add ? '（追加 ' + n + ' 项）' : ''));
+}
+
+$('#kindAttr').addEventListener('change', (e) => {
+  const v = e.target.value;
+  if (v) pickKeys(ATTR_KINDS.get(v), '同属性：' + v);
+});
+$('#kindObj').addEventListener('change', (e) => {
+  const v = e.target.value;
+  if (v) pickKeys(OBJ_KINDS.get(v), '同对象：' + v);
+});
+$('#selnone').addEventListener('click', () => {
+  selected.clear();
+  selSource = '';
+  render();
+  setStatus('已清空选择');
+});
+$('#selmatch').addEventListener('click', () => {
+  const t = tokens();
+  const keys = order.filter((k) => selectable(k) && matchesKey(k));
+  pickKeys(keys, t.length ? '匹配「' + t.join(' ') + '」' : '全部');
+});
+// 倍数一改，按钮和清单上的文案立刻跟着变 —— 不然"应用 ×1.5"会一直显示旧倍数，
+// 让人以为改的倍数没吃进去。
+$('#factor').addEventListener('input', () => { renderStatusLine(); renderPanel(); });
+// 「追加」是下一次选择的模式，改它不影响当前选择，但要让它自己看得见
+$('#append').addEventListener('change', renderStatusLine);
+
+// ------------------------------------------------------------------ 搜索
+function tokens() { return query.trim().toLowerCase().split(/\s+/).filter(Boolean); }
+function matchesKey(key) {
+  const t = tokens();
+  if (!t.length) return true;
+  const hay = HAY[key];
+  return t.every((x) => hay.indexOf(x) >= 0);
+}
+
+/** 把 text 写进 el，命中的片段用 <mark> 包起来。全程用文本节点，不碰 innerHTML。
+ *  el 可能是 null（这一行没有中文标签、或没有说明注释），直接跳过。 */
+function paint(el, text, toks) {
+  if (!el) return;
+  el.textContent = '';
+  if (!toks.length || !text) { el.textContent = text; return; }
+  const low = text.toLowerCase();
+  const ranges = [];
+  for (const t of toks) {
+    let i = low.indexOf(t);
+    while (i >= 0) { ranges.push([i, i + t.length]); i = low.indexOf(t, i + t.length); }
+  }
+  if (!ranges.length) { el.textContent = text; return; }
+  ranges.sort((a, b) => a[0] - b[0]);
+  const merged = [];
+  for (const r of ranges) {
+    const last = merged[merged.length - 1];
+    if (last && r[0] <= last[1]) last[1] = Math.max(last[1], r[1]);
+    else merged.push([r[0], r[1]]);
+  }
+  let pos = 0;
+  for (const [a, b] of merged) {
+    if (a > pos) el.appendChild(document.createTextNode(text.slice(pos, a)));
+    const m = document.createElement('mark');
+    m.textContent = text.slice(a, b);
+    el.appendChild(m);
+    pos = b;
+  }
+  if (pos < text.length) el.appendChild(document.createTextNode(text.slice(pos)));
+}
+
+function applySearch() {
+  const t = tokens();
+  const hide = $('#qhide').checked;
+  let hit = 0;
+  for (const g of SCHEMA.groups) {
+    // 整组一行都没匹配时把 section 也藏掉，否则 446 项里搜出 3 项之后
+    // 还要滚过 10 个空分组标题。secEl 由 build() 逐行记下（同一组共用）。
+    const secEl = g.fields.length ? inputEls[g.fields[0].key].sec : null;
+    let vis = 0;
+    for (const f of g.fields) {
+      const el = inputEls[f.key];
+      const ok = matchesKey(f.key);
+      if (ok) hit++;
+      const show = !t.length || ok || !hide;
+      el.row.classList.toggle('hidden', !show);
+      if (show) vis++;
+      paint(el.lblEl, el.lblText, t);
+      paint(el.keyEl, el.keyText, t);
+      paint(el.hintEl, el.hintText, t);
+    }
+    if (secEl) secEl.classList.toggle('emptied', t.length > 0 && hide && vis === 0);
+  }
+  $('#qcount').textContent = t.length
+    ? '匹配 ' + hit + ' / ' + order.length + ' 项'
+    : '共 ' + order.length + ' 项';
+  $('#qcount').className = 'status' + (t.length && hit === 0 ? ' warn' : '');
+}
+
+$('#q').addEventListener('input', (e) => { query = e.target.value; applySearch(); });
+$('#qhide').addEventListener('change', applySearch);
+$('#qclear').addEventListener('click', () => {
+  $('#q').value = ''; query = ''; applySearch(); $('#q').focus();
+});
+
+// ------------------------------------------------------------------ 批量乘
+$('#applymul').addEventListener('click', () => {
+  const k = parseFloat($('#factor').value);
+  if (!Number.isFinite(k) || k < 0) { setStatus('乘数请填一个 ≥ 0 的数字', 'warn'); return; }
+  if (!selected.size) { setStatus('先选要改的项（勾选框 / 同属性 / 全选匹配项）', 'warn'); return; }
+
+  const items = [];
+  let atMax = 0, atMin = 0, same = 0;
+  for (const key of order) {                 // 按界面顺序走，日志里的顺序才稳定
+    if (!selected.has(key) || !selectable(key)) continue;
+    const f = inputEls[key].field;
+    if (f.type === 'bool') continue;         // 开关没法乘
+    const before = values[key];
+    let v = before * k;
+    if (Number.isInteger(f.def)) v = Math.round(v);
+    if (v > f.max) atMax++; else if (v < f.min) atMin++;
+    const after = clamp(v, f.min, f.max);
+    if (after === before) { same++; continue; }
+    items.push({ key: key, before: before });
+    inputEls[key].set(after);
+  }
+
+  if (!items.length) {
+    // 「点了没反应」是最让人怀疑工具坏了的反馈，所以这里必须说清为什么没变。
+    const why = [];
+    if (atMax || atMin) why.push((atMax + atMin) + ' 项已经顶到范围上下限');
+    if (same) why.push(same + ' 项乘完取整后和原来一样');
+    setStatus('乘 ×' + k + ' 之后没有任何一项变化' + (why.length ? '（' + why.join('，') + '）' : ''), 'warn');
+    return;
+  }
+
+  lastBatch = { desc: '×' + k, items: items };
+  batchNotes.push('×' + k + '（' + items.length + ' 项）' + describeKeys(items));
+  $('#undobatch').disabled = false;
+  renderPanel();          // 清单上的 tooltip 带着数值，改完要跟着刷新
+
+  const notes = [];
+  if (atMax) notes.push(atMax + ' 项顶到上限、已夹到上限');
+  if (atMin) notes.push(atMin + ' 项顶到下限、已夹到下限');
+  if (same) notes.push(same + ' 项取整后没变');
+  setStatus('已把 ' + items.length + ' 项乘 ×' + k +
+            (notes.length ? '（' + notes.join('；') + '）' : '') + '。点「② 保存修改」写盘', 'ok');
+});
+
+$('#revertdef').addEventListener('click', () => {
+  // 还原已选为默认值。
+  //
+  // 为什么要这个（用户 2026-10-08）：以前只有「全部还原默认」—— 一按 860 项全回去，
+  // 想只把"这一条鱼的那 13 项"或"所有鱼的拉力"改回来，只能一项项手改 ✗。
+  // 语义与批量乘**完全对称**：同一个选中集合、同一个 set() 入口、
+  // 同样记进 lastBatch（所以「撤销上次批量」能把它撤回来）、同样写进变更日志。
+  if (!selected.size) {
+    setStatus('先选要还原的项（勾选框 / 同属性 / 同对象 / 全选匹配项）', 'warn');
+    return;
+  }
+
+  const items = [];
+  let already = 0;
+  for (const key of order) {                 // 按界面顺序走，日志里的顺序才稳定
+    if (!selected.has(key) || !selectable(key)) continue;
+    const f = inputEls[key].field;
+    const before = values[key];
+    const after = f.def;                     // 布尔项也有 def，同样走 set()（不用另开一条路）
+    if (after === before) { already++; continue; }
+    items.push({ key: key, before: before });
+    inputEls[key].set(after);
+  }
+
+  if (!items.length) {
+    setStatus('选中的 ' + selected.size + ' 项本来就是默认值 —— 没东西要还', 'warn');
+    return;
+  }
+
+  lastBatch = { desc: '还原默认', items: items };
+  batchNotes.push('还原默认（' + items.length + ' 项）' + describeKeys(items));
+  $('#undobatch').disabled = false;
+  renderPanel();          // 清单上的 tooltip 带着数值，改完要跟着刷新
+
+  setStatus('已把 ' + items.length + ' 项还原为默认值'
+    + (already ? '（另有 ' + already + ' 项本来就是默认）' : '')
+    + '。点「② 保存修改」写盘；点「撤销上次批量」可以反悔', 'ok');
+});
+
+$('#undobatch').addEventListener('click', () => {
+  if (!lastBatch) return;
+  for (const it of lastBatch.items) inputEls[it.key].set(it.before);
+  batchNotes.pop();                          // 这次批量等于没发生，日志里也不该留
+  setStatus('已撤销上一次批量（' + lastBatch.desc + '，' + lastBatch.items.length + ' 项）', 'warn');
+  lastBatch = null;
+  $('#undobatch').disabled = true;
+});
+
+/** 给变更日志用：按分组把键列出来，太长的截断。 */
+function describeKeys(items) {
+  const byGroup = new Map();
+  for (const it of items) {
+    const g = GROUP_OF[it.key] || '?';
+    if (!byGroup.has(g)) byGroup.set(g, []);
+    byGroup.get(g).push(it.key);
+  }
+  return [...byGroup].map(([g, ks]) =>
+    ' [' + g + '] ' + (ks.length <= 8 ? ks.join(', ') : ks.slice(0, 8).join(', ') + ' 等 ' + ks.length + ' 项'),
+  ).join('；');
+}
+
+// ------------------------------------------------------------------ TOML
+// NeoForge 用 NightConfig 写出的格式很简单：分组头 + key = value，行间夹注释。
+// 只需按分组取值，不需要完整 TOML 解析。
+function parseToml(text) {
+  const out = {};
+  let group = null;
+  for (const raw of text.split(/\r?\n/)) {
+    const line = raw.trim();
+    if (!line || line.startsWith('#')) continue;
+    const h = /^\[([^\]]+)\]$/.exec(line);
+    if (h) { group = h[1]; out[group] = out[group] || {}; continue; }
+    const kv = /^([A-Za-z_][\w.-]*)\s*=\s*(.+?)\s*$/.exec(line);
+    if (kv && group) out[group][kv[1]] = kv[2];
+  }
+  return out;
+}
+
+function buildToml() {
+  const out = [];
+  out.push('# 《垂纶》Angler\'s Tackle 配置');
+  out.push('# 由调参器写入。改完重启游戏生效。');
+  out.push('');
+  for (const g of SCHEMA.groups) {
+    out.push('[' + g.id + ']');
+    for (const f of g.fields) {
+      if (f.comment) out.push('# ' + f.comment);
+      const v = values[f.key];
+      out.push(f.key + ' = ' + (f.type === 'bool' ? (v ? 'true' : 'false') : String(v)));
+      out.push('');
+    }
+  }
+  return out.join('\n');
+}
+
+// ------------------------------------------------------------------ 变更日志
+function collectChanges() {
+  const rows = [];
+  for (const g of SCHEMA.groups) {
+    for (const f of g.fields) {
+      if (values[f.key] === original[f.key]) continue;
+      const meta = GROUP_META[g.id] || { title: g.id };
+      rows.push({ group: meta.title + ' [' + g.id + ']', key: f.key,
+                  from: original[f.key], to: values[f.key], comment: f.comment || '' });
+    }
+  }
+  return rows;
+}
+
+function buildChangelog() {
+  const rows = collectChanges();
+  if (!rows.length) return null;
+  const stamp = new Date().toLocaleString('zh-CN');
+  const L = [];
+  L.push('# 调参变更记录');
+  L.push('');
+  L.push('> 这份文件由《垂纶》调参器自动生成。');
+  L.push('> **给开发者（AI）看**：以下是玩家主动调整过的数值，请勿改回默认值。');
+  L.push('> 如果因为新版本需要动到这些项，先说明原因，不要静默覆盖。');
+  // ★ 2026-10-10 用户定案（#7 续）：机器可读的「调参指纹」✓
+  //   记录**玩家改过的每个键 → 当前值** ✓，给检查器核对用：
+  //   版本更新若把这批值改回去（① 键改名/挪组 ⇒ 值无处可迁 ✗ ② 超范围被夹回 ✗ ③ 被冲成默认 ✗），
+  //   检查器**当场变红** ✓ —— 而不是等玩家玩着发现手感变了 ✓。
+  //   格式沿用仓库已有做法：HTML 注释包一段 `key=value` ✓（Markdown 里不显示 ✓，程序能读 ✓）。
+  //   数据源 = 本页的 `values` / `original`（打开调参器时的原值 ✓）⇒ 只记**真的被改过**的项 ✓。
+  const fp = Object.keys(values).filter((k) => values[k] !== original[k]).sort();
+  L.push('');
+  L.push('<!-- atl-tuning-fingerprint');
+  L.push('saved=' + new Date().toISOString());
+  for (const k of fp) L.push(k + '=' + values[k]);
+  L.push('-->');
+  L.push('');
+  L.push('- 时间：' + stamp);
+  L.push('- 改动项数：' + rows.length);
+  // 批量乘是「一次操作改了 N 项」，只看到 21 行 diff 是看不出这层意图的
+  //（不知道是挨个手调的，还是统一乘了 1.2）。所以单独记一段。
+  if (batchNotes.length) {
+    L.push('- 批量操作 ' + batchNotes.length + ' 次：');
+    for (const n of batchNotes) L.push('    - ' + n);
+  }
+  L.push('');
+  L.push('| 分组 | 配置项 | 原值 | 新值 | 说明 |');
+  L.push('|---|---|---|---|---|');
+  for (const r of rows) {
+    L.push('| ' + r.group + ' | ' + r.key + ' | ' + r.from + ' | **' + r.to + '** | ' + r.comment + ' |');
+  }
+  L.push('');
+  L.push('## 机器可读');
+  L.push('');
+  L.push('```json');
+  const obj = {};
+  for (const r of rows) obj[r.key] = { from: r.from, to: r.to };
+  if (batchNotes.length) obj['__batchOps'] = batchNotes.slice();
+  L.push(JSON.stringify(obj, null, 2));
+  L.push('```');
+  L.push('');
+  return L.join('\n');
+}
+
+// ------------------------------------------------------------------ 打开
+$('#open').addEventListener('click', async () => {
+  if (!window.showOpenFilePicker) {
+    setStatus('这个浏览器不支持直接读写文件，请用 Edge 或 Chrome 打开本页面', 'warn');
+    return;
+  }
+  try {
+    const picked = await window.showOpenFilePicker({
+      types: [{ description: 'NeoForge 配置', accept: { 'text/plain': ['.toml'] } }],
+    });
+    cfgHandle = picked[0];
+    const text = await (await cfgHandle.getFile()).text();
+    loadFrom(text);
+    setStatus('已打开 ' + cfgHandle.name + '（' + Object.keys(values).length + ' 项）', 'ok');
+  } catch (e) {
+    if (e && e.name !== 'AbortError') setStatus('打开失败：' + e.message, 'warn');
+  }
+});
+
+function loadFrom(text) {
+  const parsed = parseToml(text);
+  for (const g of SCHEMA.groups) {
+    for (const f of g.fields) {
+      let v = f.def;
+      const raw = parsed[g.id] ? parsed[g.id][f.key] : undefined;
+      if (raw !== undefined) {
+        if (f.type === 'bool') v = (raw === 'true');
+        else {
+          const n = parseFloat(String(raw).replace(/[dD]$/, ''));
+          if (!Number.isNaN(n)) v = n;
+        }
+      }
+      values[f.key] = v; original[f.key] = v; defaults[f.key] = f.def;
+    }
+  }
+  for (const key of Object.keys(inputEls)) {
+    const el = inputEls[key], f = el.field;
+    if (f.type === 'bool') el.range.checked = values[key];
+    else { el.range.value = values[key]; el.num.value = round(values[key]); }
+    markChanged(key);
+  }
+  $('#save').disabled = false;
+  $('#reset').disabled = false;
+}
+
+// ------------------------------------------------------------------ 保存
+$('#save').addEventListener('click', async () => {
+  const changelog = buildChangelog();
+  if (!changelog) { setStatus('没有改动，无需保存', 'warn'); return; }
+  try {
+    const w = await cfgHandle.createWritable();
+    await w.write(buildToml());
+    await w.close();
+  } catch (e) {
+    setStatus('写配置失败：' + e.message, 'warn');
+    return;
+  }
+
+  // 变更日志：默认存到配置文件同目录（方便开发者按固定路径找）
+  //
+  // ★ 2026-10-10 用户定案（#7）：**变更记录不许互相覆盖** ✗
+  //   原来 `suggestedName` 是写死的 '调参变更记录.md' ✓ ⇒ 用户反复"另存为"到同一路径时，
+  //   上一次的记录被整份替换掉 ✗✗ —— 用户原话"每次替换旧记录 ⇒ 部分调参不进记录"✓，就是这个。
+  //   现在把**时间戳写进文件名** ✓ ⇒ 每次都是新文件 ✓，覆盖不了旧的 ✓；
+  //   （冒号在 Windows 文件名里非法 ✗，所以把 `-` `:` `T` 一起去掉 ✓）
+  let logSaved = false;
+  const logFileName = '调参变更记录-'
+    + new Date().toLocaleString('sv-SE').replace(/[-: ]/g, '').slice(0, 12) + '.md';
+  if (window.showSaveFilePicker) {
+    try {
+      const logHandle = await window.showSaveFilePicker({
+        suggestedName: logFileName,
+        types: [{ description: 'Markdown', accept: { 'text/markdown': ['.md'] } }],
+      });
+      const lw = await logHandle.createWritable();
+      await lw.write(changelog);
+      await lw.close();
+      logSaved = true;
+    } catch (e) {
+      if (!e || e.name !== 'AbortError') setStatus('写日志失败：' + e.message, 'warn');
+    }
+  }
+
+  showLog(changelog);
+  setStatus(logSaved
+    ? '已保存。配置重启游戏生效；变更记录已写出，发给我即可'
+    : '配置已保存，但变更记录没存成文件 —— 下面这段可以直接复制给我', logSaved ? 'ok' : 'warn');
+
+  for (const k of Object.keys(values)) original[k] = values[k];
+  for (const k of Object.keys(inputEls)) markChanged(k);
+  // 已经写盘了，撤销就没有意义了（撤销回去会变成「又改了一次」）
+  lastBatch = null;
+  batchNotes = [];
+  $('#undobatch').disabled = true;
+});
+
+$('#reset').addEventListener('click', () => {
+  if (!confirm('把所有项还原为默认值？（还没写盘，要点保存才生效）')) return;
+  // 走 set() 而不是直接写控件：边界 clamp / int 取整 / 高亮 都在它里面，
+  // 手动写一遍控件就等于把这套规则抄第二份，早晚会漂移。
+  for (const k of Object.keys(defaults)) inputEls[k].set(defaults[k]);
+  // 还原默认是一次「全表覆盖」，之前那次批量乘的 before 值已经不可信了
+  lastBatch = null;
+  batchNotes = [];
+  $('#undobatch').disabled = true;
+  setStatus('已全部还原为默认，点保存生效', 'warn');
+});
+
+function setStatus(t, cls) { const s = $('#status'); s.textContent = t; s.className = 'status ' + (cls || ''); }
+function showLog(text) {
+  $('#logwrap').style.display = 'block';
+  $('#log').textContent = text;
+  $('#logwrap').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+build();
+</script>
+</body>
+</html>

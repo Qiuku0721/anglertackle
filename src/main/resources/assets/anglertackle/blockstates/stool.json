@@ -1,0 +1,8 @@
+{
+  "variants": {
+    "facing=north": { "model": "anglertackle:block/stool", "y": 0 },
+    "facing=east": { "model": "anglertackle:block/stool", "y": 90 },
+    "facing=south": { "model": "anglertackle:block/stool", "y": 180 },
+    "facing=west": { "model": "anglertackle:block/stool", "y": 270 }
+  }
+}

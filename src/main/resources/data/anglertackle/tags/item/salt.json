@@ -1,0 +1,9 @@
+{
+  "values": [
+    "anglertackle:salt",
+    {
+      "id": "kaleidoscope_chinesefood:salt",
+      "required": false
+    }
+  ]
+}

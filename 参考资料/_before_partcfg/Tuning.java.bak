@@ -1,0 +1,367 @@
+package com.whitecobalt.anglertackle.fishing;
+
+import com.whitecobalt.anglertackle.AnglersTackle;
+import com.whitecobalt.anglertackle.Config;
+
+/**
+ * 调参值的**运行时读取层**。
+ *
+ * <p><b>为什么需要这一层</b>：原先所有调参值都是
+ * {@code private static final double REEL_GAIN = Config.INSTANCE.xxx.get();}
+ * —— 静态常量只在**类加载时求值一次**。于是：
+ * <ul>
+ *   <li>改配置文件后必须**重启整个游戏**才生效</li>
+ *   <li>调一个数值要经历"改文件 → 重启 → 抛竿 → 观察"的循环，一次几分钟</li>
+ * </ul>
+ * 对做手感调参来说这个循环太慢，所以改成运行时读取。
+ *
+ * <p><b>性能</b>：{@link com.whitecobalt.anglertackle.Config} 里的
+ * {@code ModConfigSpec.DoubleValue.get()} 只是读一个已加载的字段，不是文件 IO，
+ * 每 tick 调用几次的开销可以忽略（对比同一 tick 里已有的实体/粒子/网络开销）。
+ * 热路径上如果确实在意，可以在方法内取一次局部变量复用。
+ *
+ * <p><b>热重载</b>：{@code /atl config reload} 会调 {@code Config.SPEC.reload()}，
+ * NeoForge 重新读盘并更新 {@code ConfigValue}；而本类的所有 getter 都是现读现取，
+ * 所以**下一条鱼就会用新值**，不用重启。
+ */
+public final class Tuning {
+
+    private Tuning() {
+    }
+
+    // ================================================================ 张力
+    public static double reelGain() {
+        return cfg().tensionReelGain.get();
+    }
+
+    public static double releaseLoss() {
+        return cfg().tensionReleaseLoss.get();
+    }
+
+    public static double idleLoss() {
+        return cfg().tensionIdleLoss.get();
+    }
+
+    /** 白区上限占张力上限的比例（0~1）。config 里写的是"基准 100 的百分比"。 */
+    public static double whiteZoneRatio() {
+        return cfg().tensionWhiteMax.get() / 100.0;
+    }
+
+    /** 黄区上限占张力上限的比例（0~1）。 */
+    public static double yellowZoneRatio() {
+        return cfg().tensionYellowMax.get() / 100.0;
+    }
+
+    /** 深红闪烁阈值占张力上限的比例（0~1）。 */
+    public static double criticalRatio() {
+        return Math.min(0.999, cfg().tensionCriticalFlash.get() / 100.0);
+    }
+
+    public static double baseRecover() {
+        return cfg().tensionBaseRecover.get();
+    }
+
+    // ============================================================ 鱼的行为
+    public static double pullIdle() {
+        return cfg().pullIdleBase.get();
+    }
+
+    public static double pullStruggle() {
+        return cfg().pullStruggleBase.get();
+    }
+
+    /** 收线时每秒扣掉的鱼力比例（相对满体力）。 */
+    public static double staminaDrainPerSec() {
+        return cfg().staminaDrainBase.get();
+    }
+
+    public static double staminaDrainPerTick() {
+        return staminaDrainPerSec() / 20.0;
+    }
+
+    // ============================================================ 配件合成
+    public static double wLineOnTension() {
+        return cfg().weightLineOnTension.get();
+    }
+
+    public static double wRodOnTension() {
+        return cfg().weightRodOnTension.get();
+    }
+
+    public static double wLineOnRecover() {
+        return cfg().weightLineOnRecover.get();
+    }
+
+    public static double wRodOnRecover() {
+        return cfg().weightRodOnRecover.get();
+    }
+
+    public static double wReelOnDrain() {
+        return cfg().weightReelOnDrain.get();
+    }
+
+    public static double wRodOnDrain() {
+        return cfg().weightRodOnDrain.get();
+    }
+
+    public static double capTensionCeiling() {
+        return cfg().capTensionCeiling.get();
+    }
+
+    public static double capTensionRecover() {
+        return cfg().capTensionRecover.get();
+    }
+
+    public static double capStaminaDrain() {
+        return cfg().capStaminaDrain.get();
+    }
+
+    public static double capPull() {
+        return cfg().capPull.get();
+    }
+
+    public static double capDamping() {
+        return cfg().capDamping.get();
+    }
+
+    // ================================================================ 其他
+    public static double hookWindowBase() {
+        return cfg().hookWindowBase.get();
+    }
+
+    public static double hookWindowMin() {
+        return cfg().hookWindowMin.get();
+    }
+
+    public static double biteMinWait() {
+        return cfg().biteMinWait.get();
+    }
+
+    public static double biteMaxWait() {
+        return cfg().biteMaxWait.get();
+    }
+
+    public static double biteHardCap() {
+        return cfg().biteHardCap.get();
+    }
+
+    public static int lineDurabilityPerBite() {
+        return cfg().lineDurabilityPerBite.get();
+    }
+
+    public static int lureDurabilityPerBite() {
+        return cfg().lureDurabilityPerBite.get();
+    }
+
+    public static int rodDurabilityPerBite() {
+        return cfg().rodDurabilityPerBite.get();
+    }
+
+    public static int lineDurabilityPerBreak() {
+        return cfg().lineDurabilityPerBreak.get();
+    }
+
+    public static int chumParticleIntervalTicks() {
+        return cfg().chumParticleIntervalTicks.get();
+    }
+
+    public static int chumParticlesPerBurst() {
+        return cfg().chumParticlesPerBurst.get();
+    }
+
+    public static int ghostLineBeyondBlocks() {
+        return cfg().ghostLineBeyondBlocks.get();
+    }
+
+    // ============================================================ 热重载
+    /**
+     * 重新从磁盘读配置，**不重启游戏**。
+     *
+     * <p>为什么不是一行 {@code spec.reload()}：NeoForge 1.21.1 的
+     * {@code ModConfigSpec} 没有公开 reload（只有 {@code resetCaches} / {@code save}，
+     * {@code ConfigTracker} 也没有公开的 reload）。所以这里自己做：
+     * <ol>
+     *   <li>读配置文件（NeoForge 用它自己的读写路径，见 {@link #configFile()}）</li>
+     *   <li>按 {@code [分组].键} 的路径找到每个 {@code ConfigValue}，用 {@code set()} 写进内存</li>
+     *   <li>{@code resetCaches(RestartType.NONE)} 让下次 {@code get()} 不读旧缓存</li>
+     * </ol>
+     * 之后本类所有 getter 立刻返回新值 —— 下一条鱼就用新参数。
+     *
+     * <p><b>失败不影响玩法</b>：任何一步出错都只记日志并返回 false，
+     * 玩家重启游戏即可（也就是没有这个功能时的行为）。
+     *
+     * @return 成功重载的项数；0 表示没读到或没变化，-1 表示出错
+     */
+    public static int reload() {
+        try {
+            java.nio.file.Path file = configFile();
+            if (file == null || !java.nio.file.Files.isRegularFile(file)) {
+                AnglersTackle.LOGGER.warn("[垂纶] 热重载失败：找不到配置文件 {}", file);
+                return -1;
+            }
+            java.util.Map<String, Object> flat = parseFlatToml(file);
+            if (flat.isEmpty()) {
+                AnglersTackle.LOGGER.warn("[垂纶] 热重载：配置文件解析为空 {}", file);
+                return -1;
+            }
+
+            final Config c = cfg();
+            int[] applied = {0};
+            // ConfigValue.set 写的是内存里那份 CommentedConfig（getRaw 读的同一份）。
+            // 写完必须 clearCache()，否则 get() 还返回旧缓存 ——
+            // 这里逐个清而不是用 resetCaches()：后者要匹配 RestartType，
+            // 一旦类型对不上就静默不清（表现就是"敲了 reload 没反应"）。
+            apply(c, flat, applied);
+
+            AnglersTackle.LOGGER.info("[垂纶] 配置热重载完成：应用 {} 项（{}）", applied[0], file.getFileName());
+            return applied[0];
+        } catch (Throwable t) {
+            AnglersTackle.LOGGER.warn("[垂纶] 配置热重载失败：{}", t.toString());
+            return -1;
+        }
+    }
+
+    /** 把解析出来的扁平值逐个塞进 spec。 */
+    private static void apply(Config c, java.util.Map<String, Object> flat, int[] counter) {
+        // 逐项显式列出，而不是反射遍历 —— 反射在混淆/模块边界下脆弱，
+        // 而且这里只有 35 项，显式写反而更清楚、更容易在编译期发现漏项。
+        put(flat, "cast.chargeTimeSeconds", c.chargeTimeSeconds, counter);
+        put(flat, "hookWindow.base", c.hookWindowBase, counter);
+        put(flat, "hookWindow.min", c.hookWindowMin, counter);
+        put(flat, "tension.reelGain", c.tensionReelGain, counter);
+        put(flat, "tension.releaseLoss", c.tensionReleaseLoss, counter);
+        put(flat, "tension.idleLoss", c.tensionIdleLoss, counter);
+        put(flat, "tension.whiteMax", c.tensionWhiteMax, counter);
+        put(flat, "tension.yellowMax", c.tensionYellowMax, counter);
+        put(flat, "tension.criticalFlash", c.tensionCriticalFlash, counter);
+        put(flat, "tension.baseRecover", c.tensionBaseRecover, counter);
+        put(flat, "bite.minWaitSeconds", c.biteMinWait, counter);
+        put(flat, "bite.maxWaitSeconds", c.biteMaxWait, counter);
+        put(flat, "bite.hardCapSeconds", c.biteHardCap, counter);
+        put(flat, "parts.lineOnTension", c.weightLineOnTension, counter);
+        put(flat, "parts.rodOnTension", c.weightRodOnTension, counter);
+        put(flat, "parts.lineOnRecover", c.weightLineOnRecover, counter);
+        put(flat, "parts.rodOnRecover", c.weightRodOnRecover, counter);
+        put(flat, "parts.reelOnDrain", c.weightReelOnDrain, counter);
+        put(flat, "parts.rodOnDrain", c.weightRodOnDrain, counter);
+        put(flat, "parts.capTensionCeiling", c.capTensionCeiling, counter);
+        put(flat, "parts.capTensionRecover", c.capTensionRecover, counter);
+        put(flat, "parts.capStaminaDrain", c.capStaminaDrain, counter);
+        put(flat, "parts.capPull", c.capPull, counter);
+        put(flat, "parts.capDamping", c.capDamping, counter);
+        put(flat, "parts.pullIdleBase", c.pullIdleBase, counter);
+        put(flat, "parts.pullStruggleBase", c.pullStruggleBase, counter);
+        put(flat, "parts.staminaDrainBase", c.staminaDrainBase, counter);
+        put(flat, "chum.particleIntervalTicks", c.chumParticleIntervalTicks, counter);
+        put(flat, "chum.particlesPerBurst", c.chumParticlesPerBurst, counter);
+        put(flat, "chum.radius", c.chumRadius, counter);
+        put(flat, "durability.rodPerBite", c.rodDurabilityPerBite, counter);
+        put(flat, "durability.linePerBite", c.lineDurabilityPerBite, counter);
+        put(flat, "durability.lurePerBite", c.lureDurabilityPerBite, counter);
+        put(flat, "durability.linePerBreak", c.lineDurabilityPerBreak, counter);
+        put(flat, "render.ghostLineBeyondBlocks", c.ghostLineBeyondBlocks, counter);
+    }
+
+    /**
+     * 单项：把文件里的数值写进 {@code ConfigValue} 并清掉它的缓存。
+     *
+     * <p>两种类型分开处理（double / int），因为 {@code ConfigValue.set} 是泛型的，
+     * 直接塞 {@code Number} 会因为泛型擦除而在取值时抛 ClassCastException。
+     */
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    private static void put(java.util.Map<String, Object> flat, String path,
+                            net.neoforged.neoforge.common.ModConfigSpec.ConfigValue<?> value,
+                            int[] counter) {
+        Object v = flat.get(path);
+        if (v == null || !(v instanceof Number num)) {
+            return;
+        }
+        try {
+            Object def = value.getDefault();
+            if (def instanceof Integer) {
+                ((net.neoforged.neoforge.common.ModConfigSpec.ConfigValue) value).set(num.intValue());
+            } else {
+                ((net.neoforged.neoforge.common.ModConfigSpec.ConfigValue) value).set(num.doubleValue());
+            }
+            // 必须清缓存：不清的话 get() 仍返回旧值，表现为"敲了 reload 没反应"
+            value.clearCache();
+            counter[0]++;
+        } catch (Throwable t) {
+            // 单项失败（例如手改坏了格式）就跳过，不影响其它项
+            AnglersTackle.LOGGER.debug("[垂纶] 热重载跳过 {}：{}", path, t.toString());
+        }
+    }
+
+    /**
+     * 极简 TOML 读取：只认 {@code [分组]} 头和 {@code 键 = 数字}，
+     * 忽略注释与空行。够用且不引入依赖 —— 我们要的只是那 35 个数字。
+     */
+    private static java.util.Map<String, Object> parseFlatToml(java.nio.file.Path file)
+            throws java.io.IOException {
+        java.util.Map<String, Object> out = new java.util.HashMap<>();
+        String group = "";
+        for (String rawLine : java.nio.file.Files.readAllLines(file, java.nio.charset.StandardCharsets.UTF_8)) {
+            String line = rawLine.trim();
+            if (line.isEmpty() || line.startsWith("#")) {
+                continue;
+            }
+            if (line.startsWith("[") && line.endsWith("]")) {
+                group = line.substring(1, line.length() - 1).trim();
+                continue;
+            }
+            int eq = line.indexOf('=');
+            if (eq <= 0 || group.isEmpty()) {
+                continue;
+            }
+            String key = line.substring(0, eq).trim();
+            String val = line.substring(eq + 1).trim();
+            // 去掉 TOML 的行内注释与尾部 D/d 后缀（NeoForge 写 double 会带 'd'）
+            int hash = val.indexOf('#');
+            if (hash >= 0) {
+                val = val.substring(0, hash).trim();
+            }
+            if (val.endsWith("d") || val.endsWith("D")) {
+                val = val.substring(0, val.length() - 1);
+            }
+            try {
+                out.put(group + "." + key, Double.valueOf(val));
+            } catch (NumberFormatException ignored) {
+                // 非数字项（boolean/字符串）本类不关心
+            }
+        }
+        return out;
+    }
+
+    /**
+     * 配置文件路径。
+     *
+     * <p>NeoForge 把 common 配置放在 {@code <gameDir>/config/<modid>-common.toml}。
+     * 用 FML 的加载器拿到真实 gameDir，而不是猜 {@code user.dir} ——
+     * 开发环境和正式启动的 gameDir 不是同一个值。
+     */
+    private static java.nio.file.Path configFile() {
+        try {
+            java.nio.file.Path gameDir = net.neoforged.fml.loading.FMLPaths.GAMEDIR.get();
+            return gameDir.resolve("config").resolve(
+                    AnglersTackle.MOD_ID + "-" + "common" + ".toml");
+        } catch (Throwable t) {
+            return null;
+        }
+    }
+
+    // ---------------------------------------------------------------- 兜底
+    /**
+     * 配置句柄。
+     *
+     * <p>极早期（构造注册阶段）配置还没加载完，{@code get()} 会抛异常。
+     * 那时如果直接崩，游戏起不来 —— 而这些值只在钓鱼时用，早期根本不需要。
+     * 所以这里把异常翻译成一个明确的错误信息，便于定位而不是静默给错值。
+     */
+    private static Config cfg() {
+        Config c = Config.INSTANCE;
+        if (c == null) {
+            throw new IllegalStateException("Config.INSTANCE 尚未初始化（配置在 mod 构造阶段才注册）");
+        }
+        return c;
+    }
+}

@@ -1,0 +1,216 @@
+{
+  "walls": {
+    "north": {
+      "axis": "z",
+      "a": [
+        0,
+        2
+      ],
+      "left": "west",
+      "right": "east",
+      "top": "up",
+      "bottom": "down"
+    },
+    "south": {
+      "axis": "z",
+      "a": [
+        14,
+        16
+      ],
+      "left": "west",
+      "right": "east",
+      "top": "up",
+      "bottom": "down"
+    },
+    "west": {
+      "axis": "x",
+      "a": [
+        0,
+        2
+      ],
+      "left": "down",
+      "right": "up",
+      "top": "south",
+      "bottom": "north"
+    },
+    "east": {
+      "axis": "x",
+      "a": [
+        14,
+        16
+      ],
+      "left": "down",
+      "right": "up",
+      "top": "south",
+      "bottom": "north"
+    },
+    "down": {
+      "axis": "y",
+      "a": [
+        0,
+        2
+      ],
+      "left": "west",
+      "right": "east",
+      "top": "south",
+      "bottom": "north"
+    },
+    "up": {
+      "axis": "y",
+      "a": [
+        14,
+        16
+      ],
+      "left": "west",
+      "right": "east",
+      "top": "south",
+      "bottom": "north"
+    }
+  },
+  "bars": [
+    {
+      "model": "aquarium_north_left",
+      "wall": "north",
+      "edge": "left",
+      "edgeDir": "west"
+    },
+    {
+      "model": "aquarium_north_right",
+      "wall": "north",
+      "edge": "right",
+      "edgeDir": "east"
+    },
+    {
+      "model": "aquarium_north_top",
+      "wall": "north",
+      "edge": "top",
+      "edgeDir": "up"
+    },
+    {
+      "model": "aquarium_north_bottom",
+      "wall": "north",
+      "edge": "bottom",
+      "edgeDir": "down"
+    },
+    {
+      "model": "aquarium_south_left",
+      "wall": "south",
+      "edge": "left",
+      "edgeDir": "west"
+    },
+    {
+      "model": "aquarium_south_right",
+      "wall": "south",
+      "edge": "right",
+      "edgeDir": "east"
+    },
+    {
+      "model": "aquarium_south_top",
+      "wall": "south",
+      "edge": "top",
+      "edgeDir": "up"
+    },
+    {
+      "model": "aquarium_south_bottom",
+      "wall": "south",
+      "edge": "bottom",
+      "edgeDir": "down"
+    },
+    {
+      "model": "aquarium_west_left",
+      "wall": "west",
+      "edge": "left",
+      "edgeDir": "down"
+    },
+    {
+      "model": "aquarium_west_right",
+      "wall": "west",
+      "edge": "right",
+      "edgeDir": "up"
+    },
+    {
+      "model": "aquarium_west_top",
+      "wall": "west",
+      "edge": "top",
+      "edgeDir": "south"
+    },
+    {
+      "model": "aquarium_west_bottom",
+      "wall": "west",
+      "edge": "bottom",
+      "edgeDir": "north"
+    },
+    {
+      "model": "aquarium_east_left",
+      "wall": "east",
+      "edge": "left",
+      "edgeDir": "down"
+    },
+    {
+      "model": "aquarium_east_right",
+      "wall": "east",
+      "edge": "right",
+      "edgeDir": "up"
+    },
+    {
+      "model": "aquarium_east_top",
+      "wall": "east",
+      "edge": "top",
+      "edgeDir": "south"
+    },
+    {
+      "model": "aquarium_east_bottom",
+      "wall": "east",
+      "edge": "bottom",
+      "edgeDir": "north"
+    },
+    {
+      "model": "aquarium_down_left",
+      "wall": "down",
+      "edge": "left",
+      "edgeDir": "west"
+    },
+    {
+      "model": "aquarium_down_right",
+      "wall": "down",
+      "edge": "right",
+      "edgeDir": "east"
+    },
+    {
+      "model": "aquarium_down_top",
+      "wall": "down",
+      "edge": "top",
+      "edgeDir": "south"
+    },
+    {
+      "model": "aquarium_down_bottom",
+      "wall": "down",
+      "edge": "bottom",
+      "edgeDir": "north"
+    },
+    {
+      "model": "aquarium_up_left",
+      "wall": "up",
+      "edge": "left",
+      "edgeDir": "west"
+    },
+    {
+      "model": "aquarium_up_right",
+      "wall": "up",
+      "edge": "right",
+      "edgeDir": "east"
+    },
+    {
+      "model": "aquarium_up_top",
+      "wall": "up",
+      "edge": "top",
+      "edgeDir": "south"
+    },
+    {
+      "model": "aquarium_up_bottom",
+      "wall": "up",
+      "edge": "bottom",
+      "edgeDir": "north"
+    }
+  ]
+}

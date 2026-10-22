@@ -1,0 +1,25 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "CT",
+    "LF"
+  ],
+  "key": {
+    "C": {
+      "item": "anglertackle:codex_book"
+    },
+    "T": {
+      "item": "anglertackle:guide_book"
+    },
+    "L": {
+      "item": "anglertackle:hemp_line"
+    },
+    "F": {
+      "tag": "anglertackle:fishes"
+    }
+  },
+  "result": {
+    "id": "anglertackle:terminal",
+    "count": 1
+  }
+}

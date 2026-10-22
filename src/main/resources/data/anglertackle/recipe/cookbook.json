@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "group": "anglertackle_cookbook",
+  "ingredients": [
+    {
+      "item": "minecraft:book"
+    },
+    {
+      "tag": "c:foods/cooked_fish"
+    }
+  ],
+  "result": {
+    "id": "anglertackle:cookbook",
+    "count": 1
+  }
+}

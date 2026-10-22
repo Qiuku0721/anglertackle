@@ -1,0 +1,24 @@
+{
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:mod_loaded",
+      "modid": "kaleidoscope_cookery"
+    }
+  ],
+  "type": "kaleidoscope_cookery:flex_stockpot",
+  "carrier": {
+    "item": "minecraft:bowl"
+  },
+  "ingredients": [
+    {
+      "tag": "anglertackle:cooked_fish_chunk"
+    },
+    {
+      "tag": "anglertackle:cooking_oil"
+    }
+  ],
+  "result": {
+    "count": 1,
+    "id": "anglertackle:creamy_fish_soup"
+  }
+}

@@ -1,0 +1,762 @@
+{
+  "_README": [
+    "鱼的『习性词条』与拟饵的『专攻词条』——**唯一真相**。",
+    "改这里 → 跑 node tools/gen-fish-habits.js --write → 生成",
+    "src/main/java/com/whitecobalt/anglertackle/fishing/FishHabits.java。",
+    "Java 那边是生成文件，不要手改（check-fish-habits.js 会逐字节比对，改了就红）。",
+    "",
+    "依据与判定口径：参考资料/鱼习性词条调研.md（每条鱼都能追到 fish_research/<id>.json 的来源）。",
+    "命名与显示：id 一律 ASCII；玩家看到的中文在语言文件 habit.anglertackle.<id>。"
+  ],
+  "_rules": [
+    "① 每条鱼**至少**有一个词条（用户 2026-10-01 要求：不许有鱼是空白）。",
+    "② 词条平权：命中**任一个**词条的鱼，抽签权重 ×1.10，**不叠加**（用户定案）。",
+    "③ 只加『钓上来这种鱼』的权重，不碰稀有度（金红占比由饵料机制单独精确求解）。",
+    "④ 词条 id 必须同时出现在 habits 表里，且语言文件里必须有 zh/en 两条 key。"
+  ],
+  "_langNote": [
+    "每个词条要四条 key：habit.anglertackle.<id>（全名，拟饵 tooltip 用）",
+    "与 habit.anglertackle.<id>.short（短名，图鉴那一列用 —— 那一列只有 ~110px，",
+    "『领地意识强 / 性情凶猛 / 胆小多疑』三个全名排不下）。",
+    "下面的 zh/zhShort 与 en/enShort 是**真相**，check-fish-habits.js 会逐条比对语言文件。"
+  ],
+  "habits": [
+    {
+      "id": "deep",
+      "zh": "深水",
+      "zhShort": "深水",
+      "en": "Deep water",
+      "enShort": "Deep"
+    },
+    {
+      "id": "territorial",
+      "zh": "领地意识强",
+      "zhShort": "领地",
+      "en": "Territorial",
+      "enShort": "Territory"
+    },
+    {
+      "id": "aggressive",
+      "zh": "性情凶猛",
+      "zhShort": "凶猛",
+      "en": "Aggressive",
+      "enShort": "Aggro"
+    },
+    {
+      "id": "surface",
+      "zh": "表层觅食",
+      "zhShort": "表层",
+      "en": "Surface feeder",
+      "enShort": "Surface"
+    },
+    {
+      "id": "bottom",
+      "zh": "贴底觅食",
+      "zhShort": "贴底",
+      "en": "Bottom feeder",
+      "enShort": "Bottom"
+    },
+    {
+      "id": "timid",
+      "zh": "胆小多疑",
+      "zhShort": "胆小",
+      "en": "Timid and wary",
+      "enShort": "Timid"
+    }
+  ],
+  "fish": {
+    "tilapia": {
+      "habits": [
+        "territorial",
+        "bottom",
+        "timid"
+      ],
+      "time": [
+        "all"
+      ],
+      "weather": [
+        "all"
+      ],
+      "moon": "any"
+    },
+    "african_butterflyfish": {
+      "habits": [
+        "surface",
+        "timid"
+      ],
+      "time": [
+        "day"
+      ],
+      "weather": [
+        "clear"
+      ],
+      "moon": "any"
+    },
+    "crucian_carp": {
+      "habits": [
+        "bottom"
+      ],
+      "time": [
+        "all"
+      ],
+      "weather": [
+        "all"
+      ],
+      "moon": "any"
+    },
+    "mirror_carp": {
+      "habits": [
+        "bottom"
+      ],
+      "time": [
+        "all"
+      ],
+      "weather": [
+        "all"
+      ],
+      "moon": "full"
+    },
+    "jewel_cichlid": {
+      "habits": [
+        "territorial",
+        "aggressive"
+      ],
+      "time": [
+        "day"
+      ],
+      "weather": [
+        "clear"
+      ],
+      "moon": "any"
+    },
+    "mullet": {
+      "habits": [
+        "bottom",
+        "timid"
+      ],
+      "time": [
+        "day"
+      ],
+      "weather": [
+        "all"
+      ],
+      "moon": "any"
+    },
+    "zander": {
+      "habits": [
+        "deep",
+        "territorial",
+        "aggressive",
+        "timid"
+      ],
+      "time": [
+        "night"
+      ],
+      "weather": [
+        "all"
+      ],
+      "moon": "any"
+    },
+    "atlantic_salmon": {
+      "habits": [
+        "deep",
+        "aggressive"
+      ],
+      "time": [
+        "dawn",
+        "day"
+      ],
+      "weather": [
+        "all"
+      ],
+      "moon": "any"
+    },
+    "bluefin_tuna": {
+      "habits": [
+        "aggressive"
+      ],
+      "time": [
+        "day"
+      ],
+      "weather": [
+        "all"
+      ],
+      "moon": "any"
+    },
+    "brown_trout": {
+      "habits": [
+        "territorial",
+        "aggressive"
+      ],
+      "time": [
+        "dawn"
+      ],
+      "weather": [
+        "clear"
+      ],
+      "moon": "any"
+    },
+    "arctic_char": {
+      "_note": "北极红点鲑：高寒湖的深水层领地型掠食者（DFO 记成体在湖中深水区、繁殖期上溯溪流），日出前后最活跃。",
+      "habits": [
+        "territorial",
+        "deep"
+      ],
+      "time": [
+        "dawn",
+        "dusk"
+      ],
+      "weather": [
+        "all"
+      ],
+      "moon": "any"
+    },
+    "whitefish": {
+      "_note": "高白鲑（Coregonus peled）：白天靠视觉滤食浮游动物（DORIS 记 pélagique 群游、白天摄食），所以是**清水**白昼鱼；性胆小，成群。",
+      "habits": [
+        "timid"
+      ],
+      "time": [
+        "day"
+      ],
+      "weather": [
+        "clear"
+      ],
+      "moon": "any"
+    },
+    "rainbow_trout": {
+      "_note": "虹鳟：冷水活水的领地型掠食者（USGS NAS 记其占据固定觅食位、驱赶入侵者），全天摄食、晨间与白昼最凶。",
+      "habits": [
+        "territorial",
+        "aggressive"
+      ],
+      "time": [
+        "dawn",
+        "day"
+      ],
+      "weather": [
+        "all"
+      ],
+      "moon": "any"
+    },
+    "burbot": {
+      "_note": "江鳕：**夜行底栖**（ADFG/FishBase 都强调夜间活动、白天躲在石缝与深潭），贴底觅食、咬住不放。",
+      "habits": [
+        "bottom",
+        "aggressive"
+      ],
+      "time": [
+        "night"
+      ],
+      "weather": [
+        "all"
+      ],
+      "moon": "any"
+    },
+    "taimen": {
+      "_note": "哲罗鲑：顶级掠食的守位伏击型（研究资料记它长期守固定深潭/跌水下，只在日出前与日落后冲上浅水捕食）。",
+      "habits": [
+        "territorial",
+        "aggressive"
+      ],
+      "time": [
+        "dawn",
+        "dusk"
+      ],
+      "weather": [
+        "all"
+      ],
+      "moon": "any"
+    },
+    "arctic_cod": {
+      "_note": "北极鳕：冰下成群的银白小杂鱼，全天都在（极地食物链的底座）。",
+      "habits": [
+        "timid"
+      ],
+      "time": [
+        "all"
+      ],
+      "weather": [
+        "all"
+      ],
+      "moon": "any"
+    },
+    "capelin": {
+      "_note": "毛鳞鱼：极小的饵料鱼，成群、全天。",
+      "habits": [
+        "timid"
+      ],
+      "time": [
+        "all"
+      ],
+      "weather": [
+        "all"
+      ],
+      "moon": "any"
+    },
+    "atlantic_herring": {
+      "_note": "大西洋鲱：黄昏上浮、黎明下潜的昼夜垂直洄游（研究资料原文），所以是黄昏鱼。",
+      "habits": [
+        "timid"
+      ],
+      "time": [
+        "dusk"
+      ],
+      "weather": [
+        "all"
+      ],
+      "moon": "any"
+    },
+    "wolffish": {
+      "_note": "狼鱼：冷水**底层**的碎壳专家（咬碎海胆贝类），性情凶、全天可钓。",
+      "habits": [
+        "bottom",
+        "aggressive"
+      ],
+      "time": [
+        "all"
+      ],
+      "weather": [
+        "all"
+      ],
+      "moon": "any"
+    },
+    "redfish": {
+      "_note": "平鲉（红鱼）：短身高背大眼的**慢速底层**鱼，深水里红色即伪装；几乎不追饵，全天。",
+      "habits": [
+        "deep",
+        "bottom"
+      ],
+      "time": [
+        "all"
+      ],
+      "weather": [
+        "all"
+      ],
+      "moon": "any"
+    },
+    "sablefish": {
+      "_note": "裸盖鱼：深水泥底（数百米）的慢速鱼，夜间上浮觅食。",
+      "habits": [
+        "deep",
+        "bottom"
+      ],
+      "time": [
+        "night"
+      ],
+      "weather": [
+        "all"
+      ],
+      "moon": "any"
+    },
+    "atlantic_cod": {
+      "_note": "大西洋鳕：底栖掠食、耐力足，极地主力；全天。",
+      "habits": [
+        "bottom",
+        "aggressive"
+      ],
+      "time": [
+        "all"
+      ],
+      "weather": [
+        "all"
+      ],
+      "moon": "any"
+    },
+    "greenland_halibut": {
+      "_note": "格陵兰大比目鱼：深水底层巨物，会离底上浮追捕毛鳞鱼/极地鳕（多在夜间）。",
+      "habits": [
+        "deep",
+        "aggressive"
+      ],
+      "time": [
+        "night"
+      ],
+      "weather": [
+        "all"
+      ],
+      "moon": "any"
+    },
+    "greenland_shark": {
+      "_note": "格陵兰鲨：极地深水的慢速巨物（巡航 0.34 m/s），全天可遇、极稀有。",
+      "habits": [
+        "deep",
+        "bottom",
+        "aggressive"
+      ],
+      "time": [
+        "all"
+      ],
+      "weather": [
+        "all"
+      ],
+      "moon": "any"
+    },
+    "sailfish": {
+      "_note": "雨伞旗鱼：远洋**上层**的集体围猎者，白天靠视觉追击鱼群（背鳍如帆，常在水面巡游）。",
+      "habits": [
+        "aggressive",
+        "surface"
+      ],
+      "time": [
+        "day"
+      ],
+      "weather": [
+        "all"
+      ],
+      "moon": "any"
+    },
+    "mahi_mahi": {
+      "_note": "鲯鳅：远洋上层的快速掠食者，白天活跃；生长极快、寿命短。",
+      "habits": [
+        "aggressive",
+        "surface"
+      ],
+      "time": [
+        "day"
+      ],
+      "weather": [
+        "all"
+      ],
+      "moon": "any"
+    },
+    "alligator_gar": {
+      "_note": "鳄雀鳝：**伏击型**底栖（吞气呼吸让它能待在低氧静水），多在夜间捕食。",
+      "habits": [
+        "bottom",
+        "aggressive"
+      ],
+      "time": [
+        "night"
+      ],
+      "weather": [
+        "all"
+      ],
+      "moon": "any"
+    },
+    "giant_siamese_carp": {
+      "_note": "巨暹罗鲤：成年个体待在河流的**深潭**里（幼鱼在泛滥平原），性情温顺、以植物与藻类为食。",
+      "habits": [
+        "timid",
+        "deep"
+      ],
+      "time": [
+        "day"
+      ],
+      "weather": [
+        "all"
+      ],
+      "moon": "any"
+    },
+    "electric_eel": {
+      "_note": "电鳗：**夜行**的浑水底栖掠食者（用电定位与捕猎），白天埋在淤泥里。",
+      "habits": [
+        "bottom",
+        "aggressive"
+      ],
+      "time": [
+        "night"
+      ],
+      "weather": [
+        "all"
+      ],
+      "moon": "any"
+    },
+    "tigerfish": {
+      "habits": [
+        "aggressive"
+      ],
+      "time": [
+        "day"
+      ],
+      "weather": [
+        "rain"
+      ],
+      "moon": "any"
+    },
+    "topmouth_culter": {
+      "habits": [
+        "aggressive",
+        "surface",
+        "timid"
+      ],
+      "time": [
+        "dawn",
+        "dusk"
+      ],
+      "weather": [
+        "all"
+      ],
+      "moon": "any"
+    },
+    "hemiculter": {
+      "habits": [
+        "surface",
+        "timid"
+      ],
+      "time": [
+        "day"
+      ],
+      "weather": [
+        "clear"
+      ],
+      "moon": "any"
+    },
+    "striped_bass": {
+      "habits": [
+        "deep",
+        "aggressive"
+      ],
+      "time": [
+        "dusk",
+        "night"
+      ],
+      "weather": [
+        "all"
+      ],
+      "moon": "any"
+    },
+    "platinum_arowana": {
+      "habits": [
+        "aggressive",
+        "surface"
+      ],
+      "time": [
+        "day"
+      ],
+      "weather": [
+        "all"
+      ],
+      "moon": "any"
+    },
+    "oxeye_tarpon": {
+      "habits": [
+        "aggressive"
+      ],
+      "time": [
+        "dusk",
+        "night"
+      ],
+      "weather": [
+        "all"
+      ],
+      "moon": "any"
+    },
+    "banded_loach": {
+      "habits": [
+        "bottom",
+        "timid"
+      ],
+      "time": [
+        "night"
+      ],
+      "weather": [
+        "all"
+      ],
+      "moon": "any"
+    },
+    "guppy": {
+      "habits": [
+        "surface",
+        "timid"
+      ],
+      "time": [
+        "all"
+      ],
+      "weather": [
+        "all"
+      ],
+      "moon": "any"
+    },
+    "elephantnose": {
+      "habits": [
+        "territorial",
+        "bottom",
+        "timid"
+      ],
+      "time": [
+        "night"
+      ],
+      "weather": [
+        "all"
+      ],
+      "moon": "any"
+    },
+    "grass_carp": {
+      "habits": [
+        "surface"
+      ],
+      "time": [
+        "day"
+      ],
+      "weather": [
+        "all"
+      ],
+      "moon": "any"
+    },
+    "black_carp": {
+      "habits": [
+        "deep",
+        "bottom"
+      ],
+      "time": [
+        "day"
+      ],
+      "weather": [
+        "all"
+      ],
+      "moon": "any"
+    },
+    "pike": {
+      "habits": [
+        "aggressive"
+      ],
+      "time": [
+        "dawn",
+        "dusk"
+      ],
+      "weather": [
+        "all"
+      ],
+      "moon": "any"
+    },
+    "arapaima": {
+      "habits": [
+        "territorial",
+        "aggressive",
+        "surface"
+      ],
+      "time": [
+        "dawn"
+      ],
+      "weather": [
+        "all"
+      ],
+      "moon": "any"
+    },
+    "north_african_catfish": {
+      "habits": [
+        "aggressive",
+        "bottom"
+      ],
+      "time": [
+        "night"
+      ],
+      "weather": [
+        "rain"
+      ],
+      "moon": "any"
+    },
+    "sapphire_snakehead": {
+      "habits": [
+        "territorial",
+        "aggressive"
+      ],
+      "time": [
+        "dusk",
+        "night"
+      ],
+      "weather": [
+        "rain"
+      ],
+      "moon": "any"
+    },
+    "juvenile_shark": {
+      "habits": [
+        "aggressive"
+      ],
+      "time": [
+        "dusk"
+      ],
+      "weather": [
+        "all"
+      ],
+      "moon": "any"
+    },
+    "golden_loach": {
+      "habits": [
+        "bottom",
+        "timid"
+      ],
+      "time": [
+        "night"
+      ],
+      "weather": [
+        "all"
+      ],
+      "moon": "new"
+    },
+    "cave_blindfish": {
+      "habits": [
+        "deep",
+        "bottom",
+        "timid"
+      ],
+      "time": [
+        "all"
+      ],
+      "weather": [
+        "all"
+      ],
+      "moon": "any"
+    }
+  },
+  "lures": {
+    "lure_spoon": [
+      "aggressive"
+    ],
+    "lure_glowspoon": [
+      "timid"
+    ],
+    "lure_minnow": [
+      "aggressive",
+      "surface"
+    ],
+    "lure_soft": [
+      "aggressive",
+      "bottom"
+    ],
+    "lure_depthfinder": [
+      "deep",
+      "bottom"
+    ],
+    "lure_deep": [
+      "surface",
+      "aggressive"
+    ],
+    "lure_vibration": [
+      "deep",
+      "bottom"
+    ],
+    "lure_paddletail": [
+      "deep",
+      "territorial",
+      "aggressive"
+    ],
+    "lure_rattle": [
+      "territorial",
+      "aggressive"
+    ],
+    "lure_gilded": [
+      "deep",
+      "territorial",
+      "aggressive"
+    ]
+  },
+  "_lures_no_habit": [
+    "lure_test_red：创造模式测试拟饵（必出红鱼），**故意不给任何词条**",
+    "—— 它是调试用的基准，加词条只会让『必出红鱼』的对照变浑。"
+  ],
+  "_envNote": [
+    "每条鱼的 time / weather / moon —— 见 docs/24-时间天气月相策划.md §8（用户 2026-10-02 定案）。",
+    "time    : all | dawn | day | dusk | night（可多选，数组）",
+    "weather : all | clear | rain（可多选，数组；雷暴按 rain 命中）",
+    "moon    : any | full | new（只能选一个）",
+    "",
+    "⚠ 三个字段**每条鱼都必须显式写全**（哪怕值是 [\"all\"] / \"any\"）：",
+    "  \"忘了写\"必须是报错，而不是静默变成全天鱼 —— check-environment.js 在守这条。",
+    "",
+    "⚠ 金泥鳅原本是「夜晚 + 雨 + 新月」，但洞穴里 isRaining() 恒为 false，",
+    "  那个条件在它唯一的栖息地里永远不满足，所以改成只判「夜晚 + 新月」。"
+  ]
+}

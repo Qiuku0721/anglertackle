@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "group": "chum",
+  "ingredients": [
+    {
+      "tag": "anglertackle:raw_fish_chunk"
+    },
+    {
+      "tag": "anglertackle:raw_fish_chunk"
+    },
+    {
+      "tag": "anglertackle:raw_fish_chunk"
+    },
+    {
+      "tag": "anglertackle:raw_fish_chunk"
+    }
+  ],
+  "result": {
+    "id": "anglertackle:chum_meat",
+    "count": 1
+  }
+}

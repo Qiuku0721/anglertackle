@@ -1,0 +1,13 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "###",
+    " S ",
+    "S S"
+  ],
+  "key": {
+    "#": { "tag": "minecraft:wooden_slabs" },
+    "S": { "item": "minecraft:stick" }
+  },
+  "result": { "id": "anglertackle:stool", "count": 1 }
+}

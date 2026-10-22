@@ -1,0 +1,500 @@
+package com.whitecobalt.anglertackle.registry;
+
+import com.whitecobalt.anglertackle.AnglersTackle;
+import com.whitecobalt.anglertackle.item.BaitItem;
+import com.whitecobalt.anglertackle.item.ChumItem;
+import com.whitecobalt.anglertackle.item.FishItem;
+import com.whitecobalt.anglertackle.item.PartStats;
+import com.whitecobalt.anglertackle.item.RodItem;
+import com.whitecobalt.anglertackle.item.TacklePartItem;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.item.CreativeModeTab;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Rarity;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.neoforge.registries.DeferredHolder;
+import net.neoforged.neoforge.registries.DeferredItem;
+import net.neoforged.neoforge.registries.DeferredRegister;
+
+import java.util.function.Supplier;
+
+/**
+ * 物品注册。
+ *
+ * <p>M1 只注册"手感原型"需要的最小集合：两种木竿 + 一条鱼 + 六槽各一个基准配件。
+ * 品质阶梯（铁/金/钻/合金、6 档鱼线…）在 M2 按 docs/11-配件系统详表.md 批量加。
+ */
+public final class ModItems {
+
+    public static final DeferredRegister.Items ITEMS =
+            DeferredRegister.createItems(AnglersTackle.MOD_ID);
+    public static final DeferredRegister<CreativeModeTab> TABS =
+            DeferredRegister.create(Registries.CREATIVE_MODE_TAB, AnglersTackle.MOD_ID);
+
+    // ------------------------------------------------------------------ 钓竿
+    // 五档材质 × 两种竿型 = 10 根。材质决定耐久/承重/窗口/张力相关倍率，
+    // 竿型决定玩法（台钓看浮漂 / 路亚靠拟饵）。
+    /** 木台钓竿：看浮漂。新手的第一根竿（可合成 / 找老柯免费领）。 */
+    public static final DeferredItem<RodItem> WOOD_FLOAT_ROD = rod("wood_float_rod",
+            RodItem.RodType.FLOAT, RodItem.RodSpec.WOOD);
+    public static final DeferredItem<RodItem> WOOD_LURE_ROD = rod("wood_lure_rod",
+            RodItem.RodType.LURE, RodItem.RodSpec.WOOD);
+
+    /** 铁竿：耐久更高、承重 20kg，耐久损耗系数 0.85。 */
+    public static final DeferredItem<RodItem> IRON_FLOAT_ROD = rod("iron_float_rod",
+            RodItem.RodType.FLOAT, RodItem.RodSpec.IRON);
+    public static final DeferredItem<RodItem> IRON_LURE_ROD = rod("iron_lure_rod",
+            RodItem.RodType.LURE, RodItem.RodSpec.IRON);
+
+    /** 金竿：提竿窗口最长（+0.25s），但耐久最低——技术流专用。 */
+    public static final DeferredItem<RodItem> GOLD_FLOAT_ROD = rod("gold_float_rod",
+            RodItem.RodType.FLOAT, RodItem.RodSpec.GOLD);
+    public static final DeferredItem<RodItem> GOLD_LURE_ROD = rod("gold_lure_rod",
+            RodItem.RodType.LURE, RodItem.RodSpec.GOLD);
+
+    /** 钻石竿：承重 40kg，综合性能第一个大台阶。 */
+    public static final DeferredItem<RodItem> DIAMOND_FLOAT_ROD = rod("diamond_float_rod",
+            RodItem.RodType.FLOAT, RodItem.RodSpec.DIAMOND);
+    public static final DeferredItem<RodItem> DIAMOND_LURE_ROD = rod("diamond_lure_rod",
+            RodItem.RodType.LURE, RodItem.RodSpec.DIAMOND);
+
+    /** 下界合金竿：承重 999kg，能钓任何鱼。 */
+    public static final DeferredItem<RodItem> NETHERITE_FLOAT_ROD = rod("netherite_float_rod",
+            RodItem.RodType.FLOAT, RodItem.RodSpec.NETHERITE);
+    public static final DeferredItem<RodItem> NETHERITE_LURE_ROD = rod("netherite_lure_rod",
+            RodItem.RodType.LURE, RodItem.RodSpec.NETHERITE);
+
+    private static DeferredItem<RodItem> rod(String name, RodItem.RodType type, RodItem.RodSpec spec) {
+        return ITEMS.register(name, () -> new RodItem(type, spec,
+                new Item.Properties()
+                        .stacksTo(1)
+                        .durability(spec.maxDurability())
+                        // 出生就带上"空装配"组件：
+                        // 否则新竿的 ROD_PARTS 是 null，tooltip 会显示"未初始化"，
+                        // 玩家会以为改装坏了（实际是还没装过东西）。
+                        .component(ModDataComponents.ROD_PARTS.get(), ModDataComponents.RodParts.EMPTY)));
+    }
+
+    // ------------------------------------------------------------------ ② 鱼线
+    // 参数顺序：张力上限 / 张力生成 / 张力回复 / 线长倍率
+    // 线长倍率 × 30 = 实际长度（米）：麻 30 / 棉 35 / 尼龙 45 / 碳氟 55 / PE 65
+    // 耐久 = 还能承受多少次咬钩（每次咬钩固定 -1，见 docs/03-数值表.md §3）
+
+    // ================================================================== ② 鱼线
+    // 六档（用户定案，数值逐条指定）：
+    //   档位  耐久  张力上限  张力生成  张力回复  线长
+    //   白    50     1.00      1.00      1.00     30 米
+    //   绿    50     1.20      0.91      1.15     35 米
+    //   蓝    40     1.28      0.95      1.30     45 米
+    //   紫    35     1.54      0.81      1.36     55 米
+    //   金    30     1.94      0.76      1.44     65 米
+    //   红    30     2.20      0.58      1.76     70 米
+    //
+    // ★ 蓝档及以上在原始值上做过一次**整体弱化 12%**（用户定案，
+    //   口径是"每个品质张力上限回退 12%、张力生成提升 12%、张力回复降低 12%"）：
+    //     上限 ×0.88、回复 ×0.88、生成 ×1.12
+    //   原始值 → 调整后：
+    //     蓝 1.45/0.85/1.48 → 1.28/0.95/1.30
+    //     紫 1.75/0.72/1.54 → 1.54/0.81/1.36
+    //     金 2.20/0.68/1.64 → 1.94/0.76/1.44
+    //     红 2.50/0.52/2.00 → 2.20/0.58/1.76
+    //   ⚠ 注意"生成 ×1.12"是**变差**（生成 = 张力涨得快 = 更危险），
+    //     所以三项调整方向一致：都用同一个 12% 把高档线往下压一档。
+    //
+    // 张力上限/生成/回复在 PartComposer 里按权重合成：
+    //   张力上限 = 100 × [1+(线-1)×0.60] × [1+(竿-1)×0.40]，钳制 CAP_TENSION_CEILING
+    //   张力生成 = 直接取线的数值（越低越安全）
+    //   线长     = 30 × 线倍率
+    // 名字颜色由 TacklePartItem.quality() 的档位表决定（原版 Rarity 只有四档）。
+
+    /** 麻线：白档基准。张力上限最低、最容易断，线也不长。 */
+    public static final DeferredItem<TacklePartItem> HEMP_LINE = ITEMS.register("hemp_line",
+            () -> new TacklePartItem(TacklePartItem.Slot.LINE,
+                    partProps(50, Rarity.COMMON, PartStats.line(1.00, 1.00, 1.00, 1.00, 1))));
+
+    /** 棉线：绿档。回复略好、线略长，仍然是新手档。 */
+    public static final DeferredItem<TacklePartItem> COTTON_LINE = ITEMS.register("cotton_line",
+            () -> new TacklePartItem(TacklePartItem.Slot.LINE,
+                    partProps(50, Rarity.UNCOMMON, PartStats.line(1.20, 0.91, 1.15, 35.0 / 30.0, 2))));
+
+    /** 尼龙线：蓝档。性价比之选，张力和线长都上了一个台阶。 */
+    public static final DeferredItem<TacklePartItem> NYLON_LINE = ITEMS.register("nylon_line",
+            () -> new TacklePartItem(TacklePartItem.Slot.LINE,
+                    partProps(40, Rarity.RARE, PartStats.line(1.28, 0.95, 1.30, 45.0 / 30.0, 3))));
+
+    /** 碳氟线：紫档。抗磨、低延展，张力回复快，专治"线黄得快"的黏液型鱼。 */
+    public static final DeferredItem<TacklePartItem> FLUORO_LINE = ITEMS.register("fluoro_line",
+            () -> new TacklePartItem(TacklePartItem.Slot.LINE,
+                    partProps(35, Rarity.EPIC, PartStats.line(1.54, 0.81, 1.36, 55.0 / 30.0, 4))));
+
+    /**
+     * 编织 PE 线：**金档**（用户定案，原为紫）。
+     *
+     * <p>原版 {@code Rarity} 没有金，所以这里填 EPIC；
+     * 名字颜色由 {@link com.whitecobalt.anglertackle.item.TacklePartItem#quality} 的
+     * 档位表决定（末尾那个 {@code 5}），玩家看到的是**金色**。
+     */
+    public static final DeferredItem<TacklePartItem> PE_LINE = ITEMS.register("pe_line",
+            () -> new TacklePartItem(TacklePartItem.Slot.LINE,
+                    partProps(30, Rarity.EPIC, PartStats.line(1.94, 0.76, 1.44, 65.0 / 30.0, 5))));
+
+    /**
+     * 钛合金记忆金属线：**红档**，全模组最强鱼线（用户定案）。
+     *
+     * <p>张力上限 2.20（合成后 ×1.72）——比 PE 线又高一档，红线区相对更宽裕；
+     * 张力生成 0.58 是全场最低，线涨得最慢。耐久只有 30，和 PE 线并列最脆。
+     *
+     * <p>"记忆金属"的设定落在**张力回复 1.76** 上：被拉长后回弹最快，
+     * 松手时张力掉得比其他线都快。
+     */
+    public static final DeferredItem<TacklePartItem> TITANIUM_LINE = ITEMS.register("titanium_line",
+            () -> new TacklePartItem(TacklePartItem.Slot.LINE,
+                    partProps(30, Rarity.EPIC, PartStats.line(2.20, 0.58, 1.76, 70.0 / 30.0, 6))));
+
+    // ------------------------------------------------------------------ ③ 渔轮
+    // 参数顺序：不挣扎回拉 / 挣扎回拉 / 体力削减 / 压制阻尼
+    //
+    // 五档数值（用户定案，从上到下）：
+    //   手线轮     回拉 1.00/1.00   体力削减 1.00  阻尼 1.00
+    //   纺车轮     回拉 1.25/1.25   体力削减 1.25  阻尼 1.20
+    //   鼓轮       回拉 1.45/1.45   体力削减 1.60  阻尼 1.45
+    //   水滴轮     回拉 2.20/2.30   体力削减 1.40  阻尼 1.40
+    //   大型纺车轮  回拉 1.55/1.55   体力削减 2.30  阻尼 2.50
+    //
+    // 设计脉络很清晰：
+    //   · 鼓轮是"均衡型"——三项都中等偏上，过渡用
+    //   · 水滴轮是"收线型"——回拉最高（2.2/2.3），但体力削减/阻尼都只有 1.4
+    //   · 大型纺车轮是"绞盘型"——回拉反而低（1.55），靠体力削减 2.3 + 阻尼 2.5 磨死大鱼
+    // 所以水滴轮适合快收小鱼，大型轮适合慢慢磨巨物，各有取舍。
+
+    /** 手线轮：五档基准，无任何加成——新手的第一颗轮。 */
+    public static final DeferredItem<TacklePartItem> HAND_REEL = ITEMS.register("hand_reel",
+            () -> new TacklePartItem(TacklePartItem.Slot.REEL,
+                    partProps(0, Rarity.COMMON, PartStats.reel(1.00, 1.00, 1.00, 1.00))));
+
+    /** 纺车轮：绿档，三项同步小幅提升。 */
+    public static final DeferredItem<TacklePartItem> SPINNING_REEL = ITEMS.register("spinning_reel",
+            () -> new TacklePartItem(TacklePartItem.Slot.REEL,
+                    partProps(0, Rarity.UNCOMMON, PartStats.reel(1.25, 1.25, 1.25, 1.20))));
+
+    /** 鼓轮：蓝档，均衡型——三项都在中等偏上，最稳的过渡轮。 */
+    public static final DeferredItem<TacklePartItem> DRUM_REEL = ITEMS.register("drum_reel",
+            () -> new TacklePartItem(TacklePartItem.Slot.REEL,
+                    partProps(0, Rarity.RARE, PartStats.reel(1.45, 1.45, 1.60, 1.45))));
+
+    /**
+     * 水滴轮：**紫档，收线型**。
+     * 回拉全模组最高（1.90/1.95）——拼命收线的轮，快收小鱼/抢线首选；
+     * 代价是体力削减与阻尼都只有 1.4，磨大鱼不如大型纺车轮。
+     *
+     * <p>用户定案：不挣扎回拉 2.20 → <b>1.90</b>、挣扎回拉 2.30 → <b>1.95</b>。
+     * 下调后它仍然是回拉第一，但不再把第二名（鼓轮 1.45）甩开一倍，
+     * 避免"无脑选水滴轮"。
+     */
+    public static final DeferredItem<TacklePartItem> BAITCAST_REEL = ITEMS.register("baitcast_reel",
+            () -> new TacklePartItem(TacklePartItem.Slot.REEL,
+                    partProps(0, Rarity.EPIC, PartStats.reel(1.90, 1.95, 1.40, 1.40))));
+
+    /**
+     * 大型纺车轮：**金档，绞盘型**。
+     * 回拉不高（1.55），但体力削减 2.3 + 压制阻尼 2.5 全模组最高——
+     * 它不靠蛮力收线，靠的是"一直磨、不给鱼回气的机会"。
+     *
+     * <p>⚠️ MC 1.21.1 的 {@code Rarity} 只有 COMMON/UNCOMMON/RARE/EPIC 四档，
+     * 没有金和红，所以原版稀有度用 EPIC，"金档"的定位体现在数值上。
+     */
+    public static final DeferredItem<TacklePartItem> HEAVY_REEL = ITEMS.register("heavy_reel",
+            () -> new TacklePartItem(TacklePartItem.Slot.REEL,
+                    partProps(0, Rarity.EPIC, PartStats.reel(1.55, 1.55, 2.30, 2.50))));
+
+    // ------------------------------------------------------------------ ④ 鱼钩
+    // 用户定案：鱼钩只保留**唯一真正生效**的「提竿窗口」。
+    // 原来的"大个体概率 / 夜间效率"两个属性没有任何实现，
+    // 只在 tooltip 上显示数字 —— 已删除，不再骗玩家。
+    /** 普通钩：基准，提竿窗口 +0.00s。 */
+    public static final DeferredItem<TacklePartItem> PLAIN_HOOK = ITEMS.register("plain_hook",
+            () -> new TacklePartItem(TacklePartItem.Slot.HOOK,
+                    partProps(0, Rarity.COMMON, PartStats.hook(0.00))));
+
+    /** 倒刺钩：提竿窗口 +0.08s（绿档）。 */
+    public static final DeferredItem<TacklePartItem> BARBED_HOOK = ITEMS.register("barbed_hook",
+            () -> new TacklePartItem(TacklePartItem.Slot.HOOK,
+                    partProps(0, Rarity.UNCOMMON, PartStats.hook(0.08))));
+
+    // ------------------------------------------------------------------ ⑥ 浮漂【已删除】
+    // 木浮漂 / 荧光漂两个物品已移除（用户定案："去掉这个功能，目前没看到两配件作用"）。
+    // 原因：浮漂的灵敏度 / 预告可见度 / 夜间可见三个属性**全都没有实现**，
+    // 装上等于没装；而它还是台钓竿上唯一的可选配件槽（台钓只有饵料和浮漂两栏）。
+    // 留着只会让玩家以为是自己没搞懂用法。
+
+    // ------------------------------------------------------------------ 鱼获
+    // 15 种鱼。贴图由用户提供的参考图抠图而来（马赛克格原样保留，不做降采样）。
+    // 每条鱼的实际体长/重量/评级在咬钩时生成，存在 FISH_DATA 组件里，物品只是容器。
+
+    /** 鲫鱼：白档，新手第一条鱼。 */
+    public static final DeferredItem<FishItem> CRUCIAN_CARP = fish("crucian_carp");
+    /** 罗非鱼：白档，耐污水的杂食鱼。 */
+    public static final DeferredItem<FishItem> TILAPIA = fish("tilapia");
+    /** 淄鱼：绿档，近岸洄游。 */
+    public static final DeferredItem<FishItem> MULLET = fish("mullet");
+    /** 草鱼：绿档，体型大、力气沉。 */
+    public static final DeferredItem<FishItem> GRASS_CARP = fish("grass_carp");
+    /** 青鱼：蓝档，底层巨物，考验鱼线。 */
+    public static final DeferredItem<FishItem> BLACK_CARP = fish("black_carp");
+    /** 翘嘴：蓝档，中上层掠食，路亚目标鱼。 */
+    public static final DeferredItem<FishItem> TOPMOUTH_CULTER = fish("topmouth_culter");
+    /** 梭鲈：紫档，伏击型，手感暴烈。 */
+    public static final DeferredItem<FishItem> ZANDER = fish("zander");
+    /** 大西洋鲑：金红档，逆流洄游，耐力极强。**仅路亚**。 */
+    public static final DeferredItem<FishItem> ATLANTIC_SALMON = fish("atlantic_salmon");
+    /** 蓝鳍金枪鱼：金红档，爆发力顶尖，容易切线。 */
+    public static final DeferredItem<FishItem> BLUEFIN_TUNA = fish("bluefin_tuna");
+    /** 幼鲨：金红档，最高难度，只在深海出没。 */
+    public static final DeferredItem<FishItem> JUVENILE_SHARK = fish("juvenile_shark");
+
+    // ---- 新增 5 种（用户定案）----
+    /** 横纹鱼（横纹南鳅）：白绿档，山溪底层小鱼，仅台钓。 */
+    public static final DeferredItem<FishItem> BANDED_LOACH = fish("banded_loach");
+    /** 白条鱼（䱗）：白绿档，上层群游，仅台钓，抢食快。 */
+    public static final DeferredItem<FishItem> HEMICULTER = fish("hemiculter");
+    /** 蓝宝石雷龙鱼：红档，底层伏击，**台钓唯一的红鱼**。 */
+    public static final DeferredItem<FishItem> SAPPHIRE_SNAKEHEAD = fish("sapphire_snakehead");
+    /** 铂金银龙鱼：金红档，上层掠食，仅路亚，爱跳水。 */
+    public static final DeferredItem<FishItem> PLATINUM_AROWANA = fish("platinum_arowana");
+    /** 大眼海鲢：红档，仅路亚，本批难度顶点（爆发猛、耐力极强）。 */
+    public static final DeferredItem<FishItem> OXEYE_TARPON = fish("oxeye_tarpon");
+
+    // ---- 第二批新增 6 种，**全部仅路亚**（用户定案：本次不增加台钓鱼）----
+    /** 虎鱼：金红档，高速伏击，仅路亚。 */
+    public static final DeferredItem<FishItem> TIGERFISH = fish("tigerfish");
+    /** 狗鱼（白斑狗鱼）：紫金档，水草间伏击，仅路亚，冲刺猛但耐力差。 */
+    public static final DeferredItem<FishItem> PIKE = fish("pike");
+    /** 褐鳟：金红档，仅路亚，**粘稠手感**（摆头顶水，张力涨得快）。 */
+    public static final DeferredItem<FishItem> BROWN_TROUT = fish("brown_trout");
+    /** 镜鲤：金红档（红很稀有），仅路亚，耐力型磨人。 */
+    public static final DeferredItem<FishItem> MIRROR_CARP = fish("mirror_carp");
+    /** 条纹鲈：绿蓝紫档，仅路亚，持续对抗型。 */
+    public static final DeferredItem<FishItem> STRIPED_BASS = fish("striped_bass");
+    /** 巨骨舌鱼：紫金红档，仅路亚，笨重但蛮力极强、耐力最高。 */
+    public static final DeferredItem<FishItem> ARAPAIMA = fish("arapaima");
+
+    private static DeferredItem<FishItem> fish(String name) {
+        return ITEMS.register(name, () -> new FishItem(new Item.Properties().stacksTo(16)));
+    }
+
+    // ------------------------------------------------------------------ 教程书
+    /** 钓鱼手册：按右键打开（内容内置在 Java 里，数据包可覆盖）。 */
+    public static final DeferredItem<com.whitecobalt.anglertackle.guide.GuideBookItem> GUIDE_BOOK =
+            ITEMS.register("guide_book", () -> new com.whitecobalt.anglertackle.guide.GuideBookItem(
+                    new Item.Properties().stacksTo(1)));
+
+    // ------------------------------------------------------------------ 鱼饵（消耗品）
+    // tier = 品质下限（0 白 1 绿 2 蓝 3 紫 4 金 5 红）；maxWeight 0 = 无上限
+    // floatRodAllowed = 台钓竿能不能用这种饵
+    /** 面包屑：白档，只能钓 1kg 以下的小鱼。 */
+    public static final DeferredItem<BaitItem> BAIT_BREAD = ITEMS.register("bait_bread",
+            () -> new BaitItem(0, 1.0, 0, true, 1, 1.5, new Item.Properties().stacksTo(64)));
+    /** 蚯蚓：白档通用，挖草方块可得。 */
+    public static final DeferredItem<BaitItem> BAIT_WORM = ITEMS.register("bait_worm",
+            () -> new BaitItem(0, 4.0, 0, true, 1, 2.0, new Item.Properties().stacksTo(64)));
+    /** 玉米粒：绿档，草食鱼加成。 */
+    public static final DeferredItem<BaitItem> BAIT_CORN = ITEMS.register("bait_corn",
+            () -> new BaitItem(1, 8.0, 0, true, 5, 2.2, new Item.Properties().stacksTo(64)));
+    /** 活虾：紫档，海洋稀有鱼加成。 */
+    public static final DeferredItem<BaitItem> BAIT_SHRIMP = ITEMS.register("bait_shrimp",
+            () -> new BaitItem(3, 0, 3.0, true, 18, 2.5, new Item.Properties().stacksTo(64)));
+    /** 发光饵：金档，洞穴/深海专用。 */
+    public static final DeferredItem<BaitItem> BAIT_GLOW = ITEMS.register("bait_glow",
+            () -> new BaitItem(4, 0, 5.0, true, 24, 3.0, new Item.Properties().stacksTo(64)));
+    /** 秘制香饵：红档，最强。 */
+    public static final DeferredItem<BaitItem> BAIT_SECRET = ITEMS.register("bait_secret",
+            () -> new BaitItem(5, 0, 10.0, true, 30, 2.8, new Item.Properties().stacksTo(64)));
+
+    // ------------------------------------------------------------------ 拟饵（有耐久，路亚专用）
+    // 六档阶梯 **1白 2绿 3蓝 4紫 5金 6红**（和鱼线用同一套口径，见上面的鱼线段）。
+    //   亮片 2绿 → 米诺/软虫 3蓝 → 深潜 4紫 → 钢珠 5金 → 镀金 6红
+    //
+    // ⚠ 这里**踩过两次**：
+    //   ① 曾按"1绿…5红"填（整体差一档）→ 镀金显示成金色，且红档永远出不来；
+    //   ② 线和饵的起点不一致（线从 1 白起、饵从 2 绿起）→ 同样填 1，
+    //      麻线是白、亮片却是绿，玩家看着就是"品质乱了"。
+    //   现在两边统一：**档位号相同 = 颜色相同**。
+    //
+    // 档位同时决定饵料下限（见 FishingSession.baitMinTier）：
+    //   紫及以上（≥4）过滤绿档以下、金/红（≥5）过滤蓝档以下。
+
+    /** 亮片拟饵：**绿档**入门（档位 2），耐久 40。 */
+    public static final DeferredItem<TacklePartItem> LURE_SPOON = ITEMS.register("lure_spoon",
+            () -> new TacklePartItem(TacklePartItem.Slot.LURE,
+                    partProps(40, Rarity.UNCOMMON, PartStats.lure(2))));
+
+    /** 米诺鱼拟饵：**蓝档**主力（档位 3），耐久 30。 */
+    public static final DeferredItem<TacklePartItem> LURE_MINNOW = ITEMS.register("lure_minnow",
+            () -> new TacklePartItem(TacklePartItem.Slot.LURE,
+                    partProps(30, Rarity.RARE, PartStats.lure(3))));
+
+    /**
+     * 深潜刺激米诺：**紫档**打底层（档位 4），耐久 22。
+     *
+     * <p>机械上也要求它是紫：{@code baitMinTier()} 里"紫饵过滤绿档以下"
+     * 判的是 {@code lureTier() == 4}，填别的值那条过滤规则就走不到。
+     */
+    public static final DeferredItem<TacklePartItem> LURE_DEEP = ITEMS.register("lure_deep",
+            () -> new TacklePartItem(TacklePartItem.Slot.LURE,
+                    partProps(22, Rarity.EPIC, PartStats.lure(4))));
+
+    /** 钢珠声诱拟饵：**金档**（档位 5）。内置钢珠发声，专钓警觉的大个体。 */
+    public static final DeferredItem<TacklePartItem> LURE_RATTLE = ITEMS.register("lure_rattle",
+            () -> new TacklePartItem(TacklePartItem.Slot.LURE,
+                    partProps(18, Rarity.EPIC, PartStats.lure(5))));
+
+    /**
+     * 镀金竞技拟饵：**红档顶配**（档位 6）。竞技级做工，金红鱼也吃。
+     *
+     * <p>档位必须是 6 —— 填 5 会算成金档，"红档顶配显示成金色"，
+     * 而且整列拟饵卡在 1~5，红档永远出不来。
+     */
+    public static final DeferredItem<TacklePartItem> LURE_GILDED = ITEMS.register("lure_gilded",
+            () -> new TacklePartItem(TacklePartItem.Slot.LURE,
+                    partProps(14, Rarity.EPIC, PartStats.lure(6))));
+
+    /** 软虫拟饵：**蓝档**（档位 3），靠卷尾在水里摆动，走中层。 */
+    public static final DeferredItem<TacklePartItem> LURE_SOFT = ITEMS.register("lure_soft",
+            () -> new TacklePartItem(TacklePartItem.Slot.LURE,
+                    partProps(26, Rarity.RARE, PartStats.lure(3))));
+
+    /**
+     * 测试拟饵：**仅用于调试**，上红概率 100%（用户定案）。
+     *
+     * <p>贴图直接复用镀金竞技拟饵（{@code lure_gilded}），不单独出图。
+     * 名称里带【测试】前缀，避免误当成正式内容。
+     *
+     * <p>工作原理（两处，缺一不可，见 {@code FishingSession}）：
+     * <ol>
+     *   <li>{@code maxTier()} 放开到 5 —— 让金红鱼种能进鱼池</li>
+     *   <li>{@code rollIndividual} 的下限钉成 5 —— 让**个体**也一定是红档</li>
+     * </ol>
+     * 只做第 ① 步的话，鱼种进来了但个体大多还是金鱼，测的还是金鱼手感。
+     *
+     * <p>档位填 6 → 名字显示为红色，和"红档测试品"的定位一致。
+     * ⚠ 上架前应当移除，或至少确保它不在生存模式获取路径里。
+     */
+    public static final DeferredItem<TacklePartItem> TEST_LURE = ITEMS.register("lure_test_red",
+            () -> new TacklePartItem(TacklePartItem.Slot.LURE,
+                    partProps(9999, Rarity.EPIC, PartStats.lure(6))));
+
+    // ------------------------------------------------------------------ 窝料
+    /** 通用谷物窝：白档，只缩时间。 */
+    public static final DeferredItem<ChumItem> CHUM_GRAIN = ITEMS.register("chum_grain",
+            () -> new ChumItem(0, false, 10, 0.75, 30, new Item.Properties().stacksTo(16)));
+    /** 腥味肉窝：绿档起步。 */
+    public static final DeferredItem<ChumItem> CHUM_MEAT = ITEMS.register("chum_meat",
+            () -> new ChumItem(1, false, 10, 0.65, 80, new Item.Properties().stacksTo(16)));
+    /** 甜香果窝：蓝档起步。 */
+    public static final DeferredItem<ChumItem> CHUM_FRUIT = ITEMS.register("chum_fruit",
+            () -> new ChumItem(2, false, 10, 0.55, 150, new Item.Properties().stacksTo(16)));
+    /** 秘制配方窝：紫档起步 + **沉底窝**（唯一能影响底层鱼的）。 */
+    public static final DeferredItem<ChumItem> CHUM_SECRET = ITEMS.register("chum_secret",
+            () -> new ChumItem(3, true, 10, 0.45, 300, new Item.Properties().stacksTo(16)));
+
+    // ------------------------------------------------------------------ 创造标签
+    public static final DeferredHolder<CreativeModeTab, CreativeModeTab> TAB =
+            TABS.register("main", () -> CreativeModeTab.builder()
+                    .title(Component.translatable("itemGroup.anglertackle"))
+                    .icon(() -> new ItemStack(WOOD_FLOAT_ROD.get()))
+                    .displayItems((params, output) -> {
+                        // ★ 测试拟饵放**最前面**：它是最容易找不到的东西
+                        //   （贴图复用镀金的、名字又长），放最后会被淹没在一堆物品里。
+                        //   上架前删除本行即可。
+                        output.accept(TEST_LURE.get());
+                        // 钓竿：五档材质 × 两种竿型
+                        output.accept(WOOD_FLOAT_ROD.get());
+                        output.accept(WOOD_LURE_ROD.get());
+                        output.accept(IRON_FLOAT_ROD.get());
+                        output.accept(IRON_LURE_ROD.get());
+                        output.accept(GOLD_FLOAT_ROD.get());
+                        output.accept(GOLD_LURE_ROD.get());
+                        output.accept(DIAMOND_FLOAT_ROD.get());
+                        output.accept(DIAMOND_LURE_ROD.get());
+                        output.accept(NETHERITE_FLOAT_ROD.get());
+                        output.accept(NETHERITE_LURE_ROD.get());
+                        // 鱼线：5 档
+                        output.accept(HEMP_LINE.get());
+                        output.accept(COTTON_LINE.get());
+                        output.accept(NYLON_LINE.get());
+                        output.accept(FLUORO_LINE.get());
+                        output.accept(PE_LINE.get());
+                        output.accept(TITANIUM_LINE.get());
+                        // 渔轮（5 档）/ 鱼钩（浮漂已删除）
+                        output.accept(HAND_REEL.get());
+                        output.accept(SPINNING_REEL.get());
+                        output.accept(DRUM_REEL.get());
+                        output.accept(BAITCAST_REEL.get());
+                        output.accept(HEAVY_REEL.get());
+                        output.accept(PLAIN_HOOK.get());
+                        output.accept(BARBED_HOOK.get());
+                        // 鱼获与教程书（按品质从低到高）
+                        output.accept(CRUCIAN_CARP.get());
+                        output.accept(TILAPIA.get());
+                        output.accept(BANDED_LOACH.get());     // 白绿 · 仅台钓
+                        output.accept(HEMICULTER.get());       // 白绿 · 仅台钓
+                        output.accept(MULLET.get());
+                        output.accept(GRASS_CARP.get());
+                        output.accept(BLACK_CARP.get());
+                        output.accept(TOPMOUTH_CULTER.get());
+                        output.accept(ZANDER.get());
+                        output.accept(SAPPHIRE_SNAKEHEAD.get());   // 红 · 仅台钓
+                        output.accept(ATLANTIC_SALMON.get());
+                        output.accept(PLATINUM_AROWANA.get());     // 金红 · 仅路亚
+                        output.accept(BLUEFIN_TUNA.get());
+                        output.accept(OXEYE_TARPON.get());         // 红 · 仅路亚
+                        output.accept(JUVENILE_SHARK.get());
+                        // ---- 第二批 6 种，全部仅路亚 ----
+                        output.accept(STRIPED_BASS.get());         // 绿蓝紫 · 仅路亚
+                        output.accept(PIKE.get());                 // 紫金 · 仅路亚
+                        output.accept(ARAPAIMA.get());             // 紫金红 · 仅路亚
+                        output.accept(TIGERFISH.get());            // 金红 · 仅路亚
+                        output.accept(BROWN_TROUT.get());          // 金红 · 仅路亚（粘稠）
+                        output.accept(MIRROR_CARP.get());          // 金红 · 仅路亚
+                        output.accept(GUIDE_BOOK.get());
+                        // 鱼饵（台钓/路亚通用）
+                        output.accept(BAIT_BREAD.get());
+                        output.accept(BAIT_WORM.get());
+                        output.accept(BAIT_CORN.get());
+                        output.accept(BAIT_SHRIMP.get());
+                        output.accept(BAIT_GLOW.get());
+                        output.accept(BAIT_SECRET.get());
+                        // 拟饵（路亚专用，绿→蓝→紫→金→红）
+                        output.accept(LURE_SPOON.get());
+                        output.accept(LURE_MINNOW.get());
+                        output.accept(LURE_SOFT.get());
+                        output.accept(LURE_DEEP.get());
+                        output.accept(LURE_RATTLE.get());
+                        output.accept(LURE_GILDED.get());
+                        // 窝料
+                        output.accept(CHUM_GRAIN.get());
+                        output.accept(CHUM_MEAT.get());
+                        output.accept(CHUM_FRUIT.get());
+                        output.accept(CHUM_SECRET.get());
+                    })
+                    .build());
+
+    private ModItems() {
+    }
+
+    /** 配件通用属性：耐久（0 表示不可损坏）+ 稀有度。 */
+    private static Item.Properties partProps(int durability, Rarity rarity, PartStats stats) {
+        Item.Properties props = new Item.Properties().rarity(rarity);
+        if (durability > 0) {
+            props = props.durability(durability);
+        }
+        return props.component(ModDataComponents.PART_STATS.get(), stats);
+    }
+
+    public static void register(IEventBus modBus) {
+        ITEMS.register(modBus);
+        TABS.register(modBus);
+    }
+}

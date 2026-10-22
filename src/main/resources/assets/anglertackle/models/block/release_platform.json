@@ -1,0 +1,52 @@
+{
+  "parent": "minecraft:block/block",
+  "credit": "垂纶 · 放生台",
+  "texture_size": [
+    16,
+    16
+  ],
+  "textures": {
+    "platform": "anglertackle:block/release_platform",
+    "particle": "anglertackle:block/release_platform"
+  },
+  "elements": [
+    {
+      "from": [
+        0,
+        0,
+        0
+      ],
+      "to": [
+        16,
+        16,
+        16
+      ],
+      "faces": {
+        "north": {
+          "texture": "#platform",
+          "cullface": "north"
+        },
+        "south": {
+          "texture": "#platform",
+          "cullface": "south"
+        },
+        "east": {
+          "texture": "#platform",
+          "cullface": "east"
+        },
+        "west": {
+          "texture": "#platform",
+          "cullface": "west"
+        },
+        "up": {
+          "texture": "#platform",
+          "cullface": "up"
+        },
+        "down": {
+          "texture": "#platform",
+          "cullface": "down"
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+pluginManagement {
+    repositories {
+        gradlePluginPortal()
+        mavenCentral()
+    }
+}
+
+plugins {
+    // 让 Gradle 自动下载所需版本的 JDK（我们在 gradle.properties 里已经指定了本地 JDK 21，
+    // 这个插件是兜底：万一本地 JDK 路径失效，Gradle 会自动拉一个 Temurin 21）
+    id 'org.gradle.toolchains.foojay-resolver-convention' version '0.8.0'
+}
+
+rootProject.name = 'AnglersTackle'

@@ -1,0 +1,15 @@
+{
+  "placement": {
+    "type": "minecraft:random_spread",
+    "spacing": 26,
+    "separation": 6,
+    "salt": 1283002,
+    "spread_type": "linear"
+  },
+  "structures": [
+    {
+      "structure": "anglertackle:wild_camp",
+      "weight": 1
+    }
+  ]
+}

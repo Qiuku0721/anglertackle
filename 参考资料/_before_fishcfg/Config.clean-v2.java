@@ -1,0 +1,1942 @@
+package com.whitecobalt.anglertackle;
+
+import net.neoforged.neoforge.common.ModConfigSpec;
+import org.apache.commons.lang3.tuple.Pair;
+
+/**
+ * 配置与平衡参数。
+ *
+ * <p>数值来源见设计文档：
+ * <ul>
+ *   <li>{@code docs/02-钓鱼小游戏机制.md} §9 — 手感调参清单（cast / hookWindow / tension / bite）</li>
+ *   <li>{@code docs/11-配件系统详表.md} §2 — 六槽属性合成权重与上限（parts）</li>
+ *   <li>{@code docs/03-数值表.md} §9.3 — 经济平衡（chum / bait / value）</li>
+ *   <li>{@code docs/09-原版冲突与渲染优化.md} §4 — 渲染与实体同步（render）</li>
+ * </ul>
+ *
+ * <p>所有默认值都刻意做成"可直接改"，方便整合包作者调平衡，不必重新编译。
+ */
+public final class Config {
+
+    public static final ModConfigSpec SPEC;
+    public static final Config INSTANCE;
+
+    static {
+        Pair<Config, ModConfigSpec> pair = new ModConfigSpec.Builder().configure(Config::new);
+        INSTANCE = pair.getLeft();
+        SPEC = pair.getRight();
+    }
+
+    // ------------------------------------------------------------------ 抛投
+    public final ModConfigSpec.DoubleValue chargeTimeSeconds;
+
+    // ------------------------------------------------------------ 提竿窗口
+    public final ModConfigSpec.DoubleValue hookWindowBase;
+    public final ModConfigSpec.DoubleValue hookWindowMin;
+
+    // ---------------------------------------------------------------- 张力
+    public final ModConfigSpec.DoubleValue tensionReelGain;
+    public final ModConfigSpec.DoubleValue tensionReleaseLoss;
+    public final ModConfigSpec.DoubleValue tensionIdleLoss;
+    public final ModConfigSpec.DoubleValue tensionWhiteMax;
+    public final ModConfigSpec.DoubleValue tensionYellowMax;
+    public final ModConfigSpec.DoubleValue tensionCriticalFlash;
+    public final ModConfigSpec.DoubleValue tensionBaseRecover;
+
+    // ------------------------------------------------------------ 咬钩等待
+    public final ModConfigSpec.DoubleValue biteMinWait;
+    public final ModConfigSpec.DoubleValue biteMaxWait;
+    public final ModConfigSpec.DoubleValue biteHardCap;
+
+    // ------------------------------------------------------- 配件属性合成
+    public final ModConfigSpec.DoubleValue weightLineOnTension;
+    public final ModConfigSpec.DoubleValue weightRodOnTension;
+    public final ModConfigSpec.DoubleValue weightLineOnRecover;
+    public final ModConfigSpec.DoubleValue weightRodOnRecover;
+    public final ModConfigSpec.DoubleValue weightReelOnDrain;
+    public final ModConfigSpec.DoubleValue weightRodOnDrain;
+    public final ModConfigSpec.DoubleValue capTensionCeiling;
+    public final ModConfigSpec.DoubleValue capTensionRecover;
+    public final ModConfigSpec.DoubleValue capStaminaDrain;
+    public final ModConfigSpec.DoubleValue capPull;
+    public final ModConfigSpec.DoubleValue capDamping;
+    public final ModConfigSpec.DoubleValue pullIdleBase;
+    public final ModConfigSpec.DoubleValue pullStruggleBase;
+    public final ModConfigSpec.DoubleValue staminaDrainBase;
+
+    // ---------------------------------------------------------------- 窝料
+    public final ModConfigSpec.IntValue chumParticleIntervalTicks;
+    public final ModConfigSpec.IntValue chumParticlesPerBurst;
+    public final ModConfigSpec.DoubleValue chumRadius;
+
+    // ------------------------------------------------------------ 品质门槛
+    // （见构造函数里的说明：这一组还没实现，暂不提供配置项）
+
+    // ---------------------------------------------------------------- 耐久
+    public final ModConfigSpec.IntValue rodDurabilityPerBite;
+    public final ModConfigSpec.IntValue lineDurabilityPerBite;
+    public final ModConfigSpec.IntValue lureDurabilityPerBite;
+    public final ModConfigSpec.IntValue lineDurabilityPerBreak;
+
+    // ==== BEGIN 配件数值声明（gen-part-config.js 生成，勿手改）====
+    public final ModConfigSpec.IntValue hempDurability;
+    public final ModConfigSpec.DoubleValue hempTensionCeiling;
+    public final ModConfigSpec.DoubleValue hempTensionGen;
+    public final ModConfigSpec.DoubleValue hempTensionRecover;
+    public final ModConfigSpec.DoubleValue hempLineLength;
+    public final ModConfigSpec.IntValue hempTier;
+    public final ModConfigSpec.IntValue cottonDurability;
+    public final ModConfigSpec.DoubleValue cottonTensionCeiling;
+    public final ModConfigSpec.DoubleValue cottonTensionGen;
+    public final ModConfigSpec.DoubleValue cottonTensionRecover;
+    public final ModConfigSpec.DoubleValue cottonLineLength;
+    public final ModConfigSpec.IntValue cottonTier;
+    public final ModConfigSpec.IntValue nylonDurability;
+    public final ModConfigSpec.DoubleValue nylonTensionCeiling;
+    public final ModConfigSpec.DoubleValue nylonTensionGen;
+    public final ModConfigSpec.DoubleValue nylonTensionRecover;
+    public final ModConfigSpec.DoubleValue nylonLineLength;
+    public final ModConfigSpec.IntValue nylonTier;
+    public final ModConfigSpec.IntValue fluoroDurability;
+    public final ModConfigSpec.DoubleValue fluoroTensionCeiling;
+    public final ModConfigSpec.DoubleValue fluoroTensionGen;
+    public final ModConfigSpec.DoubleValue fluoroTensionRecover;
+    public final ModConfigSpec.DoubleValue fluoroLineLength;
+    public final ModConfigSpec.IntValue fluoroTier;
+    public final ModConfigSpec.IntValue peDurability;
+    public final ModConfigSpec.DoubleValue peTensionCeiling;
+    public final ModConfigSpec.DoubleValue peTensionGen;
+    public final ModConfigSpec.DoubleValue peTensionRecover;
+    public final ModConfigSpec.DoubleValue peLineLength;
+    public final ModConfigSpec.IntValue peTier;
+    public final ModConfigSpec.IntValue titaniumDurability;
+    public final ModConfigSpec.DoubleValue titaniumTensionCeiling;
+    public final ModConfigSpec.DoubleValue titaniumTensionGen;
+    public final ModConfigSpec.DoubleValue titaniumTensionRecover;
+    public final ModConfigSpec.DoubleValue titaniumLineLength;
+    public final ModConfigSpec.IntValue titaniumTier;
+    public final ModConfigSpec.IntValue handDurability;
+    public final ModConfigSpec.DoubleValue handPullIdle;
+    public final ModConfigSpec.DoubleValue handPullStruggle;
+    public final ModConfigSpec.DoubleValue handStaminaDrain;
+    public final ModConfigSpec.DoubleValue handDamping;
+    public final ModConfigSpec.IntValue spinningDurability;
+    public final ModConfigSpec.DoubleValue spinningPullIdle;
+    public final ModConfigSpec.DoubleValue spinningPullStruggle;
+    public final ModConfigSpec.DoubleValue spinningStaminaDrain;
+    public final ModConfigSpec.DoubleValue spinningDamping;
+    public final ModConfigSpec.IntValue drumDurability;
+    public final ModConfigSpec.DoubleValue drumPullIdle;
+    public final ModConfigSpec.DoubleValue drumPullStruggle;
+    public final ModConfigSpec.DoubleValue drumStaminaDrain;
+    public final ModConfigSpec.DoubleValue drumDamping;
+    public final ModConfigSpec.IntValue baitcastDurability;
+    public final ModConfigSpec.DoubleValue baitcastPullIdle;
+    public final ModConfigSpec.DoubleValue baitcastPullStruggle;
+    public final ModConfigSpec.DoubleValue baitcastStaminaDrain;
+    public final ModConfigSpec.DoubleValue baitcastDamping;
+    public final ModConfigSpec.IntValue heavyDurability;
+    public final ModConfigSpec.DoubleValue heavyPullIdle;
+    public final ModConfigSpec.DoubleValue heavyPullStruggle;
+    public final ModConfigSpec.DoubleValue heavyStaminaDrain;
+    public final ModConfigSpec.DoubleValue heavyDamping;
+    public final ModConfigSpec.IntValue plainDurability;
+    public final ModConfigSpec.DoubleValue plainWindowBonus;
+    public final ModConfigSpec.IntValue barbedDurability;
+    public final ModConfigSpec.DoubleValue barbedWindowBonus;
+    public final ModConfigSpec.IntValue lureSpoonDurability;
+    public final ModConfigSpec.IntValue lureSpoonTier;
+    public final ModConfigSpec.IntValue lureMinnowDurability;
+    public final ModConfigSpec.IntValue lureMinnowTier;
+    public final ModConfigSpec.IntValue lureDeepDurability;
+    public final ModConfigSpec.IntValue lureDeepTier;
+    public final ModConfigSpec.IntValue lureRattleDurability;
+    public final ModConfigSpec.IntValue lureRattleTier;
+    public final ModConfigSpec.IntValue lureGildedDurability;
+    public final ModConfigSpec.IntValue lureGildedTier;
+    public final ModConfigSpec.IntValue lureSoftDurability;
+    public final ModConfigSpec.IntValue lureSoftTier;
+    public final ModConfigSpec.IntValue lureTestRedDurability;
+    public final ModConfigSpec.IntValue lureTestRedTier;
+    // ==== END 配件数值声明 ====
+
+    // ==== BEGIN 鱼种数值声明（gen-fish-config.js 生成，勿手改）====
+    public final ModConfigSpec.DoubleValue crucianCarpMinKg;
+    public final ModConfigSpec.DoubleValue crucianCarpMaxKg;
+    public final ModConfigSpec.DoubleValue crucianCarpPullSpeed;
+    public final ModConfigSpec.DoubleValue crucianCarpFatiguedPullSpeed;
+    public final ModConfigSpec.DoubleValue crucianCarpStamina;
+    public final ModConfigSpec.DoubleValue crucianCarpTensionGain;
+    public final ModConfigSpec.DoubleValue crucianCarpSprintDurationSec;
+    public final ModConfigSpec.DoubleValue crucianCarpSprintIntervalSec;
+    public final ModConfigSpec.DoubleValue crucianCarpTurnIntervalSec;
+    public final ModConfigSpec.DoubleValue crucianCarpFakeOutChance;
+    public final ModConfigSpec.DoubleValue crucianCarpFatigueThreshold;
+    public final ModConfigSpec.DoubleValue crucianCarpFatigueDurationSec;
+    public final ModConfigSpec.DoubleValue crucianCarpStaminaRegen;
+    public final ModConfigSpec.DoubleValue tilapiaMinKg;
+    public final ModConfigSpec.DoubleValue tilapiaMaxKg;
+    public final ModConfigSpec.DoubleValue tilapiaPullSpeed;
+    public final ModConfigSpec.DoubleValue tilapiaFatiguedPullSpeed;
+    public final ModConfigSpec.DoubleValue tilapiaStamina;
+    public final ModConfigSpec.DoubleValue tilapiaTensionGain;
+    public final ModConfigSpec.DoubleValue tilapiaSprintDurationSec;
+    public final ModConfigSpec.DoubleValue tilapiaSprintIntervalSec;
+    public final ModConfigSpec.DoubleValue tilapiaTurnIntervalSec;
+    public final ModConfigSpec.DoubleValue tilapiaFakeOutChance;
+    public final ModConfigSpec.DoubleValue tilapiaFatigueThreshold;
+    public final ModConfigSpec.DoubleValue tilapiaFatigueDurationSec;
+    public final ModConfigSpec.DoubleValue tilapiaStaminaRegen;
+    public final ModConfigSpec.DoubleValue mulletMinKg;
+    public final ModConfigSpec.DoubleValue mulletMaxKg;
+    public final ModConfigSpec.DoubleValue mulletPullSpeed;
+    public final ModConfigSpec.DoubleValue mulletFatiguedPullSpeed;
+    public final ModConfigSpec.DoubleValue mulletStamina;
+    public final ModConfigSpec.DoubleValue mulletTensionGain;
+    public final ModConfigSpec.DoubleValue mulletSprintDurationSec;
+    public final ModConfigSpec.DoubleValue mulletSprintIntervalSec;
+    public final ModConfigSpec.DoubleValue mulletTurnIntervalSec;
+    public final ModConfigSpec.DoubleValue mulletFakeOutChance;
+    public final ModConfigSpec.DoubleValue mulletFatigueThreshold;
+    public final ModConfigSpec.DoubleValue mulletFatigueDurationSec;
+    public final ModConfigSpec.DoubleValue mulletStaminaRegen;
+    public final ModConfigSpec.DoubleValue grassCarpMinKg;
+    public final ModConfigSpec.DoubleValue grassCarpMaxKg;
+    public final ModConfigSpec.DoubleValue grassCarpPullSpeed;
+    public final ModConfigSpec.DoubleValue grassCarpFatiguedPullSpeed;
+    public final ModConfigSpec.DoubleValue grassCarpStamina;
+    public final ModConfigSpec.DoubleValue grassCarpTensionGain;
+    public final ModConfigSpec.DoubleValue grassCarpSprintDurationSec;
+    public final ModConfigSpec.DoubleValue grassCarpSprintIntervalSec;
+    public final ModConfigSpec.DoubleValue grassCarpTurnIntervalSec;
+    public final ModConfigSpec.DoubleValue grassCarpFakeOutChance;
+    public final ModConfigSpec.DoubleValue grassCarpFatigueThreshold;
+    public final ModConfigSpec.DoubleValue grassCarpFatigueDurationSec;
+    public final ModConfigSpec.DoubleValue grassCarpStaminaRegen;
+    public final ModConfigSpec.DoubleValue blackCarpMinKg;
+    public final ModConfigSpec.DoubleValue blackCarpMaxKg;
+    public final ModConfigSpec.DoubleValue blackCarpPullSpeed;
+    public final ModConfigSpec.DoubleValue blackCarpFatiguedPullSpeed;
+    public final ModConfigSpec.DoubleValue blackCarpStamina;
+    public final ModConfigSpec.DoubleValue blackCarpTensionGain;
+    public final ModConfigSpec.DoubleValue blackCarpSprintDurationSec;
+    public final ModConfigSpec.DoubleValue blackCarpSprintIntervalSec;
+    public final ModConfigSpec.DoubleValue blackCarpTurnIntervalSec;
+    public final ModConfigSpec.DoubleValue blackCarpFakeOutChance;
+    public final ModConfigSpec.DoubleValue blackCarpFatigueThreshold;
+    public final ModConfigSpec.DoubleValue blackCarpFatigueDurationSec;
+    public final ModConfigSpec.DoubleValue blackCarpStaminaRegen;
+    public final ModConfigSpec.DoubleValue bandedLoachMinKg;
+    public final ModConfigSpec.DoubleValue bandedLoachMaxKg;
+    public final ModConfigSpec.DoubleValue bandedLoachPullSpeed;
+    public final ModConfigSpec.DoubleValue bandedLoachFatiguedPullSpeed;
+    public final ModConfigSpec.DoubleValue bandedLoachStamina;
+    public final ModConfigSpec.DoubleValue bandedLoachTensionGain;
+    public final ModConfigSpec.DoubleValue bandedLoachSprintDurationSec;
+    public final ModConfigSpec.DoubleValue bandedLoachSprintIntervalSec;
+    public final ModConfigSpec.DoubleValue bandedLoachTurnIntervalSec;
+    public final ModConfigSpec.DoubleValue bandedLoachFakeOutChance;
+    public final ModConfigSpec.DoubleValue bandedLoachFatigueThreshold;
+    public final ModConfigSpec.DoubleValue bandedLoachFatigueDurationSec;
+    public final ModConfigSpec.DoubleValue bandedLoachStaminaRegen;
+    public final ModConfigSpec.DoubleValue hemiculterMinKg;
+    public final ModConfigSpec.DoubleValue hemiculterMaxKg;
+    public final ModConfigSpec.DoubleValue hemiculterPullSpeed;
+    public final ModConfigSpec.DoubleValue hemiculterFatiguedPullSpeed;
+    public final ModConfigSpec.DoubleValue hemiculterStamina;
+    public final ModConfigSpec.DoubleValue hemiculterTensionGain;
+    public final ModConfigSpec.DoubleValue hemiculterSprintDurationSec;
+    public final ModConfigSpec.DoubleValue hemiculterSprintIntervalSec;
+    public final ModConfigSpec.DoubleValue hemiculterTurnIntervalSec;
+    public final ModConfigSpec.DoubleValue hemiculterFakeOutChance;
+    public final ModConfigSpec.DoubleValue hemiculterFatigueThreshold;
+    public final ModConfigSpec.DoubleValue hemiculterFatigueDurationSec;
+    public final ModConfigSpec.DoubleValue hemiculterStaminaRegen;
+    public final ModConfigSpec.DoubleValue topmouthCulterMinKg;
+    public final ModConfigSpec.DoubleValue topmouthCulterMaxKg;
+    public final ModConfigSpec.DoubleValue topmouthCulterPullSpeed;
+    public final ModConfigSpec.DoubleValue topmouthCulterFatiguedPullSpeed;
+    public final ModConfigSpec.DoubleValue topmouthCulterStamina;
+    public final ModConfigSpec.DoubleValue topmouthCulterTensionGain;
+    public final ModConfigSpec.DoubleValue topmouthCulterSprintDurationSec;
+    public final ModConfigSpec.DoubleValue topmouthCulterSprintIntervalSec;
+    public final ModConfigSpec.DoubleValue topmouthCulterTurnIntervalSec;
+    public final ModConfigSpec.DoubleValue topmouthCulterFakeOutChance;
+    public final ModConfigSpec.DoubleValue topmouthCulterFatigueThreshold;
+    public final ModConfigSpec.DoubleValue topmouthCulterFatigueDurationSec;
+    public final ModConfigSpec.DoubleValue topmouthCulterStaminaRegen;
+    public final ModConfigSpec.DoubleValue zanderMinKg;
+    public final ModConfigSpec.DoubleValue zanderMaxKg;
+    public final ModConfigSpec.DoubleValue zanderPullSpeed;
+    public final ModConfigSpec.DoubleValue zanderFatiguedPullSpeed;
+    public final ModConfigSpec.DoubleValue zanderStamina;
+    public final ModConfigSpec.DoubleValue zanderTensionGain;
+    public final ModConfigSpec.DoubleValue zanderSprintDurationSec;
+    public final ModConfigSpec.DoubleValue zanderSprintIntervalSec;
+    public final ModConfigSpec.DoubleValue zanderTurnIntervalSec;
+    public final ModConfigSpec.DoubleValue zanderFakeOutChance;
+    public final ModConfigSpec.DoubleValue zanderFatigueThreshold;
+    public final ModConfigSpec.DoubleValue zanderFatigueDurationSec;
+    public final ModConfigSpec.DoubleValue zanderStaminaRegen;
+    public final ModConfigSpec.DoubleValue sapphireSnakeheadMinKg;
+    public final ModConfigSpec.DoubleValue sapphireSnakeheadMaxKg;
+    public final ModConfigSpec.DoubleValue sapphireSnakeheadPullSpeed;
+    public final ModConfigSpec.DoubleValue sapphireSnakeheadFatiguedPullSpeed;
+    public final ModConfigSpec.DoubleValue sapphireSnakeheadStamina;
+    public final ModConfigSpec.DoubleValue sapphireSnakeheadTensionGain;
+    public final ModConfigSpec.DoubleValue sapphireSnakeheadSprintDurationSec;
+    public final ModConfigSpec.DoubleValue sapphireSnakeheadSprintIntervalSec;
+    public final ModConfigSpec.DoubleValue sapphireSnakeheadTurnIntervalSec;
+    public final ModConfigSpec.DoubleValue sapphireSnakeheadFakeOutChance;
+    public final ModConfigSpec.DoubleValue sapphireSnakeheadFatigueThreshold;
+    public final ModConfigSpec.DoubleValue sapphireSnakeheadFatigueDurationSec;
+    public final ModConfigSpec.DoubleValue sapphireSnakeheadStaminaRegen;
+    public final ModConfigSpec.DoubleValue platinumArowanaMinKg;
+    public final ModConfigSpec.DoubleValue platinumArowanaMaxKg;
+    public final ModConfigSpec.DoubleValue platinumArowanaPullSpeed;
+    public final ModConfigSpec.DoubleValue platinumArowanaFatiguedPullSpeed;
+    public final ModConfigSpec.DoubleValue platinumArowanaStamina;
+    public final ModConfigSpec.DoubleValue platinumArowanaTensionGain;
+    public final ModConfigSpec.DoubleValue platinumArowanaSprintDurationSec;
+    public final ModConfigSpec.DoubleValue platinumArowanaSprintIntervalSec;
+    public final ModConfigSpec.DoubleValue platinumArowanaTurnIntervalSec;
+    public final ModConfigSpec.DoubleValue platinumArowanaFakeOutChance;
+    public final ModConfigSpec.DoubleValue platinumArowanaFatigueThreshold;
+    public final ModConfigSpec.DoubleValue platinumArowanaFatigueDurationSec;
+    public final ModConfigSpec.DoubleValue platinumArowanaStaminaRegen;
+    public final ModConfigSpec.DoubleValue oxeyeTarponMinKg;
+    public final ModConfigSpec.DoubleValue oxeyeTarponMaxKg;
+    public final ModConfigSpec.DoubleValue oxeyeTarponPullSpeed;
+    public final ModConfigSpec.DoubleValue oxeyeTarponFatiguedPullSpeed;
+    public final ModConfigSpec.DoubleValue oxeyeTarponStamina;
+    public final ModConfigSpec.DoubleValue oxeyeTarponTensionGain;
+    public final ModConfigSpec.DoubleValue oxeyeTarponSprintDurationSec;
+    public final ModConfigSpec.DoubleValue oxeyeTarponSprintIntervalSec;
+    public final ModConfigSpec.DoubleValue oxeyeTarponTurnIntervalSec;
+    public final ModConfigSpec.DoubleValue oxeyeTarponFakeOutChance;
+    public final ModConfigSpec.DoubleValue oxeyeTarponFatigueThreshold;
+    public final ModConfigSpec.DoubleValue oxeyeTarponFatigueDurationSec;
+    public final ModConfigSpec.DoubleValue oxeyeTarponStaminaRegen;
+    public final ModConfigSpec.DoubleValue atlanticSalmonMinKg;
+    public final ModConfigSpec.DoubleValue atlanticSalmonMaxKg;
+    public final ModConfigSpec.DoubleValue atlanticSalmonPullSpeed;
+    public final ModConfigSpec.DoubleValue atlanticSalmonFatiguedPullSpeed;
+    public final ModConfigSpec.DoubleValue atlanticSalmonStamina;
+    public final ModConfigSpec.DoubleValue atlanticSalmonTensionGain;
+    public final ModConfigSpec.DoubleValue atlanticSalmonSprintDurationSec;
+    public final ModConfigSpec.DoubleValue atlanticSalmonSprintIntervalSec;
+    public final ModConfigSpec.DoubleValue atlanticSalmonTurnIntervalSec;
+    public final ModConfigSpec.DoubleValue atlanticSalmonFakeOutChance;
+    public final ModConfigSpec.DoubleValue atlanticSalmonFatigueThreshold;
+    public final ModConfigSpec.DoubleValue atlanticSalmonFatigueDurationSec;
+    public final ModConfigSpec.DoubleValue atlanticSalmonStaminaRegen;
+    public final ModConfigSpec.DoubleValue bluefinTunaMinKg;
+    public final ModConfigSpec.DoubleValue bluefinTunaMaxKg;
+    public final ModConfigSpec.DoubleValue bluefinTunaPullSpeed;
+    public final ModConfigSpec.DoubleValue bluefinTunaFatiguedPullSpeed;
+    public final ModConfigSpec.DoubleValue bluefinTunaStamina;
+    public final ModConfigSpec.DoubleValue bluefinTunaTensionGain;
+    public final ModConfigSpec.DoubleValue bluefinTunaSprintDurationSec;
+    public final ModConfigSpec.DoubleValue bluefinTunaSprintIntervalSec;
+    public final ModConfigSpec.DoubleValue bluefinTunaTurnIntervalSec;
+    public final ModConfigSpec.DoubleValue bluefinTunaFakeOutChance;
+    public final ModConfigSpec.DoubleValue bluefinTunaFatigueThreshold;
+    public final ModConfigSpec.DoubleValue bluefinTunaFatigueDurationSec;
+    public final ModConfigSpec.DoubleValue bluefinTunaStaminaRegen;
+    public final ModConfigSpec.DoubleValue juvenileSharkMinKg;
+    public final ModConfigSpec.DoubleValue juvenileSharkMaxKg;
+    public final ModConfigSpec.DoubleValue juvenileSharkPullSpeed;
+    public final ModConfigSpec.DoubleValue juvenileSharkFatiguedPullSpeed;
+    public final ModConfigSpec.DoubleValue juvenileSharkStamina;
+    public final ModConfigSpec.DoubleValue juvenileSharkTensionGain;
+    public final ModConfigSpec.DoubleValue juvenileSharkSprintDurationSec;
+    public final ModConfigSpec.DoubleValue juvenileSharkSprintIntervalSec;
+    public final ModConfigSpec.DoubleValue juvenileSharkTurnIntervalSec;
+    public final ModConfigSpec.DoubleValue juvenileSharkFakeOutChance;
+    public final ModConfigSpec.DoubleValue juvenileSharkFatigueThreshold;
+    public final ModConfigSpec.DoubleValue juvenileSharkFatigueDurationSec;
+    public final ModConfigSpec.DoubleValue juvenileSharkStaminaRegen;
+    public final ModConfigSpec.DoubleValue tigerfishMinKg;
+    public final ModConfigSpec.DoubleValue tigerfishMaxKg;
+    public final ModConfigSpec.DoubleValue tigerfishPullSpeed;
+    public final ModConfigSpec.DoubleValue tigerfishFatiguedPullSpeed;
+    public final ModConfigSpec.DoubleValue tigerfishStamina;
+    public final ModConfigSpec.DoubleValue tigerfishTensionGain;
+    public final ModConfigSpec.DoubleValue tigerfishSprintDurationSec;
+    public final ModConfigSpec.DoubleValue tigerfishSprintIntervalSec;
+    public final ModConfigSpec.DoubleValue tigerfishTurnIntervalSec;
+    public final ModConfigSpec.DoubleValue tigerfishFakeOutChance;
+    public final ModConfigSpec.DoubleValue tigerfishFatigueThreshold;
+    public final ModConfigSpec.DoubleValue tigerfishFatigueDurationSec;
+    public final ModConfigSpec.DoubleValue tigerfishStaminaRegen;
+    public final ModConfigSpec.DoubleValue pikeMinKg;
+    public final ModConfigSpec.DoubleValue pikeMaxKg;
+    public final ModConfigSpec.DoubleValue pikePullSpeed;
+    public final ModConfigSpec.DoubleValue pikeFatiguedPullSpeed;
+    public final ModConfigSpec.DoubleValue pikeStamina;
+    public final ModConfigSpec.DoubleValue pikeTensionGain;
+    public final ModConfigSpec.DoubleValue pikeSprintDurationSec;
+    public final ModConfigSpec.DoubleValue pikeSprintIntervalSec;
+    public final ModConfigSpec.DoubleValue pikeTurnIntervalSec;
+    public final ModConfigSpec.DoubleValue pikeFakeOutChance;
+    public final ModConfigSpec.DoubleValue pikeFatigueThreshold;
+    public final ModConfigSpec.DoubleValue pikeFatigueDurationSec;
+    public final ModConfigSpec.DoubleValue pikeStaminaRegen;
+    public final ModConfigSpec.DoubleValue brownTroutMinKg;
+    public final ModConfigSpec.DoubleValue brownTroutMaxKg;
+    public final ModConfigSpec.DoubleValue brownTroutPullSpeed;
+    public final ModConfigSpec.DoubleValue brownTroutFatiguedPullSpeed;
+    public final ModConfigSpec.DoubleValue brownTroutStamina;
+    public final ModConfigSpec.DoubleValue brownTroutTensionGain;
+    public final ModConfigSpec.DoubleValue brownTroutSprintDurationSec;
+    public final ModConfigSpec.DoubleValue brownTroutSprintIntervalSec;
+    public final ModConfigSpec.DoubleValue brownTroutTurnIntervalSec;
+    public final ModConfigSpec.DoubleValue brownTroutFakeOutChance;
+    public final ModConfigSpec.DoubleValue brownTroutFatigueThreshold;
+    public final ModConfigSpec.DoubleValue brownTroutFatigueDurationSec;
+    public final ModConfigSpec.DoubleValue brownTroutStaminaRegen;
+    public final ModConfigSpec.DoubleValue mirrorCarpMinKg;
+    public final ModConfigSpec.DoubleValue mirrorCarpMaxKg;
+    public final ModConfigSpec.DoubleValue mirrorCarpPullSpeed;
+    public final ModConfigSpec.DoubleValue mirrorCarpFatiguedPullSpeed;
+    public final ModConfigSpec.DoubleValue mirrorCarpStamina;
+    public final ModConfigSpec.DoubleValue mirrorCarpTensionGain;
+    public final ModConfigSpec.DoubleValue mirrorCarpSprintDurationSec;
+    public final ModConfigSpec.DoubleValue mirrorCarpSprintIntervalSec;
+    public final ModConfigSpec.DoubleValue mirrorCarpTurnIntervalSec;
+    public final ModConfigSpec.DoubleValue mirrorCarpFakeOutChance;
+    public final ModConfigSpec.DoubleValue mirrorCarpFatigueThreshold;
+    public final ModConfigSpec.DoubleValue mirrorCarpFatigueDurationSec;
+    public final ModConfigSpec.DoubleValue mirrorCarpStaminaRegen;
+    public final ModConfigSpec.DoubleValue stripedBassMinKg;
+    public final ModConfigSpec.DoubleValue stripedBassMaxKg;
+    public final ModConfigSpec.DoubleValue stripedBassPullSpeed;
+    public final ModConfigSpec.DoubleValue stripedBassFatiguedPullSpeed;
+    public final ModConfigSpec.DoubleValue stripedBassStamina;
+    public final ModConfigSpec.DoubleValue stripedBassTensionGain;
+    public final ModConfigSpec.DoubleValue stripedBassSprintDurationSec;
+    public final ModConfigSpec.DoubleValue stripedBassSprintIntervalSec;
+    public final ModConfigSpec.DoubleValue stripedBassTurnIntervalSec;
+    public final ModConfigSpec.DoubleValue stripedBassFakeOutChance;
+    public final ModConfigSpec.DoubleValue stripedBassFatigueThreshold;
+    public final ModConfigSpec.DoubleValue stripedBassFatigueDurationSec;
+    public final ModConfigSpec.DoubleValue stripedBassStaminaRegen;
+    public final ModConfigSpec.DoubleValue arapaimaMinKg;
+    public final ModConfigSpec.DoubleValue arapaimaMaxKg;
+    public final ModConfigSpec.DoubleValue arapaimaPullSpeed;
+    public final ModConfigSpec.DoubleValue arapaimaFatiguedPullSpeed;
+    public final ModConfigSpec.DoubleValue arapaimaStamina;
+    public final ModConfigSpec.DoubleValue arapaimaTensionGain;
+    public final ModConfigSpec.DoubleValue arapaimaSprintDurationSec;
+    public final ModConfigSpec.DoubleValue arapaimaSprintIntervalSec;
+    public final ModConfigSpec.DoubleValue arapaimaTurnIntervalSec;
+    public final ModConfigSpec.DoubleValue arapaimaFakeOutChance;
+    public final ModConfigSpec.DoubleValue arapaimaFatigueThreshold;
+    public final ModConfigSpec.DoubleValue arapaimaFatigueDurationSec;
+    public final ModConfigSpec.DoubleValue arapaimaStaminaRegen;
+    // ==== END 鱼种数值声明 ====
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    // ---------------------------------------------------------------- 渲染
+    public final ModConfigSpec.IntValue ghostLineBeyondBlocks;
+
+    private Config(ModConfigSpec.Builder b) {
+        // ---------------------------------------------------------- 抛投
+        b.comment("""
+                抛投 / Casting
+                注意：抛投已在 M2 改成**视角抛投**（低头近 / 平视中 / 抬头远），
+                所以早期设计的"蓄力绿区 / 落点误差"配置项已删除 ——
+                留着它们只会让人以为能调。""").push("cast");
+        chargeTimeSeconds = b
+                .comment("蓄力到满所需秒数（只影响 HUD 蓄力条的显示节奏）")
+                .defineInRange("chargeTimeSeconds", 1.6D, 0.2D, 10.0D);
+        b.pop();
+
+        // ------------------------------------------------------ 提竿窗口
+        b.comment("提竿窗口 / Hook window（用户定案：基础 2.0 秒）").push("hookWindow");
+        hookWindowBase = b.comment("基础窗口秒数（鱼钩/鱼竿加成会再加到它上面）")
+                .defineInRange("base", 2.0D, 0.05D, 5.0D);
+        hookWindowMin = b.comment("窗口下限秒数（加成算完后不会低于它）")
+                .defineInRange("min", 1.0D, 0.05D, 5.0D);
+        b.pop();
+
+        // ---------------------------------------------------------- 张力
+        b.comment("""
+                张力模型 / Tension（反馈以鱼线颜色为主，HUD 只做辅助）
+                ⚠ whiteMax / yellowMax 是**相对于基准张力上限 100** 的值：
+                代码里按比例使用（whiteMax/100），好线把上限抬到 300 时
+                白区黄区会同步放大，否则"好线反而全程红区"。""").push("tension");
+        tensionReelGain = b.comment("收线时每 tick 增加的张力")
+                .defineInRange("reelGain", 0.9D, 0.0D, 20.0D);
+        tensionReleaseLoss = b.comment("放线时每 tick 减少的张力")
+                .defineInRange("releaseLoss", 1.6D, 0.0D, 20.0D);
+        tensionIdleLoss = b.comment("不操作时每 tick 自然松弛的张力")
+                .defineInRange("idleLoss", 0.35D, 0.0D, 20.0D);
+        tensionWhiteMax = b.comment("白区（安全）上限，基准 100 的百分比")
+                .defineInRange("whiteMax", 55.0D, 1.0D, 100.0D);
+        tensionYellowMax = b.comment("黄区上限（超过进红区），基准 100 的百分比")
+                .defineInRange("yellowMax", 82.0D, 1.0D, 100.0D);
+        tensionCriticalFlash = b.comment("鱼线开始深红闪烁的张力值（基准 100 的百分比）")
+                .defineInRange("criticalFlash", 98.0D, 1.0D, 100.0D);
+        tensionBaseRecover = b.comment("基础张力回复速率（点/tick，放线时由红转白的速度）")
+                .defineInRange("baseRecover", 1.6D, 0.0D, 20.0D);
+        b.pop();
+
+        // ------------------------------------------------------ 咬钩等待
+        b.comment("咬钩等待 / Bite timing（玩家扛不住长时间干等，上限压到 20 秒）").push("bite");
+        biteMinWait = b.comment("最短等待秒数")
+                .defineInRange("minWaitSeconds", 2.0D, 0.1D, 60.0D);
+        biteMaxWait = b.comment("最长等待秒数的随机量（实际等待 = min + rand × 本值）")
+                .defineInRange("maxWaitSeconds", 6.0D, 0.1D, 120.0D);
+        biteHardCap = b.comment("硬上限秒数（任何修正后都不得超过）")
+                .defineInRange("hardCapSeconds", 20.0D, 1.0D, 300.0D);
+        b.pop();
+
+        // --------------------------------------------------- 配件属性合成
+        b.comment("""
+                六槽配件属性合成 / Part attribute composition
+                权重决定"某项属性由谁主导"，上限防止数值失控。
+                详见 docs/11-配件系统详表.md §2。""").push("parts");
+        weightLineOnTension = b.comment("鱼线对张力上限的贡献权重")
+                .defineInRange("lineOnTension", 0.60D, 0.0D, 1.0D);
+        weightRodOnTension = b.comment("鱼竿对张力上限的贡献权重")
+                .defineInRange("rodOnTension", 0.40D, 0.0D, 1.0D);
+        weightLineOnRecover = b.comment("鱼线对张力回复速度的贡献权重")
+                .defineInRange("lineOnRecover", 0.60D, 0.0D, 1.0D);
+        weightRodOnRecover = b.comment("鱼竿对张力回复速度的贡献权重")
+                .defineInRange("rodOnRecover", 0.40D, 0.0D, 1.0D);
+        weightReelOnDrain = b.comment("渔轮对体力削减的贡献权重")
+                .defineInRange("reelOnDrain", 0.60D, 0.0D, 1.0D);
+        weightRodOnDrain = b.comment("鱼竿对体力削减的贡献权重")
+                .defineInRange("rodOnDrain", 0.40D, 0.0D, 1.0D);
+        capTensionCeiling = b.comment("张力上限倍率硬上限")
+                .defineInRange("capTensionCeiling", 3.00D, 1.0D, 10.0D);
+        capTensionRecover = b.comment("张力回复倍率硬上限（放线时由红转白的速度）")
+                .defineInRange("capTensionRecover", 2.20D, 1.0D, 10.0D);
+        capStaminaDrain = b.comment("体力削减倍率硬上限")
+                .defineInRange("capStaminaDrain", 2.60D, 1.0D, 10.0D);
+        capPull = b.comment("回拉速度倍率硬上限")
+                .defineInRange("capPull", 2.30D, 1.0D, 10.0D);
+        capDamping = b.comment("压制阻尼倍率硬上限")
+                .defineInRange("capDamping", 2.70D, 1.0D, 10.0D);
+        pullIdleBase = b.comment("不挣扎时基础回拉速度（格/tick）")
+                .defineInRange("pullIdleBase", 0.15D, 0.001D, 2.0D);
+        pullStruggleBase = b.comment("挣扎时基础回拉速度（格/tick）")
+                .defineInRange("pullStruggleBase", 0.35D, 0.001D, 2.0D);
+        staminaDrainBase = b.comment("收线时每秒扣掉的鱼力比例（相对满体力）")
+                .defineInRange("staminaDrainBase", 0.20D, 0.001D, 5.0D);
+        b.pop();
+
+        // ---------------------------------------------------------- 窝料
+        b.comment("""
+                窝料 / Chum（做成实体、会散开、时长按窝料档次）
+                注意：时长是**每种窝料自己的**（ChumItem 构造参数，30~300 分钟档），
+                所以这里没有"全局时长"配置 —— 那种配置要么被忽略、要么把档次差异抹平。""").push("chum");
+        chumParticleIntervalTicks = b.comment("粒子生成间隔（tick）；越大越省性能")
+                .defineInRange("particleIntervalTicks", 6, 1, 200);
+        chumParticlesPerBurst = b.comment("每次生成的粒子数（批量生成，降低总粒子量）")
+                .defineInRange("particlesPerBurst", 6, 1, 32);
+        chumRadius = b.comment("窝子半径（格）——白圈画的就是这个半径")
+                .defineInRange("radius", 10.0D, 1.0D, 64.0D);
+        b.pop();
+
+        // ------------------------------------------------------ 品质门槛
+        b.comment("""
+                品质门槛 / Rarity gate
+                说明：**这一组还没有实现**，所以暂不提供配置项。
+                当前生效的规则是：饵料/拟饵只决定鱼种档位下限（baitMinTier），
+                金红占比由饵料档次与打窝倍率共同决定。
+                等"蓝品质以下配置不许出红鱼"真正写进抽鱼逻辑后，再在这里加配置。""").push("rarityGate");
+        b.pop();
+
+        // ---------------------------------------------------------- 耐久
+        b.comment("耐久 / Durability（咬钩即扣，与是否切线逃离无关）").push("durability");
+        rodDurabilityPerBite = b.comment("每次咬钩扣除的鱼竿耐久（还会再乘竿的材质系数）")
+                .defineInRange("rodPerBite", 2, 0, 100);
+        lineDurabilityPerBite = b.comment("每次鱼咬钩扣除的鱼线耐久")
+                .defineInRange("linePerBite", 1, 0, 100);
+        lureDurabilityPerBite = b.comment("每次鱼咬钩扣除的拟饵耐久")
+                .defineInRange("lurePerBite", 1, 0, 100);
+        lineDurabilityPerBreak = b.comment("断线时额外扣除的鱼线耐久")
+                .defineInRange("linePerBreak", 5, 0, 100);
+        b.pop();
+
+        // ---------------------------------------------------------- 配件数值
+        b.comment("""
+                配件数值 / Part stats（每个配件的属性）。
+                由 tools/gen-part-config.js 从 ModItems.java 生成，默认值与代码里的原值一一对应，
+                所以不改这些项时手感和以前完全一样。
+                耐久上限是注册期固定的，改它要重启游戏；其余属性热重载即生效。
+                """).push("partsStats");
+        // ==== BEGIN 配件数值定义 ====
+                hempDurability = b
+                        .comment("麻线（hemp_line） · 耐久上限 —— 用一次扣一点，扣光配件就损坏。⚠ 注册期固定，改它必须重启游戏")
+                        .defineInRange("hempDurability", 50, 0, 100000);
+                hempTensionCeiling = b
+                        .comment("麻线（hemp_line） · 张力上限 —— 越高，线越不容易被拉崩")
+                        .defineInRange("hempTensionCeiling", 1.00, 0.0D, 100.0D);
+                hempTensionGen = b
+                        .comment("麻线（hemp_line） · 张力涨速 —— 越小，收线时张力涨得越慢（越小越安全）")
+                        .defineInRange("hempTensionGen", 1.00, 0.0D, 100.0D);
+                hempTensionRecover = b
+                        .comment("麻线（hemp_line） · 张力回复 —— 越大，放线时张力落得越快（越大越安全）")
+                        .defineInRange("hempTensionRecover", 1.00, 0.0D, 100.0D);
+                hempLineLength = b
+                        .comment("麻线（hemp_line） · 线长 —— 相对麻线的倍率，决定抛投射程上限")
+                        .defineInRange("hempLineLength", 1.00, 0.0D, 100.0D);
+                hempTier = b
+                        .comment("麻线（hemp_line） · 品质档位 —— 1白 2绿 3蓝 4紫 5金 6红")
+                        .defineInRange("hempTier", 1, 0, 6);
+                cottonDurability = b
+                        .comment("棉线（cotton_line） · 耐久上限 —— 用一次扣一点，扣光配件就损坏。⚠ 注册期固定，改它必须重启游戏")
+                        .defineInRange("cottonDurability", 50, 0, 100000);
+                cottonTensionCeiling = b
+                        .comment("棉线（cotton_line） · 张力上限 —— 越高，线越不容易被拉崩")
+                        .defineInRange("cottonTensionCeiling", 1.20, 0.0D, 100.0D);
+                cottonTensionGen = b
+                        .comment("棉线（cotton_line） · 张力涨速 —— 越小，收线时张力涨得越慢（越小越安全）")
+                        .defineInRange("cottonTensionGen", 0.91, 0.0D, 100.0D);
+                cottonTensionRecover = b
+                        .comment("棉线（cotton_line） · 张力回复 —— 越大，放线时张力落得越快（越大越安全）")
+                        .defineInRange("cottonTensionRecover", 1.15, 0.0D, 100.0D);
+                cottonLineLength = b
+                        .comment("棉线（cotton_line） · 线长 —— 相对麻线的倍率，决定抛投射程上限")
+                        .defineInRange("cottonLineLength", 35.0 / 30.0, 0.0D, 100.0D);
+                cottonTier = b
+                        .comment("棉线（cotton_line） · 品质档位 —— 1白 2绿 3蓝 4紫 5金 6红")
+                        .defineInRange("cottonTier", 2, 0, 6);
+                nylonDurability = b
+                        .comment("尼龙线（nylon_line） · 耐久上限 —— 用一次扣一点，扣光配件就损坏。⚠ 注册期固定，改它必须重启游戏")
+                        .defineInRange("nylonDurability", 40, 0, 100000);
+                nylonTensionCeiling = b
+                        .comment("尼龙线（nylon_line） · 张力上限 —— 越高，线越不容易被拉崩")
+                        .defineInRange("nylonTensionCeiling", 1.28, 0.0D, 100.0D);
+                nylonTensionGen = b
+                        .comment("尼龙线（nylon_line） · 张力涨速 —— 越小，收线时张力涨得越慢（越小越安全）")
+                        .defineInRange("nylonTensionGen", 0.95, 0.0D, 100.0D);
+                nylonTensionRecover = b
+                        .comment("尼龙线（nylon_line） · 张力回复 —— 越大，放线时张力落得越快（越大越安全）")
+                        .defineInRange("nylonTensionRecover", 1.30, 0.0D, 100.0D);
+                nylonLineLength = b
+                        .comment("尼龙线（nylon_line） · 线长 —— 相对麻线的倍率，决定抛投射程上限")
+                        .defineInRange("nylonLineLength", 45.0 / 30.0, 0.0D, 100.0D);
+                nylonTier = b
+                        .comment("尼龙线（nylon_line） · 品质档位 —— 1白 2绿 3蓝 4紫 5金 6红")
+                        .defineInRange("nylonTier", 3, 0, 6);
+                fluoroDurability = b
+                        .comment("碳氟线（fluoro_line） · 耐久上限 —— 用一次扣一点，扣光配件就损坏。⚠ 注册期固定，改它必须重启游戏")
+                        .defineInRange("fluoroDurability", 35, 0, 100000);
+                fluoroTensionCeiling = b
+                        .comment("碳氟线（fluoro_line） · 张力上限 —— 越高，线越不容易被拉崩")
+                        .defineInRange("fluoroTensionCeiling", 1.54, 0.0D, 100.0D);
+                fluoroTensionGen = b
+                        .comment("碳氟线（fluoro_line） · 张力涨速 —— 越小，收线时张力涨得越慢（越小越安全）")
+                        .defineInRange("fluoroTensionGen", 0.81, 0.0D, 100.0D);
+                fluoroTensionRecover = b
+                        .comment("碳氟线（fluoro_line） · 张力回复 —— 越大，放线时张力落得越快（越大越安全）")
+                        .defineInRange("fluoroTensionRecover", 1.36, 0.0D, 100.0D);
+                fluoroLineLength = b
+                        .comment("碳氟线（fluoro_line） · 线长 —— 相对麻线的倍率，决定抛投射程上限")
+                        .defineInRange("fluoroLineLength", 55.0 / 30.0, 0.0D, 100.0D);
+                fluoroTier = b
+                        .comment("碳氟线（fluoro_line） · 品质档位 —— 1白 2绿 3蓝 4紫 5金 6红")
+                        .defineInRange("fluoroTier", 4, 0, 6);
+                peDurability = b
+                        .comment("编织 PE 线（pe_line） · 耐久上限 —— 用一次扣一点，扣光配件就损坏。⚠ 注册期固定，改它必须重启游戏")
+                        .defineInRange("peDurability", 30, 0, 100000);
+                peTensionCeiling = b
+                        .comment("编织 PE 线（pe_line） · 张力上限 —— 越高，线越不容易被拉崩")
+                        .defineInRange("peTensionCeiling", 1.94, 0.0D, 100.0D);
+                peTensionGen = b
+                        .comment("编织 PE 线（pe_line） · 张力涨速 —— 越小，收线时张力涨得越慢（越小越安全）")
+                        .defineInRange("peTensionGen", 0.76, 0.0D, 100.0D);
+                peTensionRecover = b
+                        .comment("编织 PE 线（pe_line） · 张力回复 —— 越大，放线时张力落得越快（越大越安全）")
+                        .defineInRange("peTensionRecover", 1.44, 0.0D, 100.0D);
+                peLineLength = b
+                        .comment("编织 PE 线（pe_line） · 线长 —— 相对麻线的倍率，决定抛投射程上限")
+                        .defineInRange("peLineLength", 65.0 / 30.0, 0.0D, 100.0D);
+                peTier = b
+                        .comment("编织 PE 线（pe_line） · 品质档位 —— 1白 2绿 3蓝 4紫 5金 6红")
+                        .defineInRange("peTier", 5, 0, 6);
+                titaniumDurability = b
+                        .comment("钛合金记忆金属线（titanium_line） · 耐久上限 —— 用一次扣一点，扣光配件就损坏。⚠ 注册期固定，改它必须重启游戏")
+                        .defineInRange("titaniumDurability", 30, 0, 100000);
+                titaniumTensionCeiling = b
+                        .comment("钛合金记忆金属线（titanium_line） · 张力上限 —— 越高，线越不容易被拉崩")
+                        .defineInRange("titaniumTensionCeiling", 2.20, 0.0D, 100.0D);
+                titaniumTensionGen = b
+                        .comment("钛合金记忆金属线（titanium_line） · 张力涨速 —— 越小，收线时张力涨得越慢（越小越安全）")
+                        .defineInRange("titaniumTensionGen", 0.58, 0.0D, 100.0D);
+                titaniumTensionRecover = b
+                        .comment("钛合金记忆金属线（titanium_line） · 张力回复 —— 越大，放线时张力落得越快（越大越安全）")
+                        .defineInRange("titaniumTensionRecover", 1.76, 0.0D, 100.0D);
+                titaniumLineLength = b
+                        .comment("钛合金记忆金属线（titanium_line） · 线长 —— 相对麻线的倍率，决定抛投射程上限")
+                        .defineInRange("titaniumLineLength", 70.0 / 30.0, 0.0D, 100.0D);
+                titaniumTier = b
+                        .comment("钛合金记忆金属线（titanium_line） · 品质档位 —— 1白 2绿 3蓝 4紫 5金 6红")
+                        .defineInRange("titaniumTier", 6, 0, 6);
+                handDurability = b
+                        .comment("手线轮（hand_reel） · 耐久上限 —— 用一次扣一点，扣光配件就损坏。⚠ 注册期固定，改它必须重启游戏")
+                        .defineInRange("handDurability", 0, 0, 100000);
+                handPullIdle = b
+                        .comment("手线轮（hand_reel） · 回拉速度（不挣扎） —— 鱼不挣扎时收线拉回多快")
+                        .defineInRange("handPullIdle", 1.00, 0.0D, 100.0D);
+                handPullStruggle = b
+                        .comment("手线轮（hand_reel） · 回拉速度（挣扎） —— 鱼挣扎时收线拉回多快")
+                        .defineInRange("handPullStruggle", 1.00, 0.0D, 100.0D);
+                handStaminaDrain = b
+                        .comment("手线轮（hand_reel） · 体力削减 —— 越大，鱼掉体力越快（越大越好钓）")
+                        .defineInRange("handStaminaDrain", 1.00, 0.0D, 100.0D);
+                handDamping = b
+                        .comment("手线轮（hand_reel） · 压制阻尼 —— 抑制鱼回气；高于 1 的部分另有转化")
+                        .defineInRange("handDamping", 1.00, 0.0D, 100.0D);
+                spinningDurability = b
+                        .comment("纺车轮（spinning_reel） · 耐久上限 —— 用一次扣一点，扣光配件就损坏。⚠ 注册期固定，改它必须重启游戏")
+                        .defineInRange("spinningDurability", 0, 0, 100000);
+                spinningPullIdle = b
+                        .comment("纺车轮（spinning_reel） · 回拉速度（不挣扎） —— 鱼不挣扎时收线拉回多快")
+                        .defineInRange("spinningPullIdle", 1.25, 0.0D, 100.0D);
+                spinningPullStruggle = b
+                        .comment("纺车轮（spinning_reel） · 回拉速度（挣扎） —— 鱼挣扎时收线拉回多快")
+                        .defineInRange("spinningPullStruggle", 1.25, 0.0D, 100.0D);
+                spinningStaminaDrain = b
+                        .comment("纺车轮（spinning_reel） · 体力削减 —— 越大，鱼掉体力越快（越大越好钓）")
+                        .defineInRange("spinningStaminaDrain", 1.25, 0.0D, 100.0D);
+                spinningDamping = b
+                        .comment("纺车轮（spinning_reel） · 压制阻尼 —— 抑制鱼回气；高于 1 的部分另有转化")
+                        .defineInRange("spinningDamping", 1.20, 0.0D, 100.0D);
+                drumDurability = b
+                        .comment("鼓轮（drum_reel） · 耐久上限 —— 用一次扣一点，扣光配件就损坏。⚠ 注册期固定，改它必须重启游戏")
+                        .defineInRange("drumDurability", 0, 0, 100000);
+                drumPullIdle = b
+                        .comment("鼓轮（drum_reel） · 回拉速度（不挣扎） —— 鱼不挣扎时收线拉回多快")
+                        .defineInRange("drumPullIdle", 1.45, 0.0D, 100.0D);
+                drumPullStruggle = b
+                        .comment("鼓轮（drum_reel） · 回拉速度（挣扎） —— 鱼挣扎时收线拉回多快")
+                        .defineInRange("drumPullStruggle", 1.45, 0.0D, 100.0D);
+                drumStaminaDrain = b
+                        .comment("鼓轮（drum_reel） · 体力削减 —— 越大，鱼掉体力越快（越大越好钓）")
+                        .defineInRange("drumStaminaDrain", 1.60, 0.0D, 100.0D);
+                drumDamping = b
+                        .comment("鼓轮（drum_reel） · 压制阻尼 —— 抑制鱼回气；高于 1 的部分另有转化")
+                        .defineInRange("drumDamping", 1.45, 0.0D, 100.0D);
+                baitcastDurability = b
+                        .comment("水滴轮（baitcast_reel） · 耐久上限 —— 用一次扣一点，扣光配件就损坏。⚠ 注册期固定，改它必须重启游戏")
+                        .defineInRange("baitcastDurability", 0, 0, 100000);
+                baitcastPullIdle = b
+                        .comment("水滴轮（baitcast_reel） · 回拉速度（不挣扎） —— 鱼不挣扎时收线拉回多快")
+                        .defineInRange("baitcastPullIdle", 1.90, 0.0D, 100.0D);
+                baitcastPullStruggle = b
+                        .comment("水滴轮（baitcast_reel） · 回拉速度（挣扎） —— 鱼挣扎时收线拉回多快")
+                        .defineInRange("baitcastPullStruggle", 1.95, 0.0D, 100.0D);
+                baitcastStaminaDrain = b
+                        .comment("水滴轮（baitcast_reel） · 体力削减 —— 越大，鱼掉体力越快（越大越好钓）")
+                        .defineInRange("baitcastStaminaDrain", 1.40, 0.0D, 100.0D);
+                baitcastDamping = b
+                        .comment("水滴轮（baitcast_reel） · 压制阻尼 —— 抑制鱼回气；高于 1 的部分另有转化")
+                        .defineInRange("baitcastDamping", 1.40, 0.0D, 100.0D);
+                heavyDurability = b
+                        .comment("大型纺车轮（heavy_reel） · 耐久上限 —— 用一次扣一点，扣光配件就损坏。⚠ 注册期固定，改它必须重启游戏")
+                        .defineInRange("heavyDurability", 0, 0, 100000);
+                heavyPullIdle = b
+                        .comment("大型纺车轮（heavy_reel） · 回拉速度（不挣扎） —— 鱼不挣扎时收线拉回多快")
+                        .defineInRange("heavyPullIdle", 1.55, 0.0D, 100.0D);
+                heavyPullStruggle = b
+                        .comment("大型纺车轮（heavy_reel） · 回拉速度（挣扎） —— 鱼挣扎时收线拉回多快")
+                        .defineInRange("heavyPullStruggle", 1.55, 0.0D, 100.0D);
+                heavyStaminaDrain = b
+                        .comment("大型纺车轮（heavy_reel） · 体力削减 —— 越大，鱼掉体力越快（越大越好钓）")
+                        .defineInRange("heavyStaminaDrain", 2.30, 0.0D, 100.0D);
+                heavyDamping = b
+                        .comment("大型纺车轮（heavy_reel） · 压制阻尼 —— 抑制鱼回气；高于 1 的部分另有转化")
+                        .defineInRange("heavyDamping", 2.50, 0.0D, 100.0D);
+                plainDurability = b
+                        .comment("普通钩（plain_hook） · 耐久上限 —— 用一次扣一点，扣光配件就损坏。⚠ 注册期固定，改它必须重启游戏")
+                        .defineInRange("plainDurability", 0, 0, 100000);
+                plainWindowBonus = b
+                        .comment("普通钩（plain_hook） · 提竿窗口加成 —— 单位是秒，加到基础提竿窗口上")
+                        .defineInRange("plainWindowBonus", 0.00, 0.0D, 100.0D);
+                barbedDurability = b
+                        .comment("倒刺钩（barbed_hook） · 耐久上限 —— 用一次扣一点，扣光配件就损坏。⚠ 注册期固定，改它必须重启游戏")
+                        .defineInRange("barbedDurability", 0, 0, 100000);
+                barbedWindowBonus = b
+                        .comment("倒刺钩（barbed_hook） · 提竿窗口加成 —— 单位是秒，加到基础提竿窗口上")
+                        .defineInRange("barbedWindowBonus", 0.08, 0.0D, 100.0D);
+                lureSpoonDurability = b
+                        .comment("亮片拟饵（lure_spoon） · 耐久上限 —— 用一次扣一点，扣光配件就损坏。⚠ 注册期固定，改它必须重启游戏")
+                        .defineInRange("lureSpoonDurability", 40, 0, 100000);
+                lureSpoonTier = b
+                        .comment("亮片拟饵（lure_spoon） · 品质档位 —— 1白 2绿 3蓝 4紫 5金 6红")
+                        .defineInRange("lureSpoonTier", 2, 0, 6);
+                lureMinnowDurability = b
+                        .comment("米诺鱼拟饵（lure_minnow） · 耐久上限 —— 用一次扣一点，扣光配件就损坏。⚠ 注册期固定，改它必须重启游戏")
+                        .defineInRange("lureMinnowDurability", 30, 0, 100000);
+                lureMinnowTier = b
+                        .comment("米诺鱼拟饵（lure_minnow） · 品质档位 —— 1白 2绿 3蓝 4紫 5金 6红")
+                        .defineInRange("lureMinnowTier", 3, 0, 6);
+                lureDeepDurability = b
+                        .comment("深潜胖子（lure_deep） · 耐久上限 —— 用一次扣一点，扣光配件就损坏。⚠ 注册期固定，改它必须重启游戏")
+                        .defineInRange("lureDeepDurability", 22, 0, 100000);
+                lureDeepTier = b
+                        .comment("深潜胖子（lure_deep） · 品质档位 —— 1白 2绿 3蓝 4紫 5金 6红")
+                        .defineInRange("lureDeepTier", 4, 0, 6);
+                lureRattleDurability = b
+                        .comment("钢珠声诱拟饵（lure_rattle） · 耐久上限 —— 用一次扣一点，扣光配件就损坏。⚠ 注册期固定，改它必须重启游戏")
+                        .defineInRange("lureRattleDurability", 18, 0, 100000);
+                lureRattleTier = b
+                        .comment("钢珠声诱拟饵（lure_rattle） · 品质档位 —— 1白 2绿 3蓝 4紫 5金 6红")
+                        .defineInRange("lureRattleTier", 5, 0, 6);
+                lureGildedDurability = b
+                        .comment("镀金竞技拟饵（lure_gilded） · 耐久上限 —— 用一次扣一点，扣光配件就损坏。⚠ 注册期固定，改它必须重启游戏")
+                        .defineInRange("lureGildedDurability", 14, 0, 100000);
+                lureGildedTier = b
+                        .comment("镀金竞技拟饵（lure_gilded） · 品质档位 —— 1白 2绿 3蓝 4紫 5金 6红")
+                        .defineInRange("lureGildedTier", 6, 0, 6);
+                lureSoftDurability = b
+                        .comment("软虫拟饵（lure_soft） · 耐久上限 —— 用一次扣一点，扣光配件就损坏。⚠ 注册期固定，改它必须重启游戏")
+                        .defineInRange("lureSoftDurability", 26, 0, 100000);
+                lureSoftTier = b
+                        .comment("软虫拟饵（lure_soft） · 品质档位 —— 1白 2绿 3蓝 4紫 5金 6红")
+                        .defineInRange("lureSoftTier", 3, 0, 6);
+                lureTestRedDurability = b
+                        .comment("【测试】红档拟饵（必出红鱼）（lure_test_red） · 耐久上限 —— 用一次扣一点，扣光配件就损坏。⚠ 注册期固定，改它必须重启游戏")
+                        .defineInRange("lureTestRedDurability", 9999, 0, 100000);
+                lureTestRedTier = b
+                        .comment("【测试】红档拟饵（必出红鱼）（lure_test_red） · 品质档位 —— 1白 2绿 3蓝 4紫 5金 6红")
+                        .defineInRange("lureTestRedTier", 6, 0, 6);
+        // ==== END 配件数值定义 ====
+        b.pop();
+
+        // ---------------------------------------------------------- 鱼种数值
+        b.comment("""
+                鱼种数值 / Per-fish stats（每条鱼的体重与对抗手感）。
+                由 tools/gen-fish-config.js 从 FishSpecies.java 生成，默认值与代码里的原值一一对应，
+                所以不改这些项时手感和以前完全一样。
+                改完 /atl config reload 即生效：只影响**之后**咬钩的鱼，不影响正在遛的那条。
+                每条的 13 项含义相同：体重上下限、拉力（不挣扎/疲劳期）、体力、张力涨速、
+                冲刺时长与间隔、变向间隔、假动作概率、进疲劳的体力比例、疲劳持续、不挣扎时回气。
+                """).push("fishStats");
+        // ==== BEGIN 鱼种数值定义 ====
+        crucianCarpMinKg = b
+                .comment("鲫鱼（crucian_carp） · 体重下限（kg） —— 这种鱼最小能有多重。⚠ 它和体重上限一起决定档位怎么分——改小了会让低档鱼变少")
+                .defineInRange("crucianCarpMinKg", 0.1, 0.001, 500);
+        crucianCarpMaxKg = b
+                .comment("鲫鱼（crucian_carp） · 体重上限（kg） —— 这种鱼最大能有多重。线长/承重不够时会钓不上来（见 buildPool 的承重过滤）")
+                .defineInRange("crucianCarpMaxKg", 1.2, 0.001, 500);
+        crucianCarpPullSpeed = b
+                .comment("鲫鱼（crucian_carp） · 拉力（不挣扎） —— 挣扎时把线拽出去的速度。越大越拉不动。这是"上钩两秒就能感觉出多大"的主要来源")
+                .defineInRange("crucianCarpPullSpeed", 0.7, 0, 20);
+        crucianCarpFatiguedPullSpeed = b
+                .comment("鲫鱼（crucian_carp） · 拉力（疲劳期） —— 遛到疲劳后的拉拽速度。默认是拉力的一半——改大就等于"疲劳期反而不划算"")
+                .defineInRange("crucianCarpFatiguedPullSpeed", 0.35, 0, 20);
+        crucianCarpStamina = b
+                .comment("鲫鱼（crucian_carp） · 体力上限 —— 鱼有多少体力。越大越耐磨，要遛更久。它是"持久战"强度的总开关")
+                .defineInRange("crucianCarpStamina", 80.0, 1, 5000);
+        crucianCarpTensionGain = b
+                .comment("鲫鱼（crucian_carp） · 张力涨速 —— 这条鱼让线涨得多快。>1 = 线黄得快（黏液型鱼的味道），<1 = 宽容")
+                .defineInRange("crucianCarpTensionGain", 0.9, 0, 5);
+        crucianCarpSprintDurationSec = b
+                .comment("鲫鱼（crucian_carp） · 冲刺时长（秒） —— 每次冲刺持续几秒。0 = 这条鱼不冲刺")
+                .defineInRange("crucianCarpSprintDurationSec", 0.6, 0, 60);
+        crucianCarpSprintIntervalSec = b
+                .comment("鲫鱼（crucian_carp） · 冲刺间隔（秒） —— 每隔几秒冲一次。越小越凶（爆发型 2.6，黏液型 8.0 几乎不冲）")
+                .defineInRange("crucianCarpSprintIntervalSec", 5.5, 0.1, 60);
+        crucianCarpTurnIntervalSec = b
+                .comment("鲫鱼（crucian_carp） · 变向间隔（秒） —— 每隔几秒变一次向。越小越神经质（神经质型 1.3，黏液型 5.5 方向很稳）")
+                .defineInRange("crucianCarpTurnIntervalSec", 4.5, 0.2, 60);
+        crucianCarpFakeOutChance = b
+                .comment("鲫鱼（crucian_carp） · 假动作概率（0~1） —— 假动作概率：预告一个方向、实际往反方向跑。0~1（神经质型 0.35）")
+                .defineInRange("crucianCarpFakeOutChance", 0.0, 0, 1);
+        crucianCarpFatigueThreshold = b
+                .comment("鲫鱼（crucian_carp） · 进疲劳的体力比例（0~1） —— 体力降到这个比例以下就进疲劳期（0.3 = 剩 30% 时）")
+                .defineInRange("crucianCarpFatigueThreshold", 0.3, 0.01, 1);
+        crucianCarpFatigueDurationSec = b
+                .comment("鲫鱼（crucian_carp） · 疲劳持续（秒） —— 疲劳期持续几秒。这段时间是反拉的最佳窗口")
+                .defineInRange("crucianCarpFatigueDurationSec", 2.0, 0, 120);
+        crucianCarpStaminaRegen = b
+                .comment("鲫鱼（crucian_carp） · 不挣扎时回气（/s） —— 不挣扎时每秒回多少体力（会被渔轮阻尼压制）。越大越难遛翻")
+                .defineInRange("crucianCarpStaminaRegen", 0.02, 0, 1);
+        tilapiaMinKg = b
+                .comment("罗非鱼（tilapia） · 体重下限（kg） —— 这种鱼最小能有多重。⚠ 它和体重上限一起决定档位怎么分——改小了会让低档鱼变少")
+                .defineInRange("tilapiaMinKg", 0.2, 0.001, 500);
+        tilapiaMaxKg = b
+                .comment("罗非鱼（tilapia） · 体重上限（kg） —— 这种鱼最大能有多重。线长/承重不够时会钓不上来（见 buildPool 的承重过滤）")
+                .defineInRange("tilapiaMaxKg", 2.0, 0.001, 500);
+        tilapiaPullSpeed = b
+                .comment("罗非鱼（tilapia） · 拉力（不挣扎） —— 挣扎时把线拽出去的速度。越大越拉不动。这是"上钩两秒就能感觉出多大"的主要来源")
+                .defineInRange("tilapiaPullSpeed", 0.8, 0, 20);
+        tilapiaFatiguedPullSpeed = b
+                .comment("罗非鱼（tilapia） · 拉力（疲劳期） —— 遛到疲劳后的拉拽速度。默认是拉力的一半——改大就等于"疲劳期反而不划算"")
+                .defineInRange("tilapiaFatiguedPullSpeed", 0.4, 0, 20);
+        tilapiaStamina = b
+                .comment("罗非鱼（tilapia） · 体力上限 —— 鱼有多少体力。越大越耐磨，要遛更久。它是"持久战"强度的总开关")
+                .defineInRange("tilapiaStamina", 90.0, 1, 5000);
+        tilapiaTensionGain = b
+                .comment("罗非鱼（tilapia） · 张力涨速 —— 这条鱼让线涨得多快。>1 = 线黄得快（黏液型鱼的味道），<1 = 宽容")
+                .defineInRange("tilapiaTensionGain", 0.95, 0, 5);
+        tilapiaSprintDurationSec = b
+                .comment("罗非鱼（tilapia） · 冲刺时长（秒） —— 每次冲刺持续几秒。0 = 这条鱼不冲刺")
+                .defineInRange("tilapiaSprintDurationSec", 0.8, 0, 60);
+        tilapiaSprintIntervalSec = b
+                .comment("罗非鱼（tilapia） · 冲刺间隔（秒） —— 每隔几秒冲一次。越小越凶（爆发型 2.6，黏液型 8.0 几乎不冲）")
+                .defineInRange("tilapiaSprintIntervalSec", 4.5, 0.1, 60);
+        tilapiaTurnIntervalSec = b
+                .comment("罗非鱼（tilapia） · 变向间隔（秒） —— 每隔几秒变一次向。越小越神经质（神经质型 1.3，黏液型 5.5 方向很稳）")
+                .defineInRange("tilapiaTurnIntervalSec", 3.5, 0.2, 60);
+        tilapiaFakeOutChance = b
+                .comment("罗非鱼（tilapia） · 假动作概率（0~1） —— 假动作概率：预告一个方向、实际往反方向跑。0~1（神经质型 0.35）")
+                .defineInRange("tilapiaFakeOutChance", 0.0, 0, 1);
+        tilapiaFatigueThreshold = b
+                .comment("罗非鱼（tilapia） · 进疲劳的体力比例（0~1） —— 体力降到这个比例以下就进疲劳期（0.3 = 剩 30% 时）")
+                .defineInRange("tilapiaFatigueThreshold", 0.3, 0.01, 1);
+        tilapiaFatigueDurationSec = b
+                .comment("罗非鱼（tilapia） · 疲劳持续（秒） —— 疲劳期持续几秒。这段时间是反拉的最佳窗口")
+                .defineInRange("tilapiaFatigueDurationSec", 2.0, 0, 120);
+        tilapiaStaminaRegen = b
+                .comment("罗非鱼（tilapia） · 不挣扎时回气（/s） —— 不挣扎时每秒回多少体力（会被渔轮阻尼压制）。越大越难遛翻")
+                .defineInRange("tilapiaStaminaRegen", 0.02, 0, 1);
+        mulletMinKg = b
+                .comment("淄鱼（mullet） · 体重下限（kg） —— 这种鱼最小能有多重。⚠ 它和体重上限一起决定档位怎么分——改小了会让低档鱼变少")
+                .defineInRange("mulletMinKg", 0.3, 0.001, 500);
+        mulletMaxKg = b
+                .comment("淄鱼（mullet） · 体重上限（kg） —— 这种鱼最大能有多重。线长/承重不够时会钓不上来（见 buildPool 的承重过滤）")
+                .defineInRange("mulletMaxKg", 2.5, 0.001, 500);
+        mulletPullSpeed = b
+                .comment("淄鱼（mullet） · 拉力（不挣扎） —— 挣扎时把线拽出去的速度。越大越拉不动。这是"上钩两秒就能感觉出多大"的主要来源")
+                .defineInRange("mulletPullSpeed", 1.0, 0, 20);
+        mulletFatiguedPullSpeed = b
+                .comment("淄鱼（mullet） · 拉力（疲劳期） —— 遛到疲劳后的拉拽速度。默认是拉力的一半——改大就等于"疲劳期反而不划算"")
+                .defineInRange("mulletFatiguedPullSpeed", 0.5, 0, 20);
+        mulletStamina = b
+                .comment("淄鱼（mullet） · 体力上限 —— 鱼有多少体力。越大越耐磨，要遛更久。它是"持久战"强度的总开关")
+                .defineInRange("mulletStamina", 110.0, 1, 5000);
+        mulletTensionGain = b
+                .comment("淄鱼（mullet） · 张力涨速 —— 这条鱼让线涨得多快。>1 = 线黄得快（黏液型鱼的味道），<1 = 宽容")
+                .defineInRange("mulletTensionGain", 1.05, 0, 5);
+        mulletSprintDurationSec = b
+                .comment("淄鱼（mullet） · 冲刺时长（秒） —— 每次冲刺持续几秒。0 = 这条鱼不冲刺")
+                .defineInRange("mulletSprintDurationSec", 0.8, 0, 60);
+        mulletSprintIntervalSec = b
+                .comment("淄鱼（mullet） · 冲刺间隔（秒） —— 每隔几秒冲一次。越小越凶（爆发型 2.6，黏液型 8.0 几乎不冲）")
+                .defineInRange("mulletSprintIntervalSec", 4.5, 0.1, 60);
+        mulletTurnIntervalSec = b
+                .comment("淄鱼（mullet） · 变向间隔（秒） —— 每隔几秒变一次向。越小越神经质（神经质型 1.3，黏液型 5.5 方向很稳）")
+                .defineInRange("mulletTurnIntervalSec", 3.5, 0.2, 60);
+        mulletFakeOutChance = b
+                .comment("淄鱼（mullet） · 假动作概率（0~1） —— 假动作概率：预告一个方向、实际往反方向跑。0~1（神经质型 0.35）")
+                .defineInRange("mulletFakeOutChance", 0.0, 0, 1);
+        mulletFatigueThreshold = b
+                .comment("淄鱼（mullet） · 进疲劳的体力比例（0~1） —— 体力降到这个比例以下就进疲劳期（0.3 = 剩 30% 时）")
+                .defineInRange("mulletFatigueThreshold", 0.3, 0.01, 1);
+        mulletFatigueDurationSec = b
+                .comment("淄鱼（mullet） · 疲劳持续（秒） —— 疲劳期持续几秒。这段时间是反拉的最佳窗口")
+                .defineInRange("mulletFatigueDurationSec", 2.0, 0, 120);
+        mulletStaminaRegen = b
+                .comment("淄鱼（mullet） · 不挣扎时回气（/s） —— 不挣扎时每秒回多少体力（会被渔轮阻尼压制）。越大越难遛翻")
+                .defineInRange("mulletStaminaRegen", 0.02, 0, 1);
+        grassCarpMinKg = b
+                .comment("草鱼（grass_carp） · 体重下限（kg） —— 这种鱼最小能有多重。⚠ 它和体重上限一起决定档位怎么分——改小了会让低档鱼变少")
+                .defineInRange("grassCarpMinKg", 1.5, 0.001, 500);
+        grassCarpMaxKg = b
+                .comment("草鱼（grass_carp） · 体重上限（kg） —— 这种鱼最大能有多重。线长/承重不够时会钓不上来（见 buildPool 的承重过滤）")
+                .defineInRange("grassCarpMaxKg", 18.0, 0.001, 500);
+        grassCarpPullSpeed = b
+                .comment("草鱼（grass_carp） · 拉力（不挣扎） —— 挣扎时把线拽出去的速度。越大越拉不动。这是"上钩两秒就能感觉出多大"的主要来源")
+                .defineInRange("grassCarpPullSpeed", 0.75, 0, 20);
+        grassCarpFatiguedPullSpeed = b
+                .comment("草鱼（grass_carp） · 拉力（疲劳期） —— 遛到疲劳后的拉拽速度。默认是拉力的一半——改大就等于"疲劳期反而不划算"")
+                .defineInRange("grassCarpFatiguedPullSpeed", 0.375, 0, 20);
+        grassCarpStamina = b
+                .comment("草鱼（grass_carp） · 体力上限 —— 鱼有多少体力。越大越耐磨，要遛更久。它是"持久战"强度的总开关")
+                .defineInRange("grassCarpStamina", 220.0, 1, 5000);
+        grassCarpTensionGain = b
+                .comment("草鱼（grass_carp） · 张力涨速 —— 这条鱼让线涨得多快。>1 = 线黄得快（黏液型鱼的味道），<1 = 宽容")
+                .defineInRange("grassCarpTensionGain", 1.35, 0, 5);
+        grassCarpSprintDurationSec = b
+                .comment("草鱼（grass_carp） · 冲刺时长（秒） —— 每次冲刺持续几秒。0 = 这条鱼不冲刺")
+                .defineInRange("grassCarpSprintDurationSec", 0.4, 0, 60);
+        grassCarpSprintIntervalSec = b
+                .comment("草鱼（grass_carp） · 冲刺间隔（秒） —— 每隔几秒冲一次。越小越凶（爆发型 2.6，黏液型 8.0 几乎不冲）")
+                .defineInRange("grassCarpSprintIntervalSec", 8.0, 0.1, 60);
+        grassCarpTurnIntervalSec = b
+                .comment("草鱼（grass_carp） · 变向间隔（秒） —— 每隔几秒变一次向。越小越神经质（神经质型 1.3，黏液型 5.5 方向很稳）")
+                .defineInRange("grassCarpTurnIntervalSec", 5.5, 0.2, 60);
+        grassCarpFakeOutChance = b
+                .comment("草鱼（grass_carp） · 假动作概率（0~1） —— 假动作概率：预告一个方向、实际往反方向跑。0~1（神经质型 0.35）")
+                .defineInRange("grassCarpFakeOutChance", 0.0, 0, 1);
+        grassCarpFatigueThreshold = b
+                .comment("草鱼（grass_carp） · 进疲劳的体力比例（0~1） —— 体力降到这个比例以下就进疲劳期（0.3 = 剩 30% 时）")
+                .defineInRange("grassCarpFatigueThreshold", 0.28, 0.01, 1);
+        grassCarpFatigueDurationSec = b
+                .comment("草鱼（grass_carp） · 疲劳持续（秒） —— 疲劳期持续几秒。这段时间是反拉的最佳窗口")
+                .defineInRange("grassCarpFatigueDurationSec", 2.6, 0, 120);
+        grassCarpStaminaRegen = b
+                .comment("草鱼（grass_carp） · 不挣扎时回气（/s） —— 不挣扎时每秒回多少体力（会被渔轮阻尼压制）。越大越难遛翻")
+                .defineInRange("grassCarpStaminaRegen", 0.015, 0, 1);
+        blackCarpMinKg = b
+                .comment("青鱼（black_carp） · 体重下限（kg） —— 这种鱼最小能有多重。⚠ 它和体重上限一起决定档位怎么分——改小了会让低档鱼变少")
+                .defineInRange("blackCarpMinKg", 3.0, 0.001, 500);
+        blackCarpMaxKg = b
+                .comment("青鱼（black_carp） · 体重上限（kg） —— 这种鱼最大能有多重。线长/承重不够时会钓不上来（见 buildPool 的承重过滤）")
+                .defineInRange("blackCarpMaxKg", 35.0, 0.001, 500);
+        blackCarpPullSpeed = b
+                .comment("青鱼（black_carp） · 拉力（不挣扎） —— 挣扎时把线拽出去的速度。越大越拉不动。这是"上钩两秒就能感觉出多大"的主要来源")
+                .defineInRange("blackCarpPullSpeed", 0.7, 0, 20);
+        blackCarpFatiguedPullSpeed = b
+                .comment("青鱼（black_carp） · 拉力（疲劳期） —— 遛到疲劳后的拉拽速度。默认是拉力的一半——改大就等于"疲劳期反而不划算"")
+                .defineInRange("blackCarpFatiguedPullSpeed", 0.35, 0, 20);
+        blackCarpStamina = b
+                .comment("青鱼（black_carp） · 体力上限 —— 鱼有多少体力。越大越耐磨，要遛更久。它是"持久战"强度的总开关")
+                .defineInRange("blackCarpStamina", 320.0, 1, 5000);
+        blackCarpTensionGain = b
+                .comment("青鱼（black_carp） · 张力涨速 —— 这条鱼让线涨得多快。>1 = 线黄得快（黏液型鱼的味道），<1 = 宽容")
+                .defineInRange("blackCarpTensionGain", 1.55, 0, 5);
+        blackCarpSprintDurationSec = b
+                .comment("青鱼（black_carp） · 冲刺时长（秒） —— 每次冲刺持续几秒。0 = 这条鱼不冲刺")
+                .defineInRange("blackCarpSprintDurationSec", 0.4, 0, 60);
+        blackCarpSprintIntervalSec = b
+                .comment("青鱼（black_carp） · 冲刺间隔（秒） —— 每隔几秒冲一次。越小越凶（爆发型 2.6，黏液型 8.0 几乎不冲）")
+                .defineInRange("blackCarpSprintIntervalSec", 8.0, 0.1, 60);
+        blackCarpTurnIntervalSec = b
+                .comment("青鱼（black_carp） · 变向间隔（秒） —— 每隔几秒变一次向。越小越神经质（神经质型 1.3，黏液型 5.5 方向很稳）")
+                .defineInRange("blackCarpTurnIntervalSec", 5.5, 0.2, 60);
+        blackCarpFakeOutChance = b
+                .comment("青鱼（black_carp） · 假动作概率（0~1） —— 假动作概率：预告一个方向、实际往反方向跑。0~1（神经质型 0.35）")
+                .defineInRange("blackCarpFakeOutChance", 0.0, 0, 1);
+        blackCarpFatigueThreshold = b
+                .comment("青鱼（black_carp） · 进疲劳的体力比例（0~1） —— 体力降到这个比例以下就进疲劳期（0.3 = 剩 30% 时）")
+                .defineInRange("blackCarpFatigueThreshold", 0.28, 0.01, 1);
+        blackCarpFatigueDurationSec = b
+                .comment("青鱼（black_carp） · 疲劳持续（秒） —— 疲劳期持续几秒。这段时间是反拉的最佳窗口")
+                .defineInRange("blackCarpFatigueDurationSec", 2.6, 0, 120);
+        blackCarpStaminaRegen = b
+                .comment("青鱼（black_carp） · 不挣扎时回气（/s） —— 不挣扎时每秒回多少体力（会被渔轮阻尼压制）。越大越难遛翻")
+                .defineInRange("blackCarpStaminaRegen", 0.015, 0, 1);
+        bandedLoachMinKg = b
+                .comment("横纹鱼（banded_loach） · 体重下限（kg） —— 这种鱼最小能有多重。⚠ 它和体重上限一起决定档位怎么分——改小了会让低档鱼变少")
+                .defineInRange("bandedLoachMinKg", 0.003, 0.001, 500);
+        bandedLoachMaxKg = b
+                .comment("横纹鱼（banded_loach） · 体重上限（kg） —— 这种鱼最大能有多重。线长/承重不够时会钓不上来（见 buildPool 的承重过滤）")
+                .defineInRange("bandedLoachMaxKg", 0.03, 0.001, 500);
+        bandedLoachPullSpeed = b
+                .comment("横纹鱼（banded_loach） · 拉力（不挣扎） —— 挣扎时把线拽出去的速度。越大越拉不动。这是"上钩两秒就能感觉出多大"的主要来源")
+                .defineInRange("bandedLoachPullSpeed", 0.35, 0, 20);
+        bandedLoachFatiguedPullSpeed = b
+                .comment("横纹鱼（banded_loach） · 拉力（疲劳期） —— 遛到疲劳后的拉拽速度。默认是拉力的一半——改大就等于"疲劳期反而不划算"")
+                .defineInRange("bandedLoachFatiguedPullSpeed", 0.175, 0, 20);
+        bandedLoachStamina = b
+                .comment("横纹鱼（banded_loach） · 体力上限 —— 鱼有多少体力。越大越耐磨，要遛更久。它是"持久战"强度的总开关")
+                .defineInRange("bandedLoachStamina", 25.0, 1, 5000);
+        bandedLoachTensionGain = b
+                .comment("横纹鱼（banded_loach） · 张力涨速 —— 这条鱼让线涨得多快。>1 = 线黄得快（黏液型鱼的味道），<1 = 宽容")
+                .defineInRange("bandedLoachTensionGain", 0.8, 0, 5);
+        bandedLoachSprintDurationSec = b
+                .comment("横纹鱼（banded_loach） · 冲刺时长（秒） —— 每次冲刺持续几秒。0 = 这条鱼不冲刺")
+                .defineInRange("bandedLoachSprintDurationSec", 0.8, 0, 60);
+        bandedLoachSprintIntervalSec = b
+                .comment("横纹鱼（banded_loach） · 冲刺间隔（秒） —— 每隔几秒冲一次。越小越凶（爆发型 2.6，黏液型 8.0 几乎不冲）")
+                .defineInRange("bandedLoachSprintIntervalSec", 4.5, 0.1, 60);
+        bandedLoachTurnIntervalSec = b
+                .comment("横纹鱼（banded_loach） · 变向间隔（秒） —— 每隔几秒变一次向。越小越神经质（神经质型 1.3，黏液型 5.5 方向很稳）")
+                .defineInRange("bandedLoachTurnIntervalSec", 3.5, 0.2, 60);
+        bandedLoachFakeOutChance = b
+                .comment("横纹鱼（banded_loach） · 假动作概率（0~1） —— 假动作概率：预告一个方向、实际往反方向跑。0~1（神经质型 0.35）")
+                .defineInRange("bandedLoachFakeOutChance", 0.0, 0, 1);
+        bandedLoachFatigueThreshold = b
+                .comment("横纹鱼（banded_loach） · 进疲劳的体力比例（0~1） —— 体力降到这个比例以下就进疲劳期（0.3 = 剩 30% 时）")
+                .defineInRange("bandedLoachFatigueThreshold", 0.3, 0.01, 1);
+        bandedLoachFatigueDurationSec = b
+                .comment("横纹鱼（banded_loach） · 疲劳持续（秒） —— 疲劳期持续几秒。这段时间是反拉的最佳窗口")
+                .defineInRange("bandedLoachFatigueDurationSec", 2.0, 0, 120);
+        bandedLoachStaminaRegen = b
+                .comment("横纹鱼（banded_loach） · 不挣扎时回气（/s） —— 不挣扎时每秒回多少体力（会被渔轮阻尼压制）。越大越难遛翻")
+                .defineInRange("bandedLoachStaminaRegen", 0.02, 0, 1);
+        hemiculterMinKg = b
+                .comment("白条鱼（hemiculter） · 体重下限（kg） —— 这种鱼最小能有多重。⚠ 它和体重上限一起决定档位怎么分——改小了会让低档鱼变少")
+                .defineInRange("hemiculterMinKg", 0.02, 0.001, 500);
+        hemiculterMaxKg = b
+                .comment("白条鱼（hemiculter） · 体重上限（kg） —— 这种鱼最大能有多重。线长/承重不够时会钓不上来（见 buildPool 的承重过滤）")
+                .defineInRange("hemiculterMaxKg", 0.232, 0.001, 500);
+        hemiculterPullSpeed = b
+                .comment("白条鱼（hemiculter） · 拉力（不挣扎） —— 挣扎时把线拽出去的速度。越大越拉不动。这是"上钩两秒就能感觉出多大"的主要来源")
+                .defineInRange("hemiculterPullSpeed", 0.95, 0, 20);
+        hemiculterFatiguedPullSpeed = b
+                .comment("白条鱼（hemiculter） · 拉力（疲劳期） —— 遛到疲劳后的拉拽速度。默认是拉力的一半——改大就等于"疲劳期反而不划算"")
+                .defineInRange("hemiculterFatiguedPullSpeed", 0.475, 0, 20);
+        hemiculterStamina = b
+                .comment("白条鱼（hemiculter） · 体力上限 —— 鱼有多少体力。越大越耐磨，要遛更久。它是"持久战"强度的总开关")
+                .defineInRange("hemiculterStamina", 45.0, 1, 5000);
+        hemiculterTensionGain = b
+                .comment("白条鱼（hemiculter） · 张力涨速 —— 这条鱼让线涨得多快。>1 = 线黄得快（黏液型鱼的味道），<1 = 宽容")
+                .defineInRange("hemiculterTensionGain", 1.1, 0, 5);
+        hemiculterSprintDurationSec = b
+                .comment("白条鱼（hemiculter） · 冲刺时长（秒） —— 每次冲刺持续几秒。0 = 这条鱼不冲刺")
+                .defineInRange("hemiculterSprintDurationSec", 0.9, 0, 60);
+        hemiculterSprintIntervalSec = b
+                .comment("白条鱼（hemiculter） · 冲刺间隔（秒） —— 每隔几秒冲一次。越小越凶（爆发型 2.6，黏液型 8.0 几乎不冲）")
+                .defineInRange("hemiculterSprintIntervalSec", 3.0, 0.1, 60);
+        hemiculterTurnIntervalSec = b
+                .comment("白条鱼（hemiculter） · 变向间隔（秒） —— 每隔几秒变一次向。越小越神经质（神经质型 1.3，黏液型 5.5 方向很稳）")
+                .defineInRange("hemiculterTurnIntervalSec", 1.3, 0.2, 60);
+        hemiculterFakeOutChance = b
+                .comment("白条鱼（hemiculter） · 假动作概率（0~1） —— 假动作概率：预告一个方向、实际往反方向跑。0~1（神经质型 0.35）")
+                .defineInRange("hemiculterFakeOutChance", 0.35, 0, 1);
+        hemiculterFatigueThreshold = b
+                .comment("白条鱼（hemiculter） · 进疲劳的体力比例（0~1） —— 体力降到这个比例以下就进疲劳期（0.3 = 剩 30% 时）")
+                .defineInRange("hemiculterFatigueThreshold", 0.32, 0.01, 1);
+        hemiculterFatigueDurationSec = b
+                .comment("白条鱼（hemiculter） · 疲劳持续（秒） —— 疲劳期持续几秒。这段时间是反拉的最佳窗口")
+                .defineInRange("hemiculterFatigueDurationSec", 2.0, 0, 120);
+        hemiculterStaminaRegen = b
+                .comment("白条鱼（hemiculter） · 不挣扎时回气（/s） —— 不挣扎时每秒回多少体力（会被渔轮阻尼压制）。越大越难遛翻")
+                .defineInRange("hemiculterStaminaRegen", 0.02, 0, 1);
+        topmouthCulterMinKg = b
+                .comment("翘嘴（topmouth_culter） · 体重下限（kg） —— 这种鱼最小能有多重。⚠ 它和体重上限一起决定档位怎么分——改小了会让低档鱼变少")
+                .defineInRange("topmouthCulterMinKg", 0.6, 0.001, 500);
+        topmouthCulterMaxKg = b
+                .comment("翘嘴（topmouth_culter） · 体重上限（kg） —— 这种鱼最大能有多重。线长/承重不够时会钓不上来（见 buildPool 的承重过滤）")
+                .defineInRange("topmouthCulterMaxKg", 6.0, 0.001, 500);
+        topmouthCulterPullSpeed = b
+                .comment("翘嘴（topmouth_culter） · 拉力（不挣扎） —— 挣扎时把线拽出去的速度。越大越拉不动。这是"上钩两秒就能感觉出多大"的主要来源")
+                .defineInRange("topmouthCulterPullSpeed", 1.35, 0, 20);
+        topmouthCulterFatiguedPullSpeed = b
+                .comment("翘嘴（topmouth_culter） · 拉力（疲劳期） —— 遛到疲劳后的拉拽速度。默认是拉力的一半——改大就等于"疲劳期反而不划算"")
+                .defineInRange("topmouthCulterFatiguedPullSpeed", 0.675, 0, 20);
+        topmouthCulterStamina = b
+                .comment("翘嘴（topmouth_culter） · 体力上限 —— 鱼有多少体力。越大越耐磨，要遛更久。它是"持久战"强度的总开关")
+                .defineInRange("topmouthCulterStamina", 150.0, 1, 5000);
+        topmouthCulterTensionGain = b
+                .comment("翘嘴（topmouth_culter） · 张力涨速 —— 这条鱼让线涨得多快。>1 = 线黄得快（黏液型鱼的味道），<1 = 宽容")
+                .defineInRange("topmouthCulterTensionGain", 1.2, 0, 5);
+        topmouthCulterSprintDurationSec = b
+                .comment("翘嘴（topmouth_culter） · 冲刺时长（秒） —— 每次冲刺持续几秒。0 = 这条鱼不冲刺")
+                .defineInRange("topmouthCulterSprintDurationSec", 1.6, 0, 60);
+        topmouthCulterSprintIntervalSec = b
+                .comment("翘嘴（topmouth_culter） · 冲刺间隔（秒） —— 每隔几秒冲一次。越小越凶（爆发型 2.6，黏液型 8.0 几乎不冲）")
+                .defineInRange("topmouthCulterSprintIntervalSec", 2.6, 0.1, 60);
+        topmouthCulterTurnIntervalSec = b
+                .comment("翘嘴（topmouth_culter） · 变向间隔（秒） —— 每隔几秒变一次向。越小越神经质（神经质型 1.3，黏液型 5.5 方向很稳）")
+                .defineInRange("topmouthCulterTurnIntervalSec", 3.0, 0.2, 60);
+        topmouthCulterFakeOutChance = b
+                .comment("翘嘴（topmouth_culter） · 假动作概率（0~1） —— 假动作概率：预告一个方向、实际往反方向跑。0~1（神经质型 0.35）")
+                .defineInRange("topmouthCulterFakeOutChance", 0.1, 0, 1);
+        topmouthCulterFatigueThreshold = b
+                .comment("翘嘴（topmouth_culter） · 进疲劳的体力比例（0~1） —— 体力降到这个比例以下就进疲劳期（0.3 = 剩 30% 时）")
+                .defineInRange("topmouthCulterFatigueThreshold", 0.34, 0.01, 1);
+        topmouthCulterFatigueDurationSec = b
+                .comment("翘嘴（topmouth_culter） · 疲劳持续（秒） —— 疲劳期持续几秒。这段时间是反拉的最佳窗口")
+                .defineInRange("topmouthCulterFatigueDurationSec", 2.4, 0, 120);
+        topmouthCulterStaminaRegen = b
+                .comment("翘嘴（topmouth_culter） · 不挣扎时回气（/s） —— 不挣扎时每秒回多少体力（会被渔轮阻尼压制）。越大越难遛翻")
+                .defineInRange("topmouthCulterStaminaRegen", 0.02, 0, 1);
+        zanderMinKg = b
+                .comment("梭鲈（zander） · 体重下限（kg） —— 这种鱼最小能有多重。⚠ 它和体重上限一起决定档位怎么分——改小了会让低档鱼变少")
+                .defineInRange("zanderMinKg", 1.0, 0.001, 500);
+        zanderMaxKg = b
+                .comment("梭鲈（zander） · 体重上限（kg） —— 这种鱼最大能有多重。线长/承重不够时会钓不上来（见 buildPool 的承重过滤）")
+                .defineInRange("zanderMaxKg", 9.0, 0.001, 500);
+        zanderPullSpeed = b
+                .comment("梭鲈（zander） · 拉力（不挣扎） —— 挣扎时把线拽出去的速度。越大越拉不动。这是"上钩两秒就能感觉出多大"的主要来源")
+                .defineInRange("zanderPullSpeed", 1.45, 0, 20);
+        zanderFatiguedPullSpeed = b
+                .comment("梭鲈（zander） · 拉力（疲劳期） —— 遛到疲劳后的拉拽速度。默认是拉力的一半——改大就等于"疲劳期反而不划算"")
+                .defineInRange("zanderFatiguedPullSpeed", 0.725, 0, 20);
+        zanderStamina = b
+                .comment("梭鲈（zander） · 体力上限 —— 鱼有多少体力。越大越耐磨，要遛更久。它是"持久战"强度的总开关")
+                .defineInRange("zanderStamina", 180.0, 1, 5000);
+        zanderTensionGain = b
+                .comment("梭鲈（zander） · 张力涨速 —— 这条鱼让线涨得多快。>1 = 线黄得快（黏液型鱼的味道），<1 = 宽容")
+                .defineInRange("zanderTensionGain", 1.3, 0, 5);
+        zanderSprintDurationSec = b
+                .comment("梭鲈（zander） · 冲刺时长（秒） —— 每次冲刺持续几秒。0 = 这条鱼不冲刺")
+                .defineInRange("zanderSprintDurationSec", 0.9, 0, 60);
+        zanderSprintIntervalSec = b
+                .comment("梭鲈（zander） · 冲刺间隔（秒） —— 每隔几秒冲一次。越小越凶（爆发型 2.6，黏液型 8.0 几乎不冲）")
+                .defineInRange("zanderSprintIntervalSec", 3.0, 0.1, 60);
+        zanderTurnIntervalSec = b
+                .comment("梭鲈（zander） · 变向间隔（秒） —— 每隔几秒变一次向。越小越神经质（神经质型 1.3，黏液型 5.5 方向很稳）")
+                .defineInRange("zanderTurnIntervalSec", 1.3, 0.2, 60);
+        zanderFakeOutChance = b
+                .comment("梭鲈（zander） · 假动作概率（0~1） —— 假动作概率：预告一个方向、实际往反方向跑。0~1（神经质型 0.35）")
+                .defineInRange("zanderFakeOutChance", 0.35, 0, 1);
+        zanderFatigueThreshold = b
+                .comment("梭鲈（zander） · 进疲劳的体力比例（0~1） —— 体力降到这个比例以下就进疲劳期（0.3 = 剩 30% 时）")
+                .defineInRange("zanderFatigueThreshold", 0.32, 0.01, 1);
+        zanderFatigueDurationSec = b
+                .comment("梭鲈（zander） · 疲劳持续（秒） —— 疲劳期持续几秒。这段时间是反拉的最佳窗口")
+                .defineInRange("zanderFatigueDurationSec", 2.0, 0, 120);
+        zanderStaminaRegen = b
+                .comment("梭鲈（zander） · 不挣扎时回气（/s） —— 不挣扎时每秒回多少体力（会被渔轮阻尼压制）。越大越难遛翻")
+                .defineInRange("zanderStaminaRegen", 0.02, 0, 1);
+        sapphireSnakeheadMinKg = b
+                .comment("蓝宝石雷龙鱼（sapphire_snakehead） · 体重下限（kg） —— 这种鱼最小能有多重。⚠ 它和体重上限一起决定档位怎么分——改小了会让低档鱼变少")
+                .defineInRange("sapphireSnakeheadMinKg", 0.15, 0.001, 500);
+        sapphireSnakeheadMaxKg = b
+                .comment("蓝宝石雷龙鱼（sapphire_snakehead） · 体重上限（kg） —— 这种鱼最大能有多重。线长/承重不够时会钓不上来（见 buildPool 的承重过滤）")
+                .defineInRange("sapphireSnakeheadMaxKg", 0.35, 0.001, 500);
+        sapphireSnakeheadPullSpeed = b
+                .comment("蓝宝石雷龙鱼（sapphire_snakehead） · 拉力（不挣扎） —— 挣扎时把线拽出去的速度。越大越拉不动。这是"上钩两秒就能感觉出多大"的主要来源")
+                .defineInRange("sapphireSnakeheadPullSpeed", 1.7, 0, 20);
+        sapphireSnakeheadFatiguedPullSpeed = b
+                .comment("蓝宝石雷龙鱼（sapphire_snakehead） · 拉力（疲劳期） —— 遛到疲劳后的拉拽速度。默认是拉力的一半——改大就等于"疲劳期反而不划算"")
+                .defineInRange("sapphireSnakeheadFatiguedPullSpeed", 0.85, 0, 20);
+        sapphireSnakeheadStamina = b
+                .comment("蓝宝石雷龙鱼（sapphire_snakehead） · 体力上限 —— 鱼有多少体力。越大越耐磨，要遛更久。它是"持久战"强度的总开关")
+                .defineInRange("sapphireSnakeheadStamina", 130.0, 1, 5000);
+        sapphireSnakeheadTensionGain = b
+                .comment("蓝宝石雷龙鱼（sapphire_snakehead） · 张力涨速 —— 这条鱼让线涨得多快。>1 = 线黄得快（黏液型鱼的味道），<1 = 宽容")
+                .defineInRange("sapphireSnakeheadTensionGain", 1.35, 0, 5);
+        sapphireSnakeheadSprintDurationSec = b
+                .comment("蓝宝石雷龙鱼（sapphire_snakehead） · 冲刺时长（秒） —— 每次冲刺持续几秒。0 = 这条鱼不冲刺")
+                .defineInRange("sapphireSnakeheadSprintDurationSec", 0.9, 0, 60);
+        sapphireSnakeheadSprintIntervalSec = b
+                .comment("蓝宝石雷龙鱼（sapphire_snakehead） · 冲刺间隔（秒） —— 每隔几秒冲一次。越小越凶（爆发型 2.6，黏液型 8.0 几乎不冲）")
+                .defineInRange("sapphireSnakeheadSprintIntervalSec", 3.0, 0.1, 60);
+        sapphireSnakeheadTurnIntervalSec = b
+                .comment("蓝宝石雷龙鱼（sapphire_snakehead） · 变向间隔（秒） —— 每隔几秒变一次向。越小越神经质（神经质型 1.3，黏液型 5.5 方向很稳）")
+                .defineInRange("sapphireSnakeheadTurnIntervalSec", 1.3, 0.2, 60);
+        sapphireSnakeheadFakeOutChance = b
+                .comment("蓝宝石雷龙鱼（sapphire_snakehead） · 假动作概率（0~1） —— 假动作概率：预告一个方向、实际往反方向跑。0~1（神经质型 0.35）")
+                .defineInRange("sapphireSnakeheadFakeOutChance", 0.35, 0, 1);
+        sapphireSnakeheadFatigueThreshold = b
+                .comment("蓝宝石雷龙鱼（sapphire_snakehead） · 进疲劳的体力比例（0~1） —— 体力降到这个比例以下就进疲劳期（0.3 = 剩 30% 时）")
+                .defineInRange("sapphireSnakeheadFatigueThreshold", 0.32, 0.01, 1);
+        sapphireSnakeheadFatigueDurationSec = b
+                .comment("蓝宝石雷龙鱼（sapphire_snakehead） · 疲劳持续（秒） —— 疲劳期持续几秒。这段时间是反拉的最佳窗口")
+                .defineInRange("sapphireSnakeheadFatigueDurationSec", 2.0, 0, 120);
+        sapphireSnakeheadStaminaRegen = b
+                .comment("蓝宝石雷龙鱼（sapphire_snakehead） · 不挣扎时回气（/s） —— 不挣扎时每秒回多少体力（会被渔轮阻尼压制）。越大越难遛翻")
+                .defineInRange("sapphireSnakeheadStaminaRegen", 0.02, 0, 1);
+        platinumArowanaMinKg = b
+                .comment("铂金银龙鱼（platinum_arowana） · 体重下限（kg） —— 这种鱼最小能有多重。⚠ 它和体重上限一起决定档位怎么分——改小了会让低档鱼变少")
+                .defineInRange("platinumArowanaMinKg", 1.5, 0.001, 500);
+        platinumArowanaMaxKg = b
+                .comment("铂金银龙鱼（platinum_arowana） · 体重上限（kg） —— 这种鱼最大能有多重。线长/承重不够时会钓不上来（见 buildPool 的承重过滤）")
+                .defineInRange("platinumArowanaMaxKg", 6.0, 0.001, 500);
+        platinumArowanaPullSpeed = b
+                .comment("铂金银龙鱼（platinum_arowana） · 拉力（不挣扎） —— 挣扎时把线拽出去的速度。越大越拉不动。这是"上钩两秒就能感觉出多大"的主要来源")
+                .defineInRange("platinumArowanaPullSpeed", 2.6, 0, 20);
+        platinumArowanaFatiguedPullSpeed = b
+                .comment("铂金银龙鱼（platinum_arowana） · 拉力（疲劳期） —— 遛到疲劳后的拉拽速度。默认是拉力的一半——改大就等于"疲劳期反而不划算"")
+                .defineInRange("platinumArowanaFatiguedPullSpeed", 1.3, 0, 20);
+        platinumArowanaStamina = b
+                .comment("铂金银龙鱼（platinum_arowana） · 体力上限 —— 鱼有多少体力。越大越耐磨，要遛更久。它是"持久战"强度的总开关")
+                .defineInRange("platinumArowanaStamina", 300.0, 1, 5000);
+        platinumArowanaTensionGain = b
+                .comment("铂金银龙鱼（platinum_arowana） · 张力涨速 —— 这条鱼让线涨得多快。>1 = 线黄得快（黏液型鱼的味道），<1 = 宽容")
+                .defineInRange("platinumArowanaTensionGain", 1.3, 0, 5);
+        platinumArowanaSprintDurationSec = b
+                .comment("铂金银龙鱼（platinum_arowana） · 冲刺时长（秒） —— 每次冲刺持续几秒。0 = 这条鱼不冲刺")
+                .defineInRange("platinumArowanaSprintDurationSec", 1.6, 0, 60);
+        platinumArowanaSprintIntervalSec = b
+                .comment("铂金银龙鱼（platinum_arowana） · 冲刺间隔（秒） —— 每隔几秒冲一次。越小越凶（爆发型 2.6，黏液型 8.0 几乎不冲）")
+                .defineInRange("platinumArowanaSprintIntervalSec", 2.6, 0.1, 60);
+        platinumArowanaTurnIntervalSec = b
+                .comment("铂金银龙鱼（platinum_arowana） · 变向间隔（秒） —— 每隔几秒变一次向。越小越神经质（神经质型 1.3，黏液型 5.5 方向很稳）")
+                .defineInRange("platinumArowanaTurnIntervalSec", 3.0, 0.2, 60);
+        platinumArowanaFakeOutChance = b
+                .comment("铂金银龙鱼（platinum_arowana） · 假动作概率（0~1） —— 假动作概率：预告一个方向、实际往反方向跑。0~1（神经质型 0.35）")
+                .defineInRange("platinumArowanaFakeOutChance", 0.1, 0, 1);
+        platinumArowanaFatigueThreshold = b
+                .comment("铂金银龙鱼（platinum_arowana） · 进疲劳的体力比例（0~1） —— 体力降到这个比例以下就进疲劳期（0.3 = 剩 30% 时）")
+                .defineInRange("platinumArowanaFatigueThreshold", 0.34, 0.01, 1);
+        platinumArowanaFatigueDurationSec = b
+                .comment("铂金银龙鱼（platinum_arowana） · 疲劳持续（秒） —— 疲劳期持续几秒。这段时间是反拉的最佳窗口")
+                .defineInRange("platinumArowanaFatigueDurationSec", 2.4, 0, 120);
+        platinumArowanaStaminaRegen = b
+                .comment("铂金银龙鱼（platinum_arowana） · 不挣扎时回气（/s） —— 不挣扎时每秒回多少体力（会被渔轮阻尼压制）。越大越难遛翻")
+                .defineInRange("platinumArowanaStaminaRegen", 0.02, 0, 1);
+        oxeyeTarponMinKg = b
+                .comment("大眼海鲢（oxeye_tarpon） · 体重下限（kg） —— 这种鱼最小能有多重。⚠ 它和体重上限一起决定档位怎么分——改小了会让低档鱼变少")
+                .defineInRange("oxeyeTarponMinKg", 0.5, 0.001, 500);
+        oxeyeTarponMaxKg = b
+                .comment("大眼海鲢（oxeye_tarpon） · 体重上限（kg） —— 这种鱼最大能有多重。线长/承重不够时会钓不上来（见 buildPool 的承重过滤）")
+                .defineInRange("oxeyeTarponMaxKg", 18.0, 0.001, 500);
+        oxeyeTarponPullSpeed = b
+                .comment("大眼海鲢（oxeye_tarpon） · 拉力（不挣扎） —— 挣扎时把线拽出去的速度。越大越拉不动。这是"上钩两秒就能感觉出多大"的主要来源")
+                .defineInRange("oxeyeTarponPullSpeed", 3.2, 0, 20);
+        oxeyeTarponFatiguedPullSpeed = b
+                .comment("大眼海鲢（oxeye_tarpon） · 拉力（疲劳期） —— 遛到疲劳后的拉拽速度。默认是拉力的一半——改大就等于"疲劳期反而不划算"")
+                .defineInRange("oxeyeTarponFatiguedPullSpeed", 1.6, 0, 20);
+        oxeyeTarponStamina = b
+                .comment("大眼海鲢（oxeye_tarpon） · 体力上限 —— 鱼有多少体力。越大越耐磨，要遛更久。它是"持久战"强度的总开关")
+                .defineInRange("oxeyeTarponStamina", 400.0, 1, 5000);
+        oxeyeTarponTensionGain = b
+                .comment("大眼海鲢（oxeye_tarpon） · 张力涨速 —— 这条鱼让线涨得多快。>1 = 线黄得快（黏液型鱼的味道），<1 = 宽容")
+                .defineInRange("oxeyeTarponTensionGain", 1.65, 0, 5);
+        oxeyeTarponSprintDurationSec = b
+                .comment("大眼海鲢（oxeye_tarpon） · 冲刺时长（秒） —— 每次冲刺持续几秒。0 = 这条鱼不冲刺")
+                .defineInRange("oxeyeTarponSprintDurationSec", 0.9, 0, 60);
+        oxeyeTarponSprintIntervalSec = b
+                .comment("大眼海鲢（oxeye_tarpon） · 冲刺间隔（秒） —— 每隔几秒冲一次。越小越凶（爆发型 2.6，黏液型 8.0 几乎不冲）")
+                .defineInRange("oxeyeTarponSprintIntervalSec", 3.0, 0.1, 60);
+        oxeyeTarponTurnIntervalSec = b
+                .comment("大眼海鲢（oxeye_tarpon） · 变向间隔（秒） —— 每隔几秒变一次向。越小越神经质（神经质型 1.3，黏液型 5.5 方向很稳）")
+                .defineInRange("oxeyeTarponTurnIntervalSec", 1.3, 0.2, 60);
+        oxeyeTarponFakeOutChance = b
+                .comment("大眼海鲢（oxeye_tarpon） · 假动作概率（0~1） —— 假动作概率：预告一个方向、实际往反方向跑。0~1（神经质型 0.35）")
+                .defineInRange("oxeyeTarponFakeOutChance", 0.35, 0, 1);
+        oxeyeTarponFatigueThreshold = b
+                .comment("大眼海鲢（oxeye_tarpon） · 进疲劳的体力比例（0~1） —— 体力降到这个比例以下就进疲劳期（0.3 = 剩 30% 时）")
+                .defineInRange("oxeyeTarponFatigueThreshold", 0.32, 0.01, 1);
+        oxeyeTarponFatigueDurationSec = b
+                .comment("大眼海鲢（oxeye_tarpon） · 疲劳持续（秒） —— 疲劳期持续几秒。这段时间是反拉的最佳窗口")
+                .defineInRange("oxeyeTarponFatigueDurationSec", 2.0, 0, 120);
+        oxeyeTarponStaminaRegen = b
+                .comment("大眼海鲢（oxeye_tarpon） · 不挣扎时回气（/s） —— 不挣扎时每秒回多少体力（会被渔轮阻尼压制）。越大越难遛翻")
+                .defineInRange("oxeyeTarponStaminaRegen", 0.02, 0, 1);
+        atlanticSalmonMinKg = b
+                .comment("大西洋鲑（atlantic_salmon） · 体重下限（kg） —— 这种鱼最小能有多重。⚠ 它和体重上限一起决定档位怎么分——改小了会让低档鱼变少")
+                .defineInRange("atlanticSalmonMinKg", 2.0, 0.001, 500);
+        atlanticSalmonMaxKg = b
+                .comment("大西洋鲑（atlantic_salmon） · 体重上限（kg） —— 这种鱼最大能有多重。线长/承重不够时会钓不上来（见 buildPool 的承重过滤）")
+                .defineInRange("atlanticSalmonMaxKg", 22.0, 0.001, 500);
+        atlanticSalmonPullSpeed = b
+                .comment("大西洋鲑（atlantic_salmon） · 拉力（不挣扎） —— 挣扎时把线拽出去的速度。越大越拉不动。这是"上钩两秒就能感觉出多大"的主要来源")
+                .defineInRange("atlanticSalmonPullSpeed", 3.125, 0, 20);
+        atlanticSalmonFatiguedPullSpeed = b
+                .comment("大西洋鲑（atlantic_salmon） · 拉力（疲劳期） —— 遛到疲劳后的拉拽速度。默认是拉力的一半——改大就等于"疲劳期反而不划算"")
+                .defineInRange("atlanticSalmonFatiguedPullSpeed", 1.563, 0, 20);
+        atlanticSalmonStamina = b
+                .comment("大西洋鲑（atlantic_salmon） · 体力上限 —— 鱼有多少体力。越大越耐磨，要遛更久。它是"持久战"强度的总开关")
+                .defineInRange("atlanticSalmonStamina", 260.0, 1, 5000);
+        atlanticSalmonTensionGain = b
+                .comment("大西洋鲑（atlantic_salmon） · 张力涨速 —— 这条鱼让线涨得多快。>1 = 线黄得快（黏液型鱼的味道），<1 = 宽容")
+                .defineInRange("atlanticSalmonTensionGain", 1.25, 0, 5);
+        atlanticSalmonSprintDurationSec = b
+                .comment("大西洋鲑（atlantic_salmon） · 冲刺时长（秒） —— 每次冲刺持续几秒。0 = 这条鱼不冲刺")
+                .defineInRange("atlanticSalmonSprintDurationSec", 1.6, 0, 60);
+        atlanticSalmonSprintIntervalSec = b
+                .comment("大西洋鲑（atlantic_salmon） · 冲刺间隔（秒） —— 每隔几秒冲一次。越小越凶（爆发型 2.6，黏液型 8.0 几乎不冲）")
+                .defineInRange("atlanticSalmonSprintIntervalSec", 2.6, 0.1, 60);
+        atlanticSalmonTurnIntervalSec = b
+                .comment("大西洋鲑（atlantic_salmon） · 变向间隔（秒） —— 每隔几秒变一次向。越小越神经质（神经质型 1.3，黏液型 5.5 方向很稳）")
+                .defineInRange("atlanticSalmonTurnIntervalSec", 3.0, 0.2, 60);
+        atlanticSalmonFakeOutChance = b
+                .comment("大西洋鲑（atlantic_salmon） · 假动作概率（0~1） —— 假动作概率：预告一个方向、实际往反方向跑。0~1（神经质型 0.35）")
+                .defineInRange("atlanticSalmonFakeOutChance", 0.1, 0, 1);
+        atlanticSalmonFatigueThreshold = b
+                .comment("大西洋鲑（atlantic_salmon） · 进疲劳的体力比例（0~1） —— 体力降到这个比例以下就进疲劳期（0.3 = 剩 30% 时）")
+                .defineInRange("atlanticSalmonFatigueThreshold", 0.34, 0.01, 1);
+        atlanticSalmonFatigueDurationSec = b
+                .comment("大西洋鲑（atlantic_salmon） · 疲劳持续（秒） —— 疲劳期持续几秒。这段时间是反拉的最佳窗口")
+                .defineInRange("atlanticSalmonFatigueDurationSec", 2.4, 0, 120);
+        atlanticSalmonStaminaRegen = b
+                .comment("大西洋鲑（atlantic_salmon） · 不挣扎时回气（/s） —— 不挣扎时每秒回多少体力（会被渔轮阻尼压制）。越大越难遛翻")
+                .defineInRange("atlanticSalmonStaminaRegen", 0.02, 0, 1);
+        bluefinTunaMinKg = b
+                .comment("蓝鳍金枪鱼（bluefin_tuna） · 体重下限（kg） —— 这种鱼最小能有多重。⚠ 它和体重上限一起决定档位怎么分——改小了会让低档鱼变少")
+                .defineInRange("bluefinTunaMinKg", 12.0, 0.001, 500);
+        bluefinTunaMaxKg = b
+                .comment("蓝鳍金枪鱼（bluefin_tuna） · 体重上限（kg） —— 这种鱼最大能有多重。线长/承重不够时会钓不上来（见 buildPool 的承重过滤）")
+                .defineInRange("bluefinTunaMaxKg", 180.0, 0.001, 500);
+        bluefinTunaPullSpeed = b
+                .comment("蓝鳍金枪鱼（bluefin_tuna） · 拉力（不挣扎） —— 挣扎时把线拽出去的速度。越大越拉不动。这是"上钩两秒就能感觉出多大"的主要来源")
+                .defineInRange("bluefinTunaPullSpeed", 3.438, 0, 20);
+        bluefinTunaFatiguedPullSpeed = b
+                .comment("蓝鳍金枪鱼（bluefin_tuna） · 拉力（疲劳期） —— 遛到疲劳后的拉拽速度。默认是拉力的一半——改大就等于"疲劳期反而不划算"")
+                .defineInRange("bluefinTunaFatiguedPullSpeed", 1.719, 0, 20);
+        bluefinTunaStamina = b
+                .comment("蓝鳍金枪鱼（bluefin_tuna） · 体力上限 —— 鱼有多少体力。越大越耐磨，要遛更久。它是"持久战"强度的总开关")
+                .defineInRange("bluefinTunaStamina", 420.0, 1, 5000);
+        bluefinTunaTensionGain = b
+                .comment("蓝鳍金枪鱼（bluefin_tuna） · 张力涨速 —— 这条鱼让线涨得多快。>1 = 线黄得快（黏液型鱼的味道），<1 = 宽容")
+                .defineInRange("bluefinTunaTensionGain", 1.5, 0, 5);
+        bluefinTunaSprintDurationSec = b
+                .comment("蓝鳍金枪鱼（bluefin_tuna） · 冲刺时长（秒） —— 每次冲刺持续几秒。0 = 这条鱼不冲刺")
+                .defineInRange("bluefinTunaSprintDurationSec", 1.6, 0, 60);
+        bluefinTunaSprintIntervalSec = b
+                .comment("蓝鳍金枪鱼（bluefin_tuna） · 冲刺间隔（秒） —— 每隔几秒冲一次。越小越凶（爆发型 2.6，黏液型 8.0 几乎不冲）")
+                .defineInRange("bluefinTunaSprintIntervalSec", 2.6, 0.1, 60);
+        bluefinTunaTurnIntervalSec = b
+                .comment("蓝鳍金枪鱼（bluefin_tuna） · 变向间隔（秒） —— 每隔几秒变一次向。越小越神经质（神经质型 1.3，黏液型 5.5 方向很稳）")
+                .defineInRange("bluefinTunaTurnIntervalSec", 3.0, 0.2, 60);
+        bluefinTunaFakeOutChance = b
+                .comment("蓝鳍金枪鱼（bluefin_tuna） · 假动作概率（0~1） —— 假动作概率：预告一个方向、实际往反方向跑。0~1（神经质型 0.35）")
+                .defineInRange("bluefinTunaFakeOutChance", 0.1, 0, 1);
+        bluefinTunaFatigueThreshold = b
+                .comment("蓝鳍金枪鱼（bluefin_tuna） · 进疲劳的体力比例（0~1） —— 体力降到这个比例以下就进疲劳期（0.3 = 剩 30% 时）")
+                .defineInRange("bluefinTunaFatigueThreshold", 0.34, 0.01, 1);
+        bluefinTunaFatigueDurationSec = b
+                .comment("蓝鳍金枪鱼（bluefin_tuna） · 疲劳持续（秒） —— 疲劳期持续几秒。这段时间是反拉的最佳窗口")
+                .defineInRange("bluefinTunaFatigueDurationSec", 2.4, 0, 120);
+        bluefinTunaStaminaRegen = b
+                .comment("蓝鳍金枪鱼（bluefin_tuna） · 不挣扎时回气（/s） —— 不挣扎时每秒回多少体力（会被渔轮阻尼压制）。越大越难遛翻")
+                .defineInRange("bluefinTunaStaminaRegen", 0.02, 0, 1);
+        juvenileSharkMinKg = b
+                .comment("幼鲨（juvenile_shark） · 体重下限（kg） —— 这种鱼最小能有多重。⚠ 它和体重上限一起决定档位怎么分——改小了会让低档鱼变少")
+                .defineInRange("juvenileSharkMinKg", 8.0, 0.001, 500);
+        juvenileSharkMaxKg = b
+                .comment("幼鲨（juvenile_shark） · 体重上限（kg） —— 这种鱼最大能有多重。线长/承重不够时会钓不上来（见 buildPool 的承重过滤）")
+                .defineInRange("juvenileSharkMaxKg", 90.0, 0.001, 500);
+        juvenileSharkPullSpeed = b
+                .comment("幼鲨（juvenile_shark） · 拉力（不挣扎） —— 挣扎时把线拽出去的速度。越大越拉不动。这是"上钩两秒就能感觉出多大"的主要来源")
+                .defineInRange("juvenileSharkPullSpeed", 3.625, 0, 20);
+        juvenileSharkFatiguedPullSpeed = b
+                .comment("幼鲨（juvenile_shark） · 拉力（疲劳期） —— 遛到疲劳后的拉拽速度。默认是拉力的一半——改大就等于"疲劳期反而不划算"")
+                .defineInRange("juvenileSharkFatiguedPullSpeed", 1.813, 0, 20);
+        juvenileSharkStamina = b
+                .comment("幼鲨（juvenile_shark） · 体力上限 —— 鱼有多少体力。越大越耐磨，要遛更久。它是"持久战"强度的总开关")
+                .defineInRange("juvenileSharkStamina", 380.0, 1, 5000);
+        juvenileSharkTensionGain = b
+                .comment("幼鲨（juvenile_shark） · 张力涨速 —— 这条鱼让线涨得多快。>1 = 线黄得快（黏液型鱼的味道），<1 = 宽容")
+                .defineInRange("juvenileSharkTensionGain", 1.7, 0, 5);
+        juvenileSharkSprintDurationSec = b
+                .comment("幼鲨（juvenile_shark） · 冲刺时长（秒） —— 每次冲刺持续几秒。0 = 这条鱼不冲刺")
+                .defineInRange("juvenileSharkSprintDurationSec", 0.9, 0, 60);
+        juvenileSharkSprintIntervalSec = b
+                .comment("幼鲨（juvenile_shark） · 冲刺间隔（秒） —— 每隔几秒冲一次。越小越凶（爆发型 2.6，黏液型 8.0 几乎不冲）")
+                .defineInRange("juvenileSharkSprintIntervalSec", 3.0, 0.1, 60);
+        juvenileSharkTurnIntervalSec = b
+                .comment("幼鲨（juvenile_shark） · 变向间隔（秒） —— 每隔几秒变一次向。越小越神经质（神经质型 1.3，黏液型 5.5 方向很稳）")
+                .defineInRange("juvenileSharkTurnIntervalSec", 1.3, 0.2, 60);
+        juvenileSharkFakeOutChance = b
+                .comment("幼鲨（juvenile_shark） · 假动作概率（0~1） —— 假动作概率：预告一个方向、实际往反方向跑。0~1（神经质型 0.35）")
+                .defineInRange("juvenileSharkFakeOutChance", 0.35, 0, 1);
+        juvenileSharkFatigueThreshold = b
+                .comment("幼鲨（juvenile_shark） · 进疲劳的体力比例（0~1） —— 体力降到这个比例以下就进疲劳期（0.3 = 剩 30% 时）")
+                .defineInRange("juvenileSharkFatigueThreshold", 0.32, 0.01, 1);
+        juvenileSharkFatigueDurationSec = b
+                .comment("幼鲨（juvenile_shark） · 疲劳持续（秒） —— 疲劳期持续几秒。这段时间是反拉的最佳窗口")
+                .defineInRange("juvenileSharkFatigueDurationSec", 2.0, 0, 120);
+        juvenileSharkStaminaRegen = b
+                .comment("幼鲨（juvenile_shark） · 不挣扎时回气（/s） —— 不挣扎时每秒回多少体力（会被渔轮阻尼压制）。越大越难遛翻")
+                .defineInRange("juvenileSharkStaminaRegen", 0.02, 0, 1);
+        tigerfishMinKg = b
+                .comment("虎鱼（tigerfish） · 体重下限（kg） —— 这种鱼最小能有多重。⚠ 它和体重上限一起决定档位怎么分——改小了会让低档鱼变少")
+                .defineInRange("tigerfishMinKg", 0.05, 0.001, 500);
+        tigerfishMaxKg = b
+                .comment("虎鱼（tigerfish） · 体重上限（kg） —— 这种鱼最大能有多重。线长/承重不够时会钓不上来（见 buildPool 的承重过滤）")
+                .defineInRange("tigerfishMaxKg", 0.8, 0.001, 500);
+        tigerfishPullSpeed = b
+                .comment("虎鱼（tigerfish） · 拉力（不挣扎） —— 挣扎时把线拽出去的速度。越大越拉不动。这是"上钩两秒就能感觉出多大"的主要来源")
+                .defineInRange("tigerfishPullSpeed", 2.2, 0, 20);
+        tigerfishFatiguedPullSpeed = b
+                .comment("虎鱼（tigerfish） · 拉力（疲劳期） —— 遛到疲劳后的拉拽速度。默认是拉力的一半——改大就等于"疲劳期反而不划算"")
+                .defineInRange("tigerfishFatiguedPullSpeed", 1.1, 0, 20);
+        tigerfishStamina = b
+                .comment("虎鱼（tigerfish） · 体力上限 —— 鱼有多少体力。越大越耐磨，要遛更久。它是"持久战"强度的总开关")
+                .defineInRange("tigerfishStamina", 120.0, 1, 5000);
+        tigerfishTensionGain = b
+                .comment("虎鱼（tigerfish） · 张力涨速 —— 这条鱼让线涨得多快。>1 = 线黄得快（黏液型鱼的味道），<1 = 宽容")
+                .defineInRange("tigerfishTensionGain", 1.5, 0, 5);
+        tigerfishSprintDurationSec = b
+                .comment("虎鱼（tigerfish） · 冲刺时长（秒） —— 每次冲刺持续几秒。0 = 这条鱼不冲刺")
+                .defineInRange("tigerfishSprintDurationSec", 0.9, 0, 60);
+        tigerfishSprintIntervalSec = b
+                .comment("虎鱼（tigerfish） · 冲刺间隔（秒） —— 每隔几秒冲一次。越小越凶（爆发型 2.6，黏液型 8.0 几乎不冲）")
+                .defineInRange("tigerfishSprintIntervalSec", 3.0, 0.1, 60);
+        tigerfishTurnIntervalSec = b
+                .comment("虎鱼（tigerfish） · 变向间隔（秒） —— 每隔几秒变一次向。越小越神经质（神经质型 1.3，黏液型 5.5 方向很稳）")
+                .defineInRange("tigerfishTurnIntervalSec", 1.3, 0.2, 60);
+        tigerfishFakeOutChance = b
+                .comment("虎鱼（tigerfish） · 假动作概率（0~1） —— 假动作概率：预告一个方向、实际往反方向跑。0~1（神经质型 0.35）")
+                .defineInRange("tigerfishFakeOutChance", 0.35, 0, 1);
+        tigerfishFatigueThreshold = b
+                .comment("虎鱼（tigerfish） · 进疲劳的体力比例（0~1） —— 体力降到这个比例以下就进疲劳期（0.3 = 剩 30% 时）")
+                .defineInRange("tigerfishFatigueThreshold", 0.32, 0.01, 1);
+        tigerfishFatigueDurationSec = b
+                .comment("虎鱼（tigerfish） · 疲劳持续（秒） —— 疲劳期持续几秒。这段时间是反拉的最佳窗口")
+                .defineInRange("tigerfishFatigueDurationSec", 2.0, 0, 120);
+        tigerfishStaminaRegen = b
+                .comment("虎鱼（tigerfish） · 不挣扎时回气（/s） —— 不挣扎时每秒回多少体力（会被渔轮阻尼压制）。越大越难遛翻")
+                .defineInRange("tigerfishStaminaRegen", 0.02, 0, 1);
+        pikeMinKg = b
+                .comment("狗鱼（pike） · 体重下限（kg） —— 这种鱼最小能有多重。⚠ 它和体重上限一起决定档位怎么分——改小了会让低档鱼变少")
+                .defineInRange("pikeMinKg", 1.0, 0.001, 500);
+        pikeMaxKg = b
+                .comment("狗鱼（pike） · 体重上限（kg） —— 这种鱼最大能有多重。线长/承重不够时会钓不上来（见 buildPool 的承重过滤）")
+                .defineInRange("pikeMaxKg", 12.0, 0.001, 500);
+        pikePullSpeed = b
+                .comment("狗鱼（pike） · 拉力（不挣扎） —— 挣扎时把线拽出去的速度。越大越拉不动。这是"上钩两秒就能感觉出多大"的主要来源")
+                .defineInRange("pikePullSpeed", 2.4, 0, 20);
+        pikeFatiguedPullSpeed = b
+                .comment("狗鱼（pike） · 拉力（疲劳期） —— 遛到疲劳后的拉拽速度。默认是拉力的一半——改大就等于"疲劳期反而不划算"")
+                .defineInRange("pikeFatiguedPullSpeed", 1.2, 0, 20);
+        pikeStamina = b
+                .comment("狗鱼（pike） · 体力上限 —— 鱼有多少体力。越大越耐磨，要遛更久。它是"持久战"强度的总开关")
+                .defineInRange("pikeStamina", 170.0, 1, 5000);
+        pikeTensionGain = b
+                .comment("狗鱼（pike） · 张力涨速 —— 这条鱼让线涨得多快。>1 = 线黄得快（黏液型鱼的味道），<1 = 宽容")
+                .defineInRange("pikeTensionGain", 1.15, 0, 5);
+        pikeSprintDurationSec = b
+                .comment("狗鱼（pike） · 冲刺时长（秒） —— 每次冲刺持续几秒。0 = 这条鱼不冲刺")
+                .defineInRange("pikeSprintDurationSec", 1.6, 0, 60);
+        pikeSprintIntervalSec = b
+                .comment("狗鱼（pike） · 冲刺间隔（秒） —— 每隔几秒冲一次。越小越凶（爆发型 2.6，黏液型 8.0 几乎不冲）")
+                .defineInRange("pikeSprintIntervalSec", 2.6, 0.1, 60);
+        pikeTurnIntervalSec = b
+                .comment("狗鱼（pike） · 变向间隔（秒） —— 每隔几秒变一次向。越小越神经质（神经质型 1.3，黏液型 5.5 方向很稳）")
+                .defineInRange("pikeTurnIntervalSec", 3.0, 0.2, 60);
+        pikeFakeOutChance = b
+                .comment("狗鱼（pike） · 假动作概率（0~1） —— 假动作概率：预告一个方向、实际往反方向跑。0~1（神经质型 0.35）")
+                .defineInRange("pikeFakeOutChance", 0.1, 0, 1);
+        pikeFatigueThreshold = b
+                .comment("狗鱼（pike） · 进疲劳的体力比例（0~1） —— 体力降到这个比例以下就进疲劳期（0.3 = 剩 30% 时）")
+                .defineInRange("pikeFatigueThreshold", 0.34, 0.01, 1);
+        pikeFatigueDurationSec = b
+                .comment("狗鱼（pike） · 疲劳持续（秒） —— 疲劳期持续几秒。这段时间是反拉的最佳窗口")
+                .defineInRange("pikeFatigueDurationSec", 2.4, 0, 120);
+        pikeStaminaRegen = b
+                .comment("狗鱼（pike） · 不挣扎时回气（/s） —— 不挣扎时每秒回多少体力（会被渔轮阻尼压制）。越大越难遛翻")
+                .defineInRange("pikeStaminaRegen", 0.02, 0, 1);
+        brownTroutMinKg = b
+                .comment("褐鳟（brown_trout） · 体重下限（kg） —— 这种鱼最小能有多重。⚠ 它和体重上限一起决定档位怎么分——改小了会让低档鱼变少")
+                .defineInRange("brownTroutMinKg", 0.5, 0.001, 500);
+        brownTroutMaxKg = b
+                .comment("褐鳟（brown_trout） · 体重上限（kg） —— 这种鱼最大能有多重。线长/承重不够时会钓不上来（见 buildPool 的承重过滤）")
+                .defineInRange("brownTroutMaxKg", 6.0, 0.001, 500);
+        brownTroutPullSpeed = b
+                .comment("褐鳟（brown_trout） · 拉力（不挣扎） —— 挣扎时把线拽出去的速度。越大越拉不动。这是"上钩两秒就能感觉出多大"的主要来源")
+                .defineInRange("brownTroutPullSpeed", 2.3, 0, 20);
+        brownTroutFatiguedPullSpeed = b
+                .comment("褐鳟（brown_trout） · 拉力（疲劳期） —— 遛到疲劳后的拉拽速度。默认是拉力的一半——改大就等于"疲劳期反而不划算"")
+                .defineInRange("brownTroutFatiguedPullSpeed", 1.15, 0, 20);
+        brownTroutStamina = b
+                .comment("褐鳟（brown_trout） · 体力上限 —— 鱼有多少体力。越大越耐磨，要遛更久。它是"持久战"强度的总开关")
+                .defineInRange("brownTroutStamina", 200.0, 1, 5000);
+        brownTroutTensionGain = b
+                .comment("褐鳟（brown_trout） · 张力涨速 —— 这条鱼让线涨得多快。>1 = 线黄得快（黏液型鱼的味道），<1 = 宽容")
+                .defineInRange("brownTroutTensionGain", 1.6, 0, 5);
+        brownTroutSprintDurationSec = b
+                .comment("褐鳟（brown_trout） · 冲刺时长（秒） —— 每次冲刺持续几秒。0 = 这条鱼不冲刺")
+                .defineInRange("brownTroutSprintDurationSec", 1.6, 0, 60);
+        brownTroutSprintIntervalSec = b
+                .comment("褐鳟（brown_trout） · 冲刺间隔（秒） —— 每隔几秒冲一次。越小越凶（爆发型 2.6，黏液型 8.0 几乎不冲）")
+                .defineInRange("brownTroutSprintIntervalSec", 2.6, 0.1, 60);
+        brownTroutTurnIntervalSec = b
+                .comment("褐鳟（brown_trout） · 变向间隔（秒） —— 每隔几秒变一次向。越小越神经质（神经质型 1.3，黏液型 5.5 方向很稳）")
+                .defineInRange("brownTroutTurnIntervalSec", 3.0, 0.2, 60);
+        brownTroutFakeOutChance = b
+                .comment("褐鳟（brown_trout） · 假动作概率（0~1） —— 假动作概率：预告一个方向、实际往反方向跑。0~1（神经质型 0.35）")
+                .defineInRange("brownTroutFakeOutChance", 0.1, 0, 1);
+        brownTroutFatigueThreshold = b
+                .comment("褐鳟（brown_trout） · 进疲劳的体力比例（0~1） —— 体力降到这个比例以下就进疲劳期（0.3 = 剩 30% 时）")
+                .defineInRange("brownTroutFatigueThreshold", 0.34, 0.01, 1);
+        brownTroutFatigueDurationSec = b
+                .comment("褐鳟（brown_trout） · 疲劳持续（秒） —— 疲劳期持续几秒。这段时间是反拉的最佳窗口")
+                .defineInRange("brownTroutFatigueDurationSec", 2.4, 0, 120);
+        brownTroutStaminaRegen = b
+                .comment("褐鳟（brown_trout） · 不挣扎时回气（/s） —— 不挣扎时每秒回多少体力（会被渔轮阻尼压制）。越大越难遛翻")
+                .defineInRange("brownTroutStaminaRegen", 0.02, 0, 1);
+        mirrorCarpMinKg = b
+                .comment("镜鲤（mirror_carp） · 体重下限（kg） —— 这种鱼最小能有多重。⚠ 它和体重上限一起决定档位怎么分——改小了会让低档鱼变少")
+                .defineInRange("mirrorCarpMinKg", 1.5, 0.001, 500);
+        mirrorCarpMaxKg = b
+                .comment("镜鲤（mirror_carp） · 体重上限（kg） —— 这种鱼最大能有多重。线长/承重不够时会钓不上来（见 buildPool 的承重过滤）")
+                .defineInRange("mirrorCarpMaxKg", 20.0, 0.001, 500);
+        mirrorCarpPullSpeed = b
+                .comment("镜鲤（mirror_carp） · 拉力（不挣扎） —— 挣扎时把线拽出去的速度。越大越拉不动。这是"上钩两秒就能感觉出多大"的主要来源")
+                .defineInRange("mirrorCarpPullSpeed", 1.1, 0, 20);
+        mirrorCarpFatiguedPullSpeed = b
+                .comment("镜鲤（mirror_carp） · 拉力（疲劳期） —— 遛到疲劳后的拉拽速度。默认是拉力的一半——改大就等于"疲劳期反而不划算"")
+                .defineInRange("mirrorCarpFatiguedPullSpeed", 0.55, 0, 20);
+        mirrorCarpStamina = b
+                .comment("镜鲤（mirror_carp） · 体力上限 —— 鱼有多少体力。越大越耐磨，要遛更久。它是"持久战"强度的总开关")
+                .defineInRange("mirrorCarpStamina", 380.0, 1, 5000);
+        mirrorCarpTensionGain = b
+                .comment("镜鲤（mirror_carp） · 张力涨速 —— 这条鱼让线涨得多快。>1 = 线黄得快（黏液型鱼的味道），<1 = 宽容")
+                .defineInRange("mirrorCarpTensionGain", 1.4, 0, 5);
+        mirrorCarpSprintDurationSec = b
+                .comment("镜鲤（mirror_carp） · 冲刺时长（秒） —— 每次冲刺持续几秒。0 = 这条鱼不冲刺")
+                .defineInRange("mirrorCarpSprintDurationSec", 0.4, 0, 60);
+        mirrorCarpSprintIntervalSec = b
+                .comment("镜鲤（mirror_carp） · 冲刺间隔（秒） —— 每隔几秒冲一次。越小越凶（爆发型 2.6，黏液型 8.0 几乎不冲）")
+                .defineInRange("mirrorCarpSprintIntervalSec", 8.0, 0.1, 60);
+        mirrorCarpTurnIntervalSec = b
+                .comment("镜鲤（mirror_carp） · 变向间隔（秒） —— 每隔几秒变一次向。越小越神经质（神经质型 1.3，黏液型 5.5 方向很稳）")
+                .defineInRange("mirrorCarpTurnIntervalSec", 5.5, 0.2, 60);
+        mirrorCarpFakeOutChance = b
+                .comment("镜鲤（mirror_carp） · 假动作概率（0~1） —— 假动作概率：预告一个方向、实际往反方向跑。0~1（神经质型 0.35）")
+                .defineInRange("mirrorCarpFakeOutChance", 0.0, 0, 1);
+        mirrorCarpFatigueThreshold = b
+                .comment("镜鲤（mirror_carp） · 进疲劳的体力比例（0~1） —— 体力降到这个比例以下就进疲劳期（0.3 = 剩 30% 时）")
+                .defineInRange("mirrorCarpFatigueThreshold", 0.28, 0.01, 1);
+        mirrorCarpFatigueDurationSec = b
+                .comment("镜鲤（mirror_carp） · 疲劳持续（秒） —— 疲劳期持续几秒。这段时间是反拉的最佳窗口")
+                .defineInRange("mirrorCarpFatigueDurationSec", 2.6, 0, 120);
+        mirrorCarpStaminaRegen = b
+                .comment("镜鲤（mirror_carp） · 不挣扎时回气（/s） —— 不挣扎时每秒回多少体力（会被渔轮阻尼压制）。越大越难遛翻")
+                .defineInRange("mirrorCarpStaminaRegen", 0.015, 0, 1);
+        stripedBassMinKg = b
+                .comment("条纹鲈（striped_bass） · 体重下限（kg） —— 这种鱼最小能有多重。⚠ 它和体重上限一起决定档位怎么分——改小了会让低档鱼变少")
+                .defineInRange("stripedBassMinKg", 1.0, 0.001, 500);
+        stripedBassMaxKg = b
+                .comment("条纹鲈（striped_bass） · 体重上限（kg） —— 这种鱼最大能有多重。线长/承重不够时会钓不上来（见 buildPool 的承重过滤）")
+                .defineInRange("stripedBassMaxKg", 15.0, 0.001, 500);
+        stripedBassPullSpeed = b
+                .comment("条纹鲈（striped_bass） · 拉力（不挣扎） —— 挣扎时把线拽出去的速度。越大越拉不动。这是"上钩两秒就能感觉出多大"的主要来源")
+                .defineInRange("stripedBassPullSpeed", 1.6, 0, 20);
+        stripedBassFatiguedPullSpeed = b
+                .comment("条纹鲈（striped_bass） · 拉力（疲劳期） —— 遛到疲劳后的拉拽速度。默认是拉力的一半——改大就等于"疲劳期反而不划算"")
+                .defineInRange("stripedBassFatiguedPullSpeed", 0.8, 0, 20);
+        stripedBassStamina = b
+                .comment("条纹鲈（striped_bass） · 体力上限 —— 鱼有多少体力。越大越耐磨，要遛更久。它是"持久战"强度的总开关")
+                .defineInRange("stripedBassStamina", 240.0, 1, 5000);
+        stripedBassTensionGain = b
+                .comment("条纹鲈（striped_bass） · 张力涨速 —— 这条鱼让线涨得多快。>1 = 线黄得快（黏液型鱼的味道），<1 = 宽容")
+                .defineInRange("stripedBassTensionGain", 1.2, 0, 5);
+        stripedBassSprintDurationSec = b
+                .comment("条纹鲈（striped_bass） · 冲刺时长（秒） —— 每次冲刺持续几秒。0 = 这条鱼不冲刺")
+                .defineInRange("stripedBassSprintDurationSec", 0.8, 0, 60);
+        stripedBassSprintIntervalSec = b
+                .comment("条纹鲈（striped_bass） · 冲刺间隔（秒） —— 每隔几秒冲一次。越小越凶（爆发型 2.6，黏液型 8.0 几乎不冲）")
+                .defineInRange("stripedBassSprintIntervalSec", 4.5, 0.1, 60);
+        stripedBassTurnIntervalSec = b
+                .comment("条纹鲈（striped_bass） · 变向间隔（秒） —— 每隔几秒变一次向。越小越神经质（神经质型 1.3，黏液型 5.5 方向很稳）")
+                .defineInRange("stripedBassTurnIntervalSec", 3.5, 0.2, 60);
+        stripedBassFakeOutChance = b
+                .comment("条纹鲈（striped_bass） · 假动作概率（0~1） —— 假动作概率：预告一个方向、实际往反方向跑。0~1（神经质型 0.35）")
+                .defineInRange("stripedBassFakeOutChance", 0.0, 0, 1);
+        stripedBassFatigueThreshold = b
+                .comment("条纹鲈（striped_bass） · 进疲劳的体力比例（0~1） —— 体力降到这个比例以下就进疲劳期（0.3 = 剩 30% 时）")
+                .defineInRange("stripedBassFatigueThreshold", 0.3, 0.01, 1);
+        stripedBassFatigueDurationSec = b
+                .comment("条纹鲈（striped_bass） · 疲劳持续（秒） —— 疲劳期持续几秒。这段时间是反拉的最佳窗口")
+                .defineInRange("stripedBassFatigueDurationSec", 2.0, 0, 120);
+        stripedBassStaminaRegen = b
+                .comment("条纹鲈（striped_bass） · 不挣扎时回气（/s） —— 不挣扎时每秒回多少体力（会被渔轮阻尼压制）。越大越难遛翻")
+                .defineInRange("stripedBassStaminaRegen", 0.02, 0, 1);
+        arapaimaMinKg = b
+                .comment("巨骨舌鱼（arapaima） · 体重下限（kg） —— 这种鱼最小能有多重。⚠ 它和体重上限一起决定档位怎么分——改小了会让低档鱼变少")
+                .defineInRange("arapaimaMinKg", 20.0, 0.001, 500);
+        arapaimaMaxKg = b
+                .comment("巨骨舌鱼（arapaima） · 体重上限（kg） —— 这种鱼最大能有多重。线长/承重不够时会钓不上来（见 buildPool 的承重过滤）")
+                .defineInRange("arapaimaMaxKg", 100.0, 0.001, 500);
+        arapaimaPullSpeed = b
+                .comment("巨骨舌鱼（arapaima） · 拉力（不挣扎） —— 挣扎时把线拽出去的速度。越大越拉不动。这是"上钩两秒就能感觉出多大"的主要来源")
+                .defineInRange("arapaimaPullSpeed", 1.8, 0, 20);
+        arapaimaFatiguedPullSpeed = b
+                .comment("巨骨舌鱼（arapaima） · 拉力（疲劳期） —— 遛到疲劳后的拉拽速度。默认是拉力的一半——改大就等于"疲劳期反而不划算"")
+                .defineInRange("arapaimaFatiguedPullSpeed", 0.9, 0, 20);
+        arapaimaStamina = b
+                .comment("巨骨舌鱼（arapaima） · 体力上限 —— 鱼有多少体力。越大越耐磨，要遛更久。它是"持久战"强度的总开关")
+                .defineInRange("arapaimaStamina", 520.0, 1, 5000);
+        arapaimaTensionGain = b
+                .comment("巨骨舌鱼（arapaima） · 张力涨速 —— 这条鱼让线涨得多快。>1 = 线黄得快（黏液型鱼的味道），<1 = 宽容")
+                .defineInRange("arapaimaTensionGain", 1.75, 0, 5);
+        arapaimaSprintDurationSec = b
+                .comment("巨骨舌鱼（arapaima） · 冲刺时长（秒） —— 每次冲刺持续几秒。0 = 这条鱼不冲刺")
+                .defineInRange("arapaimaSprintDurationSec", 0.8, 0, 60);
+        arapaimaSprintIntervalSec = b
+                .comment("巨骨舌鱼（arapaima） · 冲刺间隔（秒） —— 每隔几秒冲一次。越小越凶（爆发型 2.6，黏液型 8.0 几乎不冲）")
+                .defineInRange("arapaimaSprintIntervalSec", 4.5, 0.1, 60);
+        arapaimaTurnIntervalSec = b
+                .comment("巨骨舌鱼（arapaima） · 变向间隔（秒） —— 每隔几秒变一次向。越小越神经质（神经质型 1.3，黏液型 5.5 方向很稳）")
+                .defineInRange("arapaimaTurnIntervalSec", 3.5, 0.2, 60);
+        arapaimaFakeOutChance = b
+                .comment("巨骨舌鱼（arapaima） · 假动作概率（0~1） —— 假动作概率：预告一个方向、实际往反方向跑。0~1（神经质型 0.35）")
+                .defineInRange("arapaimaFakeOutChance", 0.0, 0, 1);
+        arapaimaFatigueThreshold = b
+                .comment("巨骨舌鱼（arapaima） · 进疲劳的体力比例（0~1） —— 体力降到这个比例以下就进疲劳期（0.3 = 剩 30% 时）")
+                .defineInRange("arapaimaFatigueThreshold", 0.3, 0.01, 1);
+        arapaimaFatigueDurationSec = b
+                .comment("巨骨舌鱼（arapaima） · 疲劳持续（秒） —— 疲劳期持续几秒。这段时间是反拉的最佳窗口")
+                .defineInRange("arapaimaFatigueDurationSec", 2.0, 0, 120);
+        arapaimaStaminaRegen = b
+                .comment("巨骨舌鱼（arapaima） · 不挣扎时回气（/s） —— 不挣扎时每秒回多少体力（会被渔轮阻尼压制）。越大越难遛翻")
+                .defineInRange("arapaimaStaminaRegen", 0.02, 0, 1);
+        // ==== END 鱼种数值定义 ====
+        b.pop();
+
+        // ---------------------------------------------------------- 鱼种数值
+        b.comment("""
+                鱼种数值 / Per-fish stats（每条鱼的体重与对抗手感）。
+                由 tools/gen-fish-config.js 从 FishSpecies.java 生成，默认值与代码里的原值一一对应，
+                所以不改这些项时手感和以前完全一样。
+                改完 /atl config reload 即生效：只影响**之后**咬钩的鱼，不影响正在遛的那条。
+                每条的 13 项含义相同：体重上下限、拉力（不挣扎/疲劳期）、体力、张力涨速、
+                冲刺时长与间隔、变向间隔、假动作概率、进疲劳的体力比例、疲劳持续、不挣扎时回气。
+                """).push("fishStats");
+        b.pop();
+
+        // ---------------------------------------------------------- 鱼种数值
+        b.comment("""
+                鱼种数值 / Per-fish stats（每条鱼的体重与对抗手感）。
+                由 tools/gen-fish-config.js 从 FishSpecies.java 生成，默认值与代码里的原值一一对应，
+                所以不改这些项时手感和以前完全一样。
+                改完 /atl config reload 即生效：只影响**之后**咬钩的鱼，不影响正在遛的那条。
+                每条的 13 项含义相同：体重上下限、拉力（不挣扎/疲劳期）、体力、张力涨速、
+                冲刺时长与间隔、变向间隔、假动作概率、进疲劳的体力比例、疲劳持续、不挣扎时回气。
+                """).push("fishStats");
+        b.pop();
+
+        // ---------------------------------------------------------- 鱼种数值
+        b.comment("""
+                鱼种数值 / Per-fish stats（每条鱼的体重与对抗手感）。
+                由 tools/gen-fish-config.js 从 FishSpecies.java 生成，默认值与代码里的原值一一对应，
+                所以不改这些项时手感和以前完全一样。
+                改完 /atl config reload 即生效：只影响**之后**咬钩的鱼，不影响正在遛的那条。
+                每条的 13 项含义相同：体重上下限、拉力（不挣扎/疲劳期）、体力、张力涨速、
+                冲刺时长与间隔、变向间隔、假动作概率、进疲劳的体力比例、疲劳持续、不挣扎时回气。
+                """).push("fishStats");
+        b.pop();
+
+        // ---------------------------------------------------------- 鱼种数值
+        b.comment("""
+                鱼种数值 / Per-fish stats（每条鱼的体重与对抗手感）。
+                由 tools/gen-fish-config.js 从 FishSpecies.java 生成，默认值与代码里的原值一一对应，
+                所以不改这些项时手感和以前完全一样。
+                改完 /atl config reload 即生效：只影响**之后**咬钩的鱼，不影响正在遛的那条。
+                每条的 13 项含义相同：体重上下限、拉力（不挣扎/疲劳期）、体力、张力涨速、
+                冲刺时长与间隔、变向间隔、假动作概率、进疲劳的体力比例、疲劳持续、不挣扎时回气。
+                """).push("fishStats");
+        b.pop();
+
+        // ---------------------------------------------------------- 鱼种数值
+        b.comment("""
+                鱼种数值 / Per-fish stats（每条鱼的体重与对抗手感）。
+                由 tools/gen-fish-config.js 从 FishSpecies.java 生成，默认值与代码里的原值一一对应，
+                所以不改这些项时手感和以前完全一样。
+                改完 /atl config reload 即生效：只影响**之后**咬钩的鱼，不影响正在遛的那条。
+                每条的 13 项含义相同：体重上下限、拉力（不挣扎/疲劳期）、体力、张力涨速、
+                冲刺时长与间隔、变向间隔、假动作概率、进疲劳的体力比例、疲劳持续、不挣扎时回气。
+                """).push("fishStats");
+        b.pop();
+
+        // ---------------------------------------------------------- 鱼种数值
+        b.comment("""
+                鱼种数值 / Per-fish stats（每条鱼的体重与对抗手感）。
+                由 tools/gen-fish-config.js 从 FishSpecies.java 生成，默认值与代码里的原值一一对应，
+                所以不改这些项时手感和以前完全一样。
+                改完 /atl config reload 即生效：只影响**之后**咬钩的鱼，不影响正在遛的那条。
+                每条的 13 项含义相同：体重上下限、拉力（不挣扎/疲劳期）、体力、张力涨速、
+                冲刺时长与间隔、变向间隔、假动作概率、进疲劳的体力比例、疲劳持续、不挣扎时回气。
+                """).push("fishStats");
+        b.pop();
+
+        // ---------------------------------------------------------- 鱼种数值
+        b.comment("""
+                鱼种数值 / Per-fish stats（每条鱼的体重与对抗手感）。
+                由 tools/gen-fish-config.js 从 FishSpecies.java 生成，默认值与代码里的原值一一对应，
+                所以不改这些项时手感和以前完全一样。
+                改完 /atl config reload 即生效：只影响**之后**咬钩的鱼，不影响正在遛的那条。
+                每条的 13 项含义相同：体重上下限、拉力（不挣扎/疲劳期）、体力、张力涨速、
+                冲刺时长与间隔、变向间隔、假动作概率、进疲劳的体力比例、疲劳持续、不挣扎时回气。
+                """).push("fishStats");
+        b.pop();
+
+        // ---------------------------------------------------------- 鱼种数值
+        b.comment("""
+                鱼种数值 / Per-fish stats（每条鱼的体重与对抗手感）。
+                由 tools/gen-fish-config.js 从 FishSpecies.java 生成，默认值与代码里的原值一一对应，
+                所以不改这些项时手感和以前完全一样。
+                改完 /atl config reload 即生效：只影响**之后**咬钩的鱼，不影响正在遛的那条。
+                每条的 13 项含义相同：体重上下限、拉力（不挣扎/疲劳期）、体力、张力涨速、
+                冲刺时长与间隔、变向间隔、假动作概率、进疲劳的体力比例、疲劳持续、不挣扎时回气。
+                """).push("fishStats");
+        b.pop();
+
+        // ---------------------------------------------------------- 鱼种数值
+        b.comment("""
+                鱼种数值 / Per-fish stats（每条鱼的体重与对抗手感）。
+                由 tools/gen-fish-config.js 从 FishSpecies.java 生成，默认值与代码里的原值一一对应，
+                所以不改这些项时手感和以前完全一样。
+                改完 /atl config reload 即生效：只影响**之后**咬钩的鱼，不影响正在遛的那条。
+                每条的 13 项含义相同：体重上下限、拉力（不挣扎/疲劳期）、体力、张力涨速、
+                冲刺时长与间隔、变向间隔、假动作概率、进疲劳的体力比例、疲劳持续、不挣扎时回气。
+                """).push("fishStats");
+        b.pop();
+
+        // ---------------------------------------------------------- 鱼种数值
+        b.comment("""
+                鱼种数值 / Per-fish stats（每条鱼的体重与对抗手感）。
+                由 tools/gen-fish-config.js 从 FishSpecies.java 生成，默认值与代码里的原值一一对应，
+                所以不改这些项时手感和以前完全一样。
+                改完 /atl config reload 即生效：只影响**之后**咬钩的鱼，不影响正在遛的那条。
+                每条的 13 项含义相同：体重上下限、拉力（不挣扎/疲劳期）、体力、张力涨速、
+                冲刺时长与间隔、变向间隔、假动作概率、进疲劳的体力比例、疲劳持续、不挣扎时回气。
+                """).push("fishStats");
+        b.pop();
+
+        // ---------------------------------------------------------- 鱼种数值
+        b.comment("""
+                鱼种数值 / Per-fish stats（每条鱼的体重与对抗手感）。
+                由 tools/gen-fish-config.js 从 FishSpecies.java 生成，默认值与代码里的原值一一对应，
+                所以不改这些项时手感和以前完全一样。
+                改完 /atl config reload 即生效：只影响**之后**咬钩的鱼，不影响正在遛的那条。
+                每条的 13 项含义相同：体重上下限、拉力（不挣扎/疲劳期）、体力、张力涨速、
+                冲刺时长与间隔、变向间隔、假动作概率、进疲劳的体力比例、疲劳持续、不挣扎时回气。
+                """).push("fishStats");
+        b.pop();
+
+        // ---------------------------------------------------------- 鱼种数值
+        b.comment("""
+                鱼种数值 / Per-fish stats（每条鱼的体重与对抗手感）。
+                由 tools/gen-fish-config.js 从 FishSpecies.java 生成，默认值与代码里的原值一一对应，
+                所以不改这些项时手感和以前完全一样。
+                改完 /atl config reload 即生效：只影响**之后**咬钩的鱼，不影响正在遛的那条。
+                每条的 13 项含义相同：体重上下限、拉力（不挣扎/疲劳期）、体力、张力涨速、
+                冲刺时长与间隔、变向间隔、假动作概率、进疲劳的体力比例、疲劳持续、不挣扎时回气。
+                """).push("fishStats");
+        b.pop();
+
+        // ---------------------------------------------------------- 鱼种数值
+        b.comment("""
+                鱼种数值 / Per-fish stats（每条鱼的体重与对抗手感）。
+                由 tools/gen-fish-config.js 从 FishSpecies.java 生成，默认值与代码里的原值一一对应，
+                所以不改这些项时手感和以前完全一样。
+                改完 /atl config reload 即生效：只影响**之后**咬钩的鱼，不影响正在遛的那条。
+                每条的 13 项含义相同：体重上下限、拉力（不挣扎/疲劳期）、体力、张力涨速、
+                冲刺时长与间隔、变向间隔、假动作概率、进疲劳的体力比例、疲劳持续、不挣扎时回气。
+                """).push("fishStats");
+        b.pop();
+
+        // ---------------------------------------------------------- 鱼种数值
+        b.comment("""
+                鱼种数值 / Per-fish stats（每条鱼的体重与对抗手感）。
+                由 tools/gen-fish-config.js 从 FishSpecies.java 生成，默认值与代码里的原值一一对应，
+                所以不改这些项时手感和以前完全一样。
+                改完 /atl config reload 即生效：只影响**之后**咬钩的鱼，不影响正在遛的那条。
+                每条的 13 项含义相同：体重上下限、拉力（不挣扎/疲劳期）、体力、张力涨速、
+                冲刺时长与间隔、变向间隔、假动作概率、进疲劳的体力比例、疲劳持续、不挣扎时回气。
+                """).push("fishStats");
+        b.pop();
+
+        // ---------------------------------------------------------- 鱼种数值
+        b.comment("""
+                鱼种数值 / Per-fish stats（每条鱼的体重与对抗手感）。
+                由 tools/gen-fish-config.js 从 FishSpecies.java 生成，默认值与代码里的原值一一对应，
+                所以不改这些项时手感和以前完全一样。
+                改完 /atl config reload 即生效：只影响**之后**咬钩的鱼，不影响正在遛的那条。
+                每条的 13 项含义相同：体重上下限、拉力（不挣扎/疲劳期）、体力、张力涨速、
+                冲刺时长与间隔、变向间隔、假动作概率、进疲劳的体力比例、疲劳持续、不挣扎时回气。
+                """).push("fishStats");
+        b.pop();
+
+        // ---------------------------------------------------------- 鱼种数值
+        b.comment("""
+                鱼种数值 / Per-fish stats（每条鱼的体重与对抗手感）。
+                由 tools/gen-fish-config.js 从 FishSpecies.java 生成，默认值与代码里的原值一一对应，
+                所以不改这些项时手感和以前完全一样。
+                改完 /atl config reload 即生效：只影响**之后**咬钩的鱼，不影响正在遛的那条。
+                每条的 13 项含义相同：体重上下限、拉力（不挣扎/疲劳期）、体力、张力涨速、
+                冲刺时长与间隔、变向间隔、假动作概率、进疲劳的体力比例、疲劳持续、不挣扎时回气。
+                """).push("fishStats");
+        b.pop();
+
+        // ---------------------------------------------------------- 鱼种数值
+        b.comment("""
+                鱼种数值 / Per-fish stats（每条鱼的体重与对抗手感）。
+                由 tools/gen-fish-config.js 从 FishSpecies.java 生成，默认值与代码里的原值一一对应，
+                所以不改这些项时手感和以前完全一样。
+                改完 /atl config reload 即生效：只影响**之后**咬钩的鱼，不影响正在遛的那条。
+                每条的 13 项含义相同：体重上下限、拉力（不挣扎/疲劳期）、体力、张力涨速、
+                冲刺时长与间隔、变向间隔、假动作概率、进疲劳的体力比例、疲劳持续、不挣扎时回气。
+                """).push("fishStats");
+        b.pop();
+
+        // ---------------------------------------------------------- 鱼种数值
+        b.comment("""
+                鱼种数值 / Per-fish stats（每条鱼的体重与对抗手感）。
+                由 tools/gen-fish-config.js 从 FishSpecies.java 生成，默认值与代码里的原值一一对应，
+                所以不改这些项时手感和以前完全一样。
+                改完 /atl config reload 即生效：只影响**之后**咬钩的鱼，不影响正在遛的那条。
+                每条的 13 项含义相同：体重上下限、拉力（不挣扎/疲劳期）、体力、张力涨速、
+                冲刺时长与间隔、变向间隔、假动作概率、进疲劳的体力比例、疲劳持续、不挣扎时回气。
+                """).push("fishStats");
+        b.pop();
+
+        // ---------------------------------------------------------- 鱼种数值
+        b.comment("""
+                鱼种数值 / Per-fish stats（每条鱼的体重与对抗手感）。
+                由 tools/gen-fish-config.js 从 FishSpecies.java 生成，默认值与代码里的原值一一对应，
+                所以不改这些项时手感和以前完全一样。
+                改完 /atl config reload 即生效：只影响**之后**咬钩的鱼，不影响正在遛的那条。
+                每条的 13 项含义相同：体重上下限、拉力（不挣扎/疲劳期）、体力、张力涨速、
+                冲刺时长与间隔、变向间隔、假动作概率、进疲劳的体力比例、疲劳持续、不挣扎时回气。
+                """).push("fishStats");
+        b.pop();
+
+        // ---------------------------------------------------------- 鱼种数值
+        b.comment("""
+                鱼种数值 / Per-fish stats（每条鱼的体重与对抗手感）。
+                由 tools/gen-fish-config.js 从 FishSpecies.java 生成，默认值与代码里的原值一一对应，
+                所以不改这些项时手感和以前完全一样。
+                改完 /atl config reload 即生效：只影响**之后**咬钩的鱼，不影响正在遛的那条。
+                每条的 13 项含义相同：体重上下限、拉力（不挣扎/疲劳期）、体力、张力涨速、
+                冲刺时长与间隔、变向间隔、假动作概率、进疲劳的体力比例、疲劳持续、不挣扎时回气。
+                """).push("fishStats");
+        b.pop();
+
+        // ---------------------------------------------------------- 鱼种数值
+        b.comment("""
+                鱼种数值 / Per-fish stats（每条鱼的体重与对抗手感）。
+                由 tools/gen-fish-config.js 从 FishSpecies.java 生成，默认值与代码里的原值一一对应，
+                所以不改这些项时手感和以前完全一样。
+                改完 /atl config reload 即生效：只影响**之后**咬钩的鱼，不影响正在遛的那条。
+                每条的 13 项含义相同：体重上下限、拉力（不挣扎/疲劳期）、体力、张力涨速、
+                冲刺时长与间隔、变向间隔、假动作概率、进疲劳的体力比例、疲劳持续、不挣扎时回气。
+                """).push("fishStats");
+        b.pop();
+
+        // ---------------------------------------------------------- 鱼种数值
+        b.comment("""
+                鱼种数值 / Per-fish stats（每条鱼的体重与对抗手感）。
+                由 tools/gen-fish-config.js 从 FishSpecies.java 生成，默认值与代码里的原值一一对应，
+                所以不改这些项时手感和以前完全一样。
+                改完 /atl config reload 即生效：只影响**之后**咬钩的鱼，不影响正在遛的那条。
+                每条的 13 项含义相同：体重上下限、拉力（不挣扎/疲劳期）、体力、张力涨速、
+                冲刺时长与间隔、变向间隔、假动作概率、进疲劳的体力比例、疲劳持续、不挣扎时回气。
+                """).push("fishStats");
+        b.pop();
+
+        // ---------------------------------------------------------- 鱼种数值
+        b.comment("""
+                鱼种数值 / Per-fish stats（每条鱼的体重与对抗手感）。
+                由 tools/gen-fish-config.js 从 FishSpecies.java 生成，默认值与代码里的原值一一对应，
+                所以不改这些项时手感和以前完全一样。
+                改完 /atl config reload 即生效：只影响**之后**咬钩的鱼，不影响正在遛的那条。
+                每条的 13 项含义相同：体重上下限、拉力（不挣扎/疲劳期）、体力、张力涨速、
+                冲刺时长与间隔、变向间隔、假动作概率、进疲劳的体力比例、疲劳持续、不挣扎时回气。
+                """).push("fishStats");
+        b.pop();
+
+        // ---------------------------------------------------------- 鱼种数值
+        b.comment("""
+                鱼种数值 / Per-fish stats（每条鱼的体重与对抗手感）。
+                由 tools/gen-fish-config.js 从 FishSpecies.java 生成，默认值与代码里的原值一一对应，
+                所以不改这些项时手感和以前完全一样。
+                改完 /atl config reload 即生效：只影响**之后**咬钩的鱼，不影响正在遛的那条。
+                每条的 13 项含义相同：体重上下限、拉力（不挣扎/疲劳期）、体力、张力涨速、
+                冲刺时长与间隔、变向间隔、假动作概率、进疲劳的体力比例、疲劳持续、不挣扎时回气。
+                """).push("fishStats");
+        b.pop();
+        b.pop();
+
+        // ---------------------------------------------------------- 渲染
+        b.comment("""
+                渲染与实体同步 / Rendering
+                注意：实体追踪范围（clientTrackingRange）是**注册期常量**，
+                运行时改配置改不动它，所以这里不提供该项 —— 免得改了没反应。
+                超出视距时的兜底靠"幽灵鱼线"，见 docs/09-原版冲突与渲染优化.md。""").push("render");
+        ghostLineBeyondBlocks = b.comment("超过该距离改用简化线型（格）")
+                .defineInRange("ghostLineBeyondBlocks", 64, 8, 256);
+        b.pop();
+    }
+}

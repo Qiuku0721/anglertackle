@@ -1,0 +1,194 @@
+// ============================================================
+//  《垂纶》Angler's Tackle
+//  Minecraft 1.21.1 + NeoForge 21.1.x + Java 21
+//  构建方式：ModDevGradle 2.x（https://docs.neoforged.net/toolchain/docs/plugins/mdg/）
+//
+//  ⚠ 重要：maven.neoforged.net 在本机网络下被阻断（TCP ECONNRESET），
+//     因此所有仓库都把镜像 https://neoforged.forgecdn.net 放在前面。
+//     若将来镜像失效，把官方地址放回第一位即可。
+// ============================================================
+
+plugins {
+    id 'java-library'
+    id 'net.neoforged.moddev' version '2.0.131'
+}
+
+group = mod_group_id
+version = mod_version
+base.archivesName = mod_id
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+    withSourcesJar()
+}
+
+neoForge {
+    version = neo_version
+    validateAccessTransformers = true
+
+    // 开发运行配置：gradlew runClient / runServer / runData
+    runs {
+        client {
+            client()
+            // 开发期给 4G 内存，避免加载大量贴图时 OOM
+            jvmArguments = ['-Xmx4G']
+        }
+        server {
+            server()
+            // 配方体检（见 debug/RecipeAudit.java）：
+            //   ATL_AUDIT=true gradlew runServer
+            // 体检完自己关服；平时不设这个环境变量就什么都不做。
+            jvmArguments = ["-Danglertackle.audit=${System.getenv('ATL_AUDIT') ?: 'false'}"]
+        }
+        data {
+            data()
+            programArguments.addAll '--mod', mod_id, '--all',
+                    '--output', file('src/generated/resources/').getAbsolutePath(),
+                    '--existing', file('src/main/resources/').getAbsolutePath()
+        }
+    }
+
+    mods {
+        "${mod_id}" {
+            sourceSet sourceSets.main
+        }
+    }
+}
+
+// ------------------------------------------------------------
+//  仓库：镜像优先
+// ------------------------------------------------------------
+repositories {
+    // NeoForge 的 ForgeCDN 镜像（国内可达）
+    maven {
+        name = 'NeoForged (ForgeCDN mirror)'
+        url = 'https://neoforged.forgecdn.net/releases'
+    }
+    // 官方源（本机不通，但保留以便将来网络恢复或换环境时自动生效）
+    maven {
+        name = 'NeoForged (official)'
+        url = 'https://maven.neoforged.net/releases'
+    }
+    mavenCentral()
+    maven {
+        name = 'Mojang libraries'
+        url = 'https://libraries.minecraft.net'
+    }
+    maven {
+        name = 'ParchmentMC'
+        url = 'https://maven.parchmentmc.org'
+    }
+}
+
+dependencies {
+    // 暂无第三方依赖。将来若需要，用 jarJar 内嵌以免玩家额外装模组。
+}
+
+// ------------------------------------------------------------
+//  资源处理：把 gradle.properties 里的元数据注入 neoforge.mods.toml
+// ------------------------------------------------------------
+tasks.named('processResources', ProcessResources).configure {
+    def expandProps = [
+            'version'               : version,
+            'group'                 : project.group,
+            'minecraft_version'     : minecraft_version,
+            'minecraft_version_range': minecraft_version_range,
+            'neo_version'           : neo_version,
+            'neo_version_range'     : neo_version_range,
+            'loader_version_range'  : loader_version_range,
+            'mod_id'                : mod_id,
+            'mod_name'              : mod_name,
+            'mod_license'           : mod_license,
+            'mod_authors'           : mod_authors,
+            'mod_description'       : mod_description,
+    ]
+
+    inputs.properties expandProps
+
+    filesMatching(['META-INF/neoforge.mods.toml']) {
+        expand expandProps
+    }
+
+    // 不要把这些文件当资源处理
+    exclude '**/*.psd', '**/*.bbmodel', '**/*.xcf'
+}
+
+// 把 LICENSE 与 CREDITS 打进 jar（CurseForge / Modrinth 上架要求）
+tasks.named('jar', Jar).configure {
+    from(rootProject.file('LICENSE')) {
+        rename { 'LICENSE-anglertackle' }
+    }
+    from(rootProject.file('CREDITS.txt')) {
+        rename { 'CREDITS-anglertackle.txt' }
+    }
+    manifest {
+        attributes([
+                'Specification-Title'     : mod_name,
+                'Specification-Vendor'    : mod_authors,
+                'Specification-Version'   : '1',
+                'Implementation-Title'    : mod_name,
+                'Implementation-Version'  : version,
+                'Implementation-Vendor'   : mod_authors,
+        ])
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+    options.release = 21
+}
+
+// ------------------------------------------------------------
+//  扩展包：垂纶 × 森罗物语（src/compat → 独立 jar）
+// ------------------------------------------------------------
+// 为什么隔离成独立源集/独立 jar：
+//   · 主 jar 与森罗**完全解耦** —— 它的源码里不许出现他们任何一个类名
+//     （tools/check-kaleidoscope-compat.js 断言 6），所以主 jar 不能 compileOnly 他们的 jar；
+//   · 扩展包反过来必须直接调他们的公开 API（IChoppingBoard / StockpotMatchRecipeEvent）。
+// 他们的 jar **不入库**（见 .gitignore）：开发者手动把 kaleidoscope_cookery-*.jar 放进 libs/。
+// libs/ 里没有时**整个扩展包跳过**，主 jar 的构建与自检完全不受影响。
+def theirJars = fileTree(dir: 'libs', include: ['kaleidoscope*.jar'])
+def hasTheirJar = !theirJars.empty
+
+sourceSets {
+    compat {
+        // ⚠ 不要写 java.srcDir/resources.srcDir：名为 compat 的源集**默认就是**
+        //   src/compat/java 与 src/compat/resources，再显式加一次会让同一份资源出现两次，
+        //   processCompatResources 会以 "Entry META-INF/neoforge.mods.toml is a duplicate" 失败。
+        // 复用主源集的 MC + NeoForge 类路径（MDG 把它们挂在主源集上）+ 我们的类 + 他们的 jar
+        compileClasspath += sourceSets.main.output + sourceSets.main.compileClasspath + theirJars
+        runtimeClasspath += sourceSets.main.output + sourceSets.main.runtimeClasspath
+    }
+}
+
+tasks.register('compatJar', Jar) {
+    group = 'build'
+    description = '扩展包：垂纶 × 森罗物语（需要 libs/kaleidoscope_cookery-*.jar）'
+    archiveBaseName = 'anglertackle-kaleidoscope'
+    archiveVersion = '1.0.0'
+    destinationDirectory = layout.buildDirectory.dir('libs')
+    from sourceSets.compat.output
+    manifest {
+        attributes([
+                'Specification-Title'   : 'Angler\'s Tackle × Kaleidoscope',
+                'Specification-Vendor'  : mod_authors,
+                'Specification-Version' : '1',
+                'Implementation-Title'  : 'Angler\'s Tackle × Kaleidoscope',
+                'Implementation-Version': '1.0.0',
+                'Implementation-Vendor' : mod_authors,
+        ])
+    }
+    onlyIf { hasTheirJar }
+}
+
+if (hasTheirJar) {
+    tasks.named('build') { dependsOn 'compatJar' }
+    logger.lifecycle('扩展包：libs/ 里发现 ' + theirJars.files*.name.join(', ') + ' → 会一起构建 anglertackle-kaleidoscope')
+} else {
+    sourceSets.compat.java.setSrcDirs([])
+    sourceSets.compat.resources.setSrcDirs([])
+    logger.lifecycle('扩展包：libs/ 里没有 kaleidoscope*.jar → 跳过扩展包，只构建主 jar')
+}
+

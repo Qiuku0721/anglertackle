@@ -1,0 +1,789 @@
+{
+  "generatedFrom": "Config.java",
+  "count": 87,
+  "fields": [
+    {
+      "name": "hempDurability",
+      "key": "hempDurability",
+      "def": "50",
+      "min": "0",
+      "max": "100000",
+      "type": "int",
+      "comment": "麻线（hemp_line） · 耐久上限 —— 用一次扣一点，扣光配件就损坏。⚠ 注册期固定，改它必须重启游戏"
+    },
+    {
+      "name": "hempTensionCeiling",
+      "key": "hempTensionCeiling",
+      "def": "1.08",
+      "min": "0.0",
+      "max": "100.0",
+      "type": "double",
+      "comment": "麻线（hemp_line） · 张力上限 —— 越高，线越不容易被拉崩"
+    },
+    {
+      "name": "hempTensionGen",
+      "key": "hempTensionGen",
+      "def": "0.97",
+      "min": "0.0",
+      "max": "100.0",
+      "type": "double",
+      "comment": "麻线（hemp_line） · 张力涨速 —— 越小，收线时张力涨得越慢（越小越安全）"
+    },
+    {
+      "name": "hempTensionRecover",
+      "key": "hempTensionRecover",
+      "def": "1.05",
+      "min": "0.0",
+      "max": "100.0",
+      "type": "double",
+      "comment": "麻线（hemp_line） · 张力回复 —— 越大，放线时张力落得越快（越大越安全）"
+    },
+    {
+      "name": "hempLineLength",
+      "key": "hempLineLength",
+      "def": "1.00",
+      "min": "0.0",
+      "max": "100.0",
+      "type": "double",
+      "comment": "麻线（hemp_line） · 线长 —— 相对麻线的倍率，决定抛投射程上限"
+    },
+    {
+      "name": "hempTier",
+      "key": "hempTier",
+      "def": "1",
+      "min": "1",
+      "max": "6",
+      "type": "int",
+      "comment": "麻线（hemp_line） · 品质档位 —— 1白 2绿 3蓝 4紫 5金 6红"
+    },
+    {
+      "name": "cottonDurability",
+      "key": "cottonDurability",
+      "def": "50",
+      "min": "0",
+      "max": "100000",
+      "type": "int",
+      "comment": "棉线（cotton_line） · 耐久上限 —— 用一次扣一点，扣光配件就损坏。⚠ 注册期固定，改它必须重启游戏"
+    },
+    {
+      "name": "cottonTensionCeiling",
+      "key": "cottonTensionCeiling",
+      "def": "1.20",
+      "min": "0.0",
+      "max": "100.0",
+      "type": "double",
+      "comment": "棉线（cotton_line） · 张力上限 —— 越高，线越不容易被拉崩"
+    },
+    {
+      "name": "cottonTensionGen",
+      "key": "cottonTensionGen",
+      "def": "0.91",
+      "min": "0.0",
+      "max": "100.0",
+      "type": "double",
+      "comment": "棉线（cotton_line） · 张力涨速 —— 越小，收线时张力涨得越慢（越小越安全）"
+    },
+    {
+      "name": "cottonTensionRecover",
+      "key": "cottonTensionRecover",
+      "def": "1.15",
+      "min": "0.0",
+      "max": "100.0",
+      "type": "double",
+      "comment": "棉线（cotton_line） · 张力回复 —— 越大，放线时张力落得越快（越大越安全）"
+    },
+    {
+      "name": "cottonLineLength",
+      "key": "cottonLineLength",
+      "def": "35.0 / 30.0",
+      "min": "0.0",
+      "max": "100.0",
+      "type": "double",
+      "comment": "棉线（cotton_line） · 线长 —— 相对麻线的倍率，决定抛投射程上限"
+    },
+    {
+      "name": "cottonTier",
+      "key": "cottonTier",
+      "def": "2",
+      "min": "1",
+      "max": "6",
+      "type": "int",
+      "comment": "棉线（cotton_line） · 品质档位 —— 1白 2绿 3蓝 4紫 5金 6红"
+    },
+    {
+      "name": "nylonDurability",
+      "key": "nylonDurability",
+      "def": "40",
+      "min": "0",
+      "max": "100000",
+      "type": "int",
+      "comment": "尼龙线（nylon_line） · 耐久上限 —— 用一次扣一点，扣光配件就损坏。⚠ 注册期固定，改它必须重启游戏"
+    },
+    {
+      "name": "nylonTensionCeiling",
+      "key": "nylonTensionCeiling",
+      "def": "1.28",
+      "min": "0.0",
+      "max": "100.0",
+      "type": "double",
+      "comment": "尼龙线（nylon_line） · 张力上限 —— 越高，线越不容易被拉崩"
+    },
+    {
+      "name": "nylonTensionGen",
+      "key": "nylonTensionGen",
+      "def": "0.95",
+      "min": "0.0",
+      "max": "100.0",
+      "type": "double",
+      "comment": "尼龙线（nylon_line） · 张力涨速 —— 越小，收线时张力涨得越慢（越小越安全）"
+    },
+    {
+      "name": "nylonTensionRecover",
+      "key": "nylonTensionRecover",
+      "def": "1.30",
+      "min": "0.0",
+      "max": "100.0",
+      "type": "double",
+      "comment": "尼龙线（nylon_line） · 张力回复 —— 越大，放线时张力落得越快（越大越安全）"
+    },
+    {
+      "name": "nylonLineLength",
+      "key": "nylonLineLength",
+      "def": "45.0 / 30.0",
+      "min": "0.0",
+      "max": "100.0",
+      "type": "double",
+      "comment": "尼龙线（nylon_line） · 线长 —— 相对麻线的倍率，决定抛投射程上限"
+    },
+    {
+      "name": "nylonTier",
+      "key": "nylonTier",
+      "def": "3",
+      "min": "1",
+      "max": "6",
+      "type": "int",
+      "comment": "尼龙线（nylon_line） · 品质档位 —— 1白 2绿 3蓝 4紫 5金 6红"
+    },
+    {
+      "name": "fluoroDurability",
+      "key": "fluoroDurability",
+      "def": "35",
+      "min": "0",
+      "max": "100000",
+      "type": "int",
+      "comment": "碳氟线（fluoro_line） · 耐久上限 —— 用一次扣一点，扣光配件就损坏。⚠ 注册期固定，改它必须重启游戏"
+    },
+    {
+      "name": "fluoroTensionCeiling",
+      "key": "fluoroTensionCeiling",
+      "def": "1.54",
+      "min": "0.0",
+      "max": "100.0",
+      "type": "double",
+      "comment": "碳氟线（fluoro_line） · 张力上限 —— 越高，线越不容易被拉崩"
+    },
+    {
+      "name": "fluoroTensionGen",
+      "key": "fluoroTensionGen",
+      "def": "0.81",
+      "min": "0.0",
+      "max": "100.0",
+      "type": "double",
+      "comment": "碳氟线（fluoro_line） · 张力涨速 —— 越小，收线时张力涨得越慢（越小越安全）"
+    },
+    {
+      "name": "fluoroTensionRecover",
+      "key": "fluoroTensionRecover",
+      "def": "1.36",
+      "min": "0.0",
+      "max": "100.0",
+      "type": "double",
+      "comment": "碳氟线（fluoro_line） · 张力回复 —— 越大，放线时张力落得越快（越大越安全）"
+    },
+    {
+      "name": "fluoroLineLength",
+      "key": "fluoroLineLength",
+      "def": "55.0 / 30.0",
+      "min": "0.0",
+      "max": "100.0",
+      "type": "double",
+      "comment": "碳氟线（fluoro_line） · 线长 —— 相对麻线的倍率，决定抛投射程上限"
+    },
+    {
+      "name": "fluoroTier",
+      "key": "fluoroTier",
+      "def": "4",
+      "min": "1",
+      "max": "6",
+      "type": "int",
+      "comment": "碳氟线（fluoro_line） · 品质档位 —— 1白 2绿 3蓝 4紫 5金 6红"
+    },
+    {
+      "name": "peDurability",
+      "key": "peDurability",
+      "def": "30",
+      "min": "0",
+      "max": "100000",
+      "type": "int",
+      "comment": "编织 PE 线（pe_line） · 耐久上限 —— 用一次扣一点，扣光配件就损坏。⚠ 注册期固定，改它必须重启游戏"
+    },
+    {
+      "name": "peTensionCeiling",
+      "key": "peTensionCeiling",
+      "def": "1.94",
+      "min": "0.0",
+      "max": "100.0",
+      "type": "double",
+      "comment": "编织 PE 线（pe_line） · 张力上限 —— 越高，线越不容易被拉崩"
+    },
+    {
+      "name": "peTensionGen",
+      "key": "peTensionGen",
+      "def": "0.76",
+      "min": "0.0",
+      "max": "100.0",
+      "type": "double",
+      "comment": "编织 PE 线（pe_line） · 张力涨速 —— 越小，收线时张力涨得越慢（越小越安全）"
+    },
+    {
+      "name": "peTensionRecover",
+      "key": "peTensionRecover",
+      "def": "1.44",
+      "min": "0.0",
+      "max": "100.0",
+      "type": "double",
+      "comment": "编织 PE 线（pe_line） · 张力回复 —— 越大，放线时张力落得越快（越大越安全）"
+    },
+    {
+      "name": "peLineLength",
+      "key": "peLineLength",
+      "def": "65.0 / 30.0",
+      "min": "0.0",
+      "max": "100.0",
+      "type": "double",
+      "comment": "编织 PE 线（pe_line） · 线长 —— 相对麻线的倍率，决定抛投射程上限"
+    },
+    {
+      "name": "peTier",
+      "key": "peTier",
+      "def": "5",
+      "min": "1",
+      "max": "6",
+      "type": "int",
+      "comment": "编织 PE 线（pe_line） · 品质档位 —— 1白 2绿 3蓝 4紫 5金 6红"
+    },
+    {
+      "name": "titaniumDurability",
+      "key": "titaniumDurability",
+      "def": "30",
+      "min": "0",
+      "max": "100000",
+      "type": "int",
+      "comment": "钛合金记忆金属线（titanium_line） · 耐久上限 —— 用一次扣一点，扣光配件就损坏。⚠ 注册期固定，改它必须重启游戏"
+    },
+    {
+      "name": "titaniumTensionCeiling",
+      "key": "titaniumTensionCeiling",
+      "def": "2.20",
+      "min": "0.0",
+      "max": "100.0",
+      "type": "double",
+      "comment": "钛合金记忆金属线（titanium_line） · 张力上限 —— 越高，线越不容易被拉崩"
+    },
+    {
+      "name": "titaniumTensionGen",
+      "key": "titaniumTensionGen",
+      "def": "0.58",
+      "min": "0.0",
+      "max": "100.0",
+      "type": "double",
+      "comment": "钛合金记忆金属线（titanium_line） · 张力涨速 —— 越小，收线时张力涨得越慢（越小越安全）"
+    },
+    {
+      "name": "titaniumTensionRecover",
+      "key": "titaniumTensionRecover",
+      "def": "1.76",
+      "min": "0.0",
+      "max": "100.0",
+      "type": "double",
+      "comment": "钛合金记忆金属线（titanium_line） · 张力回复 —— 越大，放线时张力落得越快（越大越安全）"
+    },
+    {
+      "name": "titaniumLineLength",
+      "key": "titaniumLineLength",
+      "def": "70.0 / 30.0",
+      "min": "0.0",
+      "max": "100.0",
+      "type": "double",
+      "comment": "钛合金记忆金属线（titanium_line） · 线长 —— 相对麻线的倍率，决定抛投射程上限"
+    },
+    {
+      "name": "titaniumTier",
+      "key": "titaniumTier",
+      "def": "6",
+      "min": "1",
+      "max": "6",
+      "type": "int",
+      "comment": "钛合金记忆金属线（titanium_line） · 品质档位 —— 1白 2绿 3蓝 4紫 5金 6红"
+    },
+    {
+      "name": "handDurability",
+      "key": "handDurability",
+      "def": "0",
+      "min": "0",
+      "max": "100000",
+      "type": "int",
+      "comment": "手线轮（hand_reel） · 耐久上限 —— 用一次扣一点，扣光配件就损坏。⚠ 注册期固定，改它必须重启游戏"
+    },
+    {
+      "name": "handPullIdle",
+      "key": "handPullIdle",
+      "def": "1.08",
+      "min": "0.0",
+      "max": "100.0",
+      "type": "double",
+      "comment": "手线轮（hand_reel） · 回拉速度（不挣扎） —— 鱼不挣扎时收线拉回多快"
+    },
+    {
+      "name": "handPullStruggle",
+      "key": "handPullStruggle",
+      "def": "1.08",
+      "min": "0.0",
+      "max": "100.0",
+      "type": "double",
+      "comment": "手线轮（hand_reel） · 回拉速度（挣扎） —— 鱼挣扎时收线拉回多快"
+    },
+    {
+      "name": "handStaminaDrain",
+      "key": "handStaminaDrain",
+      "def": "1.08",
+      "min": "0.0",
+      "max": "100.0",
+      "type": "double",
+      "comment": "手线轮（hand_reel） · 体力削减 —— 越大，鱼掉体力越快（越大越好钓）"
+    },
+    {
+      "name": "handDamping",
+      "key": "handDamping",
+      "def": "1.07",
+      "min": "0.0",
+      "max": "100.0",
+      "type": "double",
+      "comment": "手线轮（hand_reel） · 压制阻尼 —— 抑制鱼回气；高于 1 的部分另有转化"
+    },
+    {
+      "name": "spinningDurability",
+      "key": "spinningDurability",
+      "def": "0",
+      "min": "0",
+      "max": "100000",
+      "type": "int",
+      "comment": "纺车轮（spinning_reel） · 耐久上限 —— 用一次扣一点，扣光配件就损坏。⚠ 注册期固定，改它必须重启游戏"
+    },
+    {
+      "name": "spinningPullIdle",
+      "key": "spinningPullIdle",
+      "def": "1.25",
+      "min": "0.0",
+      "max": "100.0",
+      "type": "double",
+      "comment": "纺车轮（spinning_reel） · 回拉速度（不挣扎） —— 鱼不挣扎时收线拉回多快"
+    },
+    {
+      "name": "spinningPullStruggle",
+      "key": "spinningPullStruggle",
+      "def": "1.25",
+      "min": "0.0",
+      "max": "100.0",
+      "type": "double",
+      "comment": "纺车轮（spinning_reel） · 回拉速度（挣扎） —— 鱼挣扎时收线拉回多快"
+    },
+    {
+      "name": "spinningStaminaDrain",
+      "key": "spinningStaminaDrain",
+      "def": "1.25",
+      "min": "0.0",
+      "max": "100.0",
+      "type": "double",
+      "comment": "纺车轮（spinning_reel） · 体力削减 —— 越大，鱼掉体力越快（越大越好钓）"
+    },
+    {
+      "name": "spinningDamping",
+      "key": "spinningDamping",
+      "def": "1.20",
+      "min": "0.0",
+      "max": "100.0",
+      "type": "double",
+      "comment": "纺车轮（spinning_reel） · 压制阻尼 —— 抑制鱼回气；高于 1 的部分另有转化"
+    },
+    {
+      "name": "drumDurability",
+      "key": "drumDurability",
+      "def": "0",
+      "min": "0",
+      "max": "100000",
+      "type": "int",
+      "comment": "鼓轮（drum_reel） · 耐久上限 —— 用一次扣一点，扣光配件就损坏。⚠ 注册期固定，改它必须重启游戏"
+    },
+    {
+      "name": "drumPullIdle",
+      "key": "drumPullIdle",
+      "def": "1.45",
+      "min": "0.0",
+      "max": "100.0",
+      "type": "double",
+      "comment": "鼓轮（drum_reel） · 回拉速度（不挣扎） —— 鱼不挣扎时收线拉回多快"
+    },
+    {
+      "name": "drumPullStruggle",
+      "key": "drumPullStruggle",
+      "def": "1.45",
+      "min": "0.0",
+      "max": "100.0",
+      "type": "double",
+      "comment": "鼓轮（drum_reel） · 回拉速度（挣扎） —— 鱼挣扎时收线拉回多快"
+    },
+    {
+      "name": "drumStaminaDrain",
+      "key": "drumStaminaDrain",
+      "def": "1.60",
+      "min": "0.0",
+      "max": "100.0",
+      "type": "double",
+      "comment": "鼓轮（drum_reel） · 体力削减 —— 越大，鱼掉体力越快（越大越好钓）"
+    },
+    {
+      "name": "drumDamping",
+      "key": "drumDamping",
+      "def": "1.45",
+      "min": "0.0",
+      "max": "100.0",
+      "type": "double",
+      "comment": "鼓轮（drum_reel） · 压制阻尼 —— 抑制鱼回气；高于 1 的部分另有转化"
+    },
+    {
+      "name": "baitcastDurability",
+      "key": "baitcastDurability",
+      "def": "0",
+      "min": "0",
+      "max": "100000",
+      "type": "int",
+      "comment": "水滴轮（baitcast_reel） · 耐久上限 —— 用一次扣一点，扣光配件就损坏。⚠ 注册期固定，改它必须重启游戏"
+    },
+    {
+      "name": "baitcastPullIdle",
+      "key": "baitcastPullIdle",
+      "def": "1.98",
+      "min": "0.0",
+      "max": "100.0",
+      "type": "double",
+      "comment": "水滴轮（baitcast_reel） · 回拉速度（不挣扎） —— 鱼不挣扎时收线拉回多快"
+    },
+    {
+      "name": "baitcastPullStruggle",
+      "key": "baitcastPullStruggle",
+      "def": "1.95",
+      "min": "0.0",
+      "max": "100.0",
+      "type": "double",
+      "comment": "水滴轮（baitcast_reel） · 回拉速度（挣扎） —— 鱼挣扎时收线拉回多快"
+    },
+    {
+      "name": "baitcastStaminaDrain",
+      "key": "baitcastStaminaDrain",
+      "def": "1.40",
+      "min": "0.0",
+      "max": "100.0",
+      "type": "double",
+      "comment": "水滴轮（baitcast_reel） · 体力削减 —— 越大，鱼掉体力越快（越大越好钓）"
+    },
+    {
+      "name": "baitcastDamping",
+      "key": "baitcastDamping",
+      "def": "1.40",
+      "min": "0.0",
+      "max": "100.0",
+      "type": "double",
+      "comment": "水滴轮（baitcast_reel） · 压制阻尼 —— 抑制鱼回气；高于 1 的部分另有转化"
+    },
+    {
+      "name": "heavyDurability",
+      "key": "heavyDurability",
+      "def": "0",
+      "min": "0",
+      "max": "100000",
+      "type": "int",
+      "comment": "大型纺车轮（heavy_reel） · 耐久上限 —— 用一次扣一点，扣光配件就损坏。⚠ 注册期固定，改它必须重启游戏"
+    },
+    {
+      "name": "heavyPullIdle",
+      "key": "heavyPullIdle",
+      "def": "1.55",
+      "min": "0.0",
+      "max": "100.0",
+      "type": "double",
+      "comment": "大型纺车轮（heavy_reel） · 回拉速度（不挣扎） —— 鱼不挣扎时收线拉回多快"
+    },
+    {
+      "name": "heavyPullStruggle",
+      "key": "heavyPullStruggle",
+      "def": "1.55",
+      "min": "0.0",
+      "max": "100.0",
+      "type": "double",
+      "comment": "大型纺车轮（heavy_reel） · 回拉速度（挣扎） —— 鱼挣扎时收线拉回多快"
+    },
+    {
+      "name": "heavyStaminaDrain",
+      "key": "heavyStaminaDrain",
+      "def": "2.30",
+      "min": "0.0",
+      "max": "100.0",
+      "type": "double",
+      "comment": "大型纺车轮（heavy_reel） · 体力削减 —— 越大，鱼掉体力越快（越大越好钓）"
+    },
+    {
+      "name": "heavyDamping",
+      "key": "heavyDamping",
+      "def": "2.50",
+      "min": "0.0",
+      "max": "100.0",
+      "type": "double",
+      "comment": "大型纺车轮（heavy_reel） · 压制阻尼 —— 抑制鱼回气；高于 1 的部分另有转化"
+    },
+    {
+      "name": "plainDurability",
+      "key": "plainDurability",
+      "def": "0",
+      "min": "0",
+      "max": "100000",
+      "type": "int",
+      "comment": "普通钩（plain_hook） · 耐久上限 —— 用一次扣一点，扣光配件就损坏。⚠ 注册期固定，改它必须重启游戏"
+    },
+    {
+      "name": "plainWindowBonus",
+      "key": "plainWindowBonus",
+      "def": "0.00",
+      "min": "0.0",
+      "max": "100.0",
+      "type": "double",
+      "comment": "普通钩（plain_hook） · 提竿窗口加成 —— 单位是秒，加到基础提竿窗口上"
+    },
+    {
+      "name": "barbedDurability",
+      "key": "barbedDurability",
+      "def": "0",
+      "min": "0",
+      "max": "100000",
+      "type": "int",
+      "comment": "倒刺钩（barbed_hook） · 耐久上限 —— 用一次扣一点，扣光配件就损坏。⚠ 注册期固定，改它必须重启游戏"
+    },
+    {
+      "name": "barbedWindowBonus",
+      "key": "barbedWindowBonus",
+      "def": "0.08",
+      "min": "0.0",
+      "max": "100.0",
+      "type": "double",
+      "comment": "倒刺钩（barbed_hook） · 提竿窗口加成 —— 单位是秒，加到基础提竿窗口上"
+    },
+    {
+      "name": "lureSpoonDurability",
+      "key": "lureSpoonDurability",
+      "def": "40",
+      "min": "0",
+      "max": "100000",
+      "type": "int",
+      "comment": "亮片拟饵（lure_spoon） · 耐久上限 —— 用一次扣一点，扣光配件就损坏。⚠ 注册期固定，改它必须重启游戏"
+    },
+    {
+      "name": "lureSpoonTier",
+      "key": "lureSpoonTier",
+      "def": "2",
+      "min": "1",
+      "max": "6",
+      "type": "int",
+      "comment": "亮片拟饵（lure_spoon） · 品质档位 —— 1白 2绿 3蓝 4紫 5金 6红"
+    },
+    {
+      "name": "lureGlowspoonDurability",
+      "key": "lureGlowspoonDurability",
+      "def": "40",
+      "min": "0",
+      "max": "100000",
+      "type": "int",
+      "comment": "荧光亮片（lure_glowspoon） · 耐久上限 —— 用一次扣一点，扣光配件就损坏。⚠ 注册期固定，改它必须重启游戏"
+    },
+    {
+      "name": "lureGlowspoonTier",
+      "key": "lureGlowspoonTier",
+      "def": "2",
+      "min": "1",
+      "max": "6",
+      "type": "int",
+      "comment": "荧光亮片（lure_glowspoon） · 品质档位 —— 1白 2绿 3蓝 4紫 5金 6红"
+    },
+    {
+      "name": "lureMinnowDurability",
+      "key": "lureMinnowDurability",
+      "def": "30",
+      "min": "0",
+      "max": "100000",
+      "type": "int",
+      "comment": "米诺鱼拟饵（lure_minnow） · 耐久上限 —— 用一次扣一点，扣光配件就损坏。⚠ 注册期固定，改它必须重启游戏"
+    },
+    {
+      "name": "lureMinnowTier",
+      "key": "lureMinnowTier",
+      "def": "3",
+      "min": "1",
+      "max": "6",
+      "type": "int",
+      "comment": "米诺鱼拟饵（lure_minnow） · 品质档位 —— 1白 2绿 3蓝 4紫 5金 6红"
+    },
+    {
+      "name": "lureDeepDurability",
+      "key": "lureDeepDurability",
+      "def": "22",
+      "min": "0",
+      "max": "100000",
+      "type": "int",
+      "comment": "浅层刺激拟饵（lure_deep） · 耐久上限 —— 用一次扣一点，扣光配件就损坏。⚠ 注册期固定，改它必须重启游戏"
+    },
+    {
+      "name": "lureDeepTier",
+      "key": "lureDeepTier",
+      "def": "4",
+      "min": "1",
+      "max": "6",
+      "type": "int",
+      "comment": "浅层刺激拟饵（lure_deep） · 品质档位 —— 1白 2绿 3蓝 4紫 5金 6红"
+    },
+    {
+      "name": "lureRattleDurability",
+      "key": "lureRattleDurability",
+      "def": "20",
+      "min": "0",
+      "max": "100000",
+      "type": "int",
+      "comment": "钢珠声诱拟饵（lure_rattle） · 耐久上限 —— 用一次扣一点，扣光配件就损坏。⚠ 注册期固定，改它必须重启游戏"
+    },
+    {
+      "name": "lureRattleTier",
+      "key": "lureRattleTier",
+      "def": "5",
+      "min": "1",
+      "max": "6",
+      "type": "int",
+      "comment": "钢珠声诱拟饵（lure_rattle） · 品质档位 —— 1白 2绿 3蓝 4紫 5金 6红"
+    },
+    {
+      "name": "lureGildedDurability",
+      "key": "lureGildedDurability",
+      "def": "20",
+      "min": "0",
+      "max": "100000",
+      "type": "int",
+      "comment": "镀金竞技拟饵（lure_gilded） · 耐久上限 —— 用一次扣一点，扣光配件就损坏。⚠ 注册期固定，改它必须重启游戏"
+    },
+    {
+      "name": "lureGildedTier",
+      "key": "lureGildedTier",
+      "def": "6",
+      "min": "1",
+      "max": "6",
+      "type": "int",
+      "comment": "镀金竞技拟饵（lure_gilded） · 品质档位 —— 1白 2绿 3蓝 4紫 5金 6红"
+    },
+    {
+      "name": "lureSoftDurability",
+      "key": "lureSoftDurability",
+      "def": "26",
+      "min": "0",
+      "max": "100000",
+      "type": "int",
+      "comment": "软虫拟饵（lure_soft） · 耐久上限 —— 用一次扣一点，扣光配件就损坏。⚠ 注册期固定，改它必须重启游戏"
+    },
+    {
+      "name": "lureSoftTier",
+      "key": "lureSoftTier",
+      "def": "3",
+      "min": "1",
+      "max": "6",
+      "type": "int",
+      "comment": "软虫拟饵（lure_soft） · 品质档位 —— 1白 2绿 3蓝 4紫 5金 6红"
+    },
+    {
+      "name": "lureDepthfinderDurability",
+      "key": "lureDepthfinderDurability",
+      "def": "26",
+      "min": "0",
+      "max": "100000",
+      "type": "int",
+      "comment": "深水探索米诺（lure_depthfinder） · 耐久上限 —— 用一次扣一点，扣光配件就损坏。⚠ 注册期固定，改它必须重启游戏"
+    },
+    {
+      "name": "lureDepthfinderTier",
+      "key": "lureDepthfinderTier",
+      "def": "3",
+      "min": "1",
+      "max": "6",
+      "type": "int",
+      "comment": "深水探索米诺（lure_depthfinder） · 品质档位 —— 1白 2绿 3蓝 4紫 5金 6红"
+    },
+    {
+      "name": "lurePaddletailDurability",
+      "key": "lurePaddletailDurability",
+      "def": "22",
+      "min": "0",
+      "max": "100000",
+      "type": "int",
+      "comment": "深水摆尾拟饵（lure_paddletail） · 耐久上限 —— 用一次扣一点，扣光配件就损坏。⚠ 注册期固定，改它必须重启游戏"
+    },
+    {
+      "name": "lurePaddletailTier",
+      "key": "lurePaddletailTier",
+      "def": "4",
+      "min": "1",
+      "max": "6",
+      "type": "int",
+      "comment": "深水摆尾拟饵（lure_paddletail） · 品质档位 —— 1白 2绿 3蓝 4紫 5金 6红"
+    },
+    {
+      "name": "lureVibrationDurability",
+      "key": "lureVibrationDurability",
+      "def": "20",
+      "min": "0",
+      "max": "100000",
+      "type": "int",
+      "comment": "深潜巨物振动饵（lure_vibration） · 耐久上限 —— 用一次扣一点，扣光配件就损坏。⚠ 注册期固定，改它必须重启游戏"
+    },
+    {
+      "name": "lureVibrationTier",
+      "key": "lureVibrationTier",
+      "def": "5",
+      "min": "1",
+      "max": "6",
+      "type": "int",
+      "comment": "深潜巨物振动饵（lure_vibration） · 品质档位 —— 1白 2绿 3蓝 4紫 5金 6红"
+    },
+    {
+      "name": "lureTestRedDurability",
+      "key": "lureTestRedDurability",
+      "def": "9999",
+      "min": "0",
+      "max": "100000",
+      "type": "int",
+      "comment": "【测试】红档拟饵（必出红鱼）（lure_test_red） · 耐久上限 —— 用一次扣一点，扣光配件就损坏。⚠ 注册期固定，改它必须重启游戏"
+    },
+    {
+      "name": "lureTestRedTier",
+      "key": "lureTestRedTier",
+      "def": "6",
+      "min": "1",
+      "max": "6",
+      "type": "int",
+      "comment": "【测试】红档拟饵（必出红鱼）（lure_test_red） · 品质档位 —— 1白 2绿 3蓝 4紫 5金 6红"
+    }
+  ]
+}

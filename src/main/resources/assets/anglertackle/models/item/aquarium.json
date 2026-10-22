@@ -1,0 +1,43 @@
+{
+  "parent": "minecraft:block/block",
+  "credit": "垂纶 · 水族箱",
+  "render_type": "minecraft:cutout",
+  "textures": {
+    "glass": "anglertackle:block/aquarium",
+    "particle": "anglertackle:block/aquarium"
+  },
+  "elements": [
+    {
+      "from": [
+        0,
+        0,
+        0
+      ],
+      "to": [
+        16,
+        16,
+        16
+      ],
+      "faces": {
+        "north": {
+          "texture": "#glass"
+        },
+        "south": {
+          "texture": "#glass"
+        },
+        "east": {
+          "texture": "#glass"
+        },
+        "west": {
+          "texture": "#glass"
+        },
+        "up": {
+          "texture": "#glass"
+        },
+        "down": {
+          "texture": "#glass"
+        }
+      }
+    }
+  ]
+}

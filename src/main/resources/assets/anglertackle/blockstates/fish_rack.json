@@ -1,0 +1,36 @@
+{
+  "variants": {
+    "facing=north,has_fish=false": {
+      "model": "anglertackle:block/fish_rack",
+      "y": 0
+    },
+    "facing=north,has_fish=true": {
+      "model": "anglertackle:block/fish_rack",
+      "y": 0
+    },
+    "facing=east,has_fish=false": {
+      "model": "anglertackle:block/fish_rack",
+      "y": 90
+    },
+    "facing=east,has_fish=true": {
+      "model": "anglertackle:block/fish_rack",
+      "y": 90
+    },
+    "facing=south,has_fish=false": {
+      "model": "anglertackle:block/fish_rack",
+      "y": 180
+    },
+    "facing=south,has_fish=true": {
+      "model": "anglertackle:block/fish_rack",
+      "y": 180
+    },
+    "facing=west,has_fish=false": {
+      "model": "anglertackle:block/fish_rack",
+      "y": 270
+    },
+    "facing=west,has_fish=true": {
+      "model": "anglertackle:block/fish_rack",
+      "y": 270
+    }
+  }
+}

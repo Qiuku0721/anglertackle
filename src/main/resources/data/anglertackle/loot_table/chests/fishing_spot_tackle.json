@@ -1,0 +1,151 @@
+{
+  "type": "minecraft:chest",
+  "pools": [
+    {
+      "rolls": {
+        "type": "minecraft:uniform",
+        "min": 1,
+        "max": 2
+      },
+      "bonus_rolls": 0,
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "anglertackle:hemp_line",
+          "weight": 7945
+        },
+        {
+          "type": "minecraft:item",
+          "name": "anglertackle:cotton_line",
+          "weight": 7945
+        },
+        {
+          "type": "minecraft:item",
+          "name": "anglertackle:hand_reel",
+          "weight": 7945
+        },
+        {
+          "type": "minecraft:item",
+          "name": "anglertackle:spinning_reel",
+          "weight": 7945
+        },
+        {
+          "type": "minecraft:item",
+          "name": "anglertackle:bait_bread",
+          "weight": 7944
+        },
+        {
+          "type": "minecraft:item",
+          "name": "anglertackle:bait_worm",
+          "weight": 7944
+        },
+        {
+          "type": "minecraft:item",
+          "name": "anglertackle:bait_corn",
+          "weight": 7944
+        },
+        {
+          "type": "minecraft:item",
+          "name": "anglertackle:lure_spoon",
+          "weight": 7944
+        },
+        {
+          "type": "minecraft:item",
+          "name": "anglertackle:lure_glowspoon",
+          "weight": 7944
+        },
+        {
+          "type": "minecraft:item",
+          "name": "anglertackle:nylon_line",
+          "weight": 2500
+        },
+        {
+          "type": "minecraft:item",
+          "name": "anglertackle:fluoro_line",
+          "weight": 2500
+        },
+        {
+          "type": "minecraft:item",
+          "name": "anglertackle:drum_reel",
+          "weight": 2500
+        },
+        {
+          "type": "minecraft:item",
+          "name": "anglertackle:baitcast_reel",
+          "weight": 2500
+        },
+        {
+          "type": "minecraft:item",
+          "name": "anglertackle:bait_shrimp",
+          "weight": 2500
+        },
+        {
+          "type": "minecraft:item",
+          "name": "anglertackle:lure_minnow",
+          "weight": 2500
+        },
+        {
+          "type": "minecraft:item",
+          "name": "anglertackle:lure_deep",
+          "weight": 2500
+        },
+        {
+          "type": "minecraft:item",
+          "name": "anglertackle:lure_soft",
+          "weight": 2500
+        },
+        {
+          "type": "minecraft:item",
+          "name": "anglertackle:lure_depthfinder",
+          "weight": 2500
+        },
+        {
+          "type": "minecraft:item",
+          "name": "anglertackle:lure_paddletail",
+          "weight": 2500
+        },
+        {
+          "type": "minecraft:item",
+          "name": "anglertackle:pe_line",
+          "weight": 600
+        },
+        {
+          "type": "minecraft:item",
+          "name": "anglertackle:heavy_reel",
+          "weight": 600
+        },
+        {
+          "type": "minecraft:item",
+          "name": "anglertackle:bait_glow",
+          "weight": 600
+        },
+        {
+          "type": "minecraft:item",
+          "name": "anglertackle:lure_rattle",
+          "weight": 600
+        },
+        {
+          "type": "minecraft:item",
+          "name": "anglertackle:lure_vibration",
+          "weight": 600
+        },
+        {
+          "type": "minecraft:item",
+          "name": "anglertackle:titanium_line",
+          "weight": 167
+        },
+        {
+          "type": "minecraft:item",
+          "name": "anglertackle:bait_secret",
+          "weight": 167
+        },
+        {
+          "type": "minecraft:item",
+          "name": "anglertackle:lure_gilded",
+          "weight": 166
+        }
+      ]
+    }
+  ],
+  "random_sequence": "anglertackle:chests/fishing_spot_tackle"
+}

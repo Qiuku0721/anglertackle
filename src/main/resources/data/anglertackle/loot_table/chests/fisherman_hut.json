@@ -1,0 +1,259 @@
+{
+  "type": "minecraft:chest",
+  "pools": [
+    {
+      "rolls": {
+        "type": "minecraft:uniform",
+        "min": 2,
+        "max": 4
+      },
+      "bonus_rolls": 0,
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "minecraft:string",
+          "functions": [
+            {
+              "function": "minecraft:set_count",
+              "count": {
+                "type": "minecraft:uniform",
+                "min": 2,
+                "max": 6
+              }
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item",
+          "name": "minecraft:stick",
+          "functions": [
+            {
+              "function": "minecraft:set_count",
+              "count": {
+                "type": "minecraft:uniform",
+                "min": 2,
+                "max": 8
+              }
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item",
+          "name": "minecraft:bread",
+          "functions": [
+            {
+              "function": "minecraft:set_count",
+              "count": {
+                "type": "minecraft:uniform",
+                "min": 1,
+                "max": 4
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "rolls": 1,
+      "bonus_rolls": 0,
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "anglertackle:bait_bread",
+          "weight": 239
+        },
+        {
+          "type": "minecraft:item",
+          "name": "anglertackle:bait_worm",
+          "weight": 239
+        },
+        {
+          "type": "minecraft:item",
+          "name": "anglertackle:bait_corn",
+          "weight": 239
+        },
+        {
+          "type": "minecraft:item",
+          "name": "anglertackle:lure_spoon",
+          "weight": 239
+        },
+        {
+          "type": "minecraft:item",
+          "name": "anglertackle:lure_minnow",
+          "weight": 239
+        },
+        {
+          "type": "minecraft:item",
+          "name": "anglertackle:lure_soft",
+          "weight": 239
+        },
+        {
+          "type": "minecraft:item",
+          "name": "anglertackle:bait_shrimp",
+          "weight": 239
+        },
+        {
+          "type": "minecraft:item",
+          "name": "anglertackle:lure_deep",
+          "weight": 100
+        },
+        {
+          "type": "minecraft:item",
+          "name": "anglertackle:bait_glow",
+          "weight": 100
+        },
+        {
+          "type": "minecraft:item",
+          "name": "anglertackle:lure_rattle",
+          "weight": 50
+        },
+        {
+          "type": "minecraft:item",
+          "name": "anglertackle:bait_secret",
+          "weight": 50
+        },
+        {
+          "type": "minecraft:item",
+          "name": "anglertackle:lure_gilded",
+          "weight": 30
+        }
+      ]
+    },
+    {
+      "rolls": 1,
+      "bonus_rolls": 0,
+      "conditions": [
+        {
+          "condition": "minecraft:random_chance",
+          "chance": 0.15
+        }
+      ],
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "anglertackle:hemp_line"
+        },
+        {
+          "type": "minecraft:item",
+          "name": "anglertackle:cotton_line"
+        },
+        {
+          "type": "minecraft:item",
+          "name": "anglertackle:nylon_line"
+        }
+      ]
+    },
+    {
+      "rolls": 1,
+      "bonus_rolls": 0,
+      "conditions": [
+        {
+          "condition": "minecraft:random_chance",
+          "chance": 0.1
+        }
+      ],
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "anglertackle:fluoro_line"
+        }
+      ]
+    },
+    {
+      "rolls": 1,
+      "bonus_rolls": 0,
+      "conditions": [
+        {
+          "condition": "minecraft:random_chance",
+          "chance": 0.05
+        }
+      ],
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "anglertackle:pe_line"
+        }
+      ]
+    },
+    {
+      "rolls": 1,
+      "bonus_rolls": 0,
+      "conditions": [
+        {
+          "condition": "minecraft:random_chance",
+          "chance": 0.015
+        }
+      ],
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "anglertackle:titanium_line"
+        }
+      ]
+    },
+    {
+      "rolls": 1,
+      "bonus_rolls": 0,
+      "conditions": [
+        {
+          "condition": "minecraft:random_chance",
+          "chance": 0.015
+        }
+      ],
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "anglertackle:bluefin_tuna",
+          "functions": [
+            {
+              "function": "minecraft:set_components",
+              "components": {
+                "anglertackle:fish_data": {
+                  "species": "bluefin_tuna",
+                  "length_cm": 210,
+                  "weight_kg": 180,
+                  "tier": 6
+                }
+              }
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item",
+          "name": "anglertackle:juvenile_shark",
+          "functions": [
+            {
+              "function": "minecraft:set_components",
+              "components": {
+                "anglertackle:fish_data": {
+                  "species": "juvenile_shark",
+                  "length_cm": 140,
+                  "weight_kg": 95,
+                  "tier": 6
+                }
+              }
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item",
+          "name": "anglertackle:oxeye_tarpon",
+          "functions": [
+            {
+              "function": "minecraft:set_components",
+              "components": {
+                "anglertackle:fish_data": {
+                  "species": "oxeye_tarpon",
+                  "length_cm": 175,
+                  "weight_kg": 70,
+                  "tier": 6
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "random_sequence": "anglertackle:chests/fisherman_hut"
+}

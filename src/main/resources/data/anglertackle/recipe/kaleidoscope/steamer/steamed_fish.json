@@ -1,0 +1,16 @@
+{
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:mod_loaded",
+      "modid": "kaleidoscope_cookery"
+    }
+  ],
+  "type": "kaleidoscope_cookery:steamer",
+  "ingredient": {
+    "tag": "anglertackle:fishes"
+  },
+  "result": {
+    "count": 1,
+    "id": "anglertackle:steamed_fish"
+  }
+}

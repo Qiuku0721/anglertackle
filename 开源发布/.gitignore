@@ -1,0 +1,46 @@
+# ---- 构建 / 工具链（不入库：体积大、可由脚本重建）----
+.gradle-home/
+.gradle/
+build/
+.jdk/
+run/
+*.class
+
+# ---- 与"跑一次就变"的本地状态 ----
+versions/
+_temp*/
+Temp/
+*.args
+javac.*.args
+
+# ---- 我自己的备份与对照副本（只对开发者有意义）----
+_backup_anglertackle/
+_baseline_1.21.1/
+_fishsrc/
+_scratch-nfrt/
+发布包/
+发布包-*/
+发布包_*/
+导入用/
+
+# ---- 个人调参：本地实测用的配置文件，**绝不入库**（默认值在 Config.java 里）----
+anglertackle-common.toml
+anglertackle-client.toml
+默认配置_anglertackle-common.toml
+*.toml.bak
+
+# ---- 第三方 jar（开发者手动放进 libs/ 做兼容测试）----
+libs/*.jar
+
+# ---- 参考资料：外部图片/调研原件，可能含第三方版权，不入库 ----
+参考资料/
+参考资料/_probe/
+fish_research/
+
+# ---- 编辑器 / 系统 ----
+.workbuddy/
+.idea/
+*.iml
+.vscode/
+Thumbs.db
+desktop.ini

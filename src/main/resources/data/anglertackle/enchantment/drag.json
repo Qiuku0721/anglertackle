@@ -1,0 +1,21 @@
+{
+  "anvil_cost": 8,
+  "description": {
+    "translate": "enchantment.anglertackle.drag"
+  },
+  "effects": {},
+  "max_cost": {
+    "base": 90,
+    "per_level_above_first": 9
+  },
+  "max_level": 3,
+  "min_cost": {
+    "base": 15,
+    "per_level_above_first": 9
+  },
+  "slots": [
+    "mainhand"
+  ],
+  "supported_items": "#anglertackle:enchantable/rod",
+  "weight": 2
+}

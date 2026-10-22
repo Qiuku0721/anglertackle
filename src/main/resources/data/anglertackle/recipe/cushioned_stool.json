@@ -1,0 +1,8 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    { "item": "anglertackle:stool" },
+    { "item": "minecraft:leather" }
+  ],
+  "result": { "id": "anglertackle:cushioned_stool", "count": 1 }
+}

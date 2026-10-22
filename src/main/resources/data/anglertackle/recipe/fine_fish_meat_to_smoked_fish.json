@@ -1,0 +1,12 @@
+{
+  "type": "anglertackle:chunk_smoking",
+  "category": "food",
+  "ingredient": {
+    "item": "anglertackle:fine_fish_meat"
+  },
+  "result": {
+    "id": "anglertackle:smoked_fish"
+  },
+  "experience": 0.35,
+  "cookingtime": 100
+}

@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "top": "anglertackle:block/broken_ice_top",
+    "bottom": "minecraft:block/ice",
+    "side": "minecraft:block/ice"
+  }
+}

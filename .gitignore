@@ -1,0 +1,59 @@
+# ---- 构建 / 工具链（可由脚本重建，不入库）----
+.gradle-home/
+.gradle/
+build/
+.jdk/
+run/
+versions/
+*.class
+
+# ---- 跑一次就变的本地状态 ----
+Temp/
+*.args
+javac.*.args
+
+# ---- 开发机专用的备份与对照副本 ----
+_backup_anglertackle/
+_baseline_1.21.1/
+_fishsrc/
+_scratch-nfrt/
+发布包/
+发布包-*/
+发布包_*/
+导入用/
+
+# ---- 个人调参的副本：不入库 ----
+#   注意：根目录的 anglertackle-common.toml **要入库**（它是发布用默认配置，与代码默认值逐项一致）
+anglertackle-common-*.toml.bak
+*.toml.bak
+
+# ---- 第三方 jar（开发者手动放进 libs/ 做兼容测试）----
+libs/*.jar
+
+# ---- 参考资料：外部照片/原图**不入库**（可能有第三方版权），
+#      但数值冻结基线要保留 —— 40 个开发工具依赖它们。
+参考资料/*
+!参考资料/_before_partcfg/
+!参考资料/_before_fishcfg/
+!参考资料/图标指纹.json
+参考资料/_probe/
+
+fish_research/
+
+# ---- 打包产物：make-release 生成的那份副本（旧值，容易误导，不入库）----
+默认配置_anglertackle-common.toml
+
+# ---- 本机零字节残留 / 重复的生成物 / 与本模组无关的小工具 ----
+/45
+/Configure
+/Task
+/tuner.html
+/工具/
+
+# ---- 编辑器 / 系统 ----
+.workbuddy/
+.idea/
+*.iml
+.vscode/
+Thumbs.db
+desktop.ini

@@ -1,0 +1,18 @@
+{
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:mod_loaded",
+      "modid": "kaleidoscope_cookery"
+    }
+  ],
+  "type": "kaleidoscope_cookery:pot",
+  "ingredients": [
+    {
+      "item": "anglertackle:fish_chunk"
+    }
+  ],
+  "result": {
+    "count": 1,
+    "id": "anglertackle:fish_chunk_cooked"
+  }
+}

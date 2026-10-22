@@ -1,0 +1,6 @@
+{
+  "parent": "anglertackle:item/rod_grip",
+  "textures": {
+    "layer0": "anglertackle:item/wood_lure_rod"
+  }
+}

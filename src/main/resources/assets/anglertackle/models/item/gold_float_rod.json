@@ -1,0 +1,14 @@
+{
+  "parent": "anglertackle:item/rod_grip",
+  "textures": {
+    "layer0": "anglertackle:item/gold_float_rod"
+  },
+  "overrides": [
+    {
+      "predicate": {
+        "anglertackle:cast": 1
+      },
+      "model": "anglertackle:item/gold_float_rod_cast"
+    }
+  ]
+}

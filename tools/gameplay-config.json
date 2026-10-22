@@ -1,0 +1,623 @@
+{
+  "group": "gameplay",
+  "items": [
+    {
+      "key": "rodWoodMaxWeightKg",
+      "cn": "木竿 · 承重上限",
+      "def": 8,
+      "type": "double"
+    },
+    {
+      "key": "rodWoodHookWindowBonus",
+      "cn": "木竿 · 提竿窗口加成",
+      "def": 0,
+      "type": "double"
+    },
+    {
+      "key": "rodWoodTensionCeiling",
+      "cn": "木竿 · 张力上限倍率",
+      "def": 1,
+      "type": "double"
+    },
+    {
+      "key": "rodWoodTensionRecover",
+      "cn": "木竿 · 张力回复倍率",
+      "def": 1,
+      "type": "double"
+    },
+    {
+      "key": "rodWoodStaminaDrain",
+      "cn": "木竿 · 体力削减倍率",
+      "def": 1,
+      "type": "double"
+    },
+    {
+      "key": "rodWoodMaterialFactor",
+      "cn": "木竿 · 耐久损耗系数",
+      "def": 1,
+      "type": "double"
+    },
+    {
+      "key": "rodWoodTier",
+      "cn": "木竿 · 品质档位上限",
+      "def": 3,
+      "type": "int"
+    },
+    {
+      "key": "rodIronMaxWeightKg",
+      "cn": "铁竿 · 承重上限",
+      "def": 30,
+      "type": "double"
+    },
+    {
+      "key": "rodIronHookWindowBonus",
+      "cn": "铁竿 · 提竿窗口加成",
+      "def": 0.1,
+      "type": "double"
+    },
+    {
+      "key": "rodIronTensionCeiling",
+      "cn": "铁竿 · 张力上限倍率",
+      "def": 1.2,
+      "type": "double"
+    },
+    {
+      "key": "rodIronTensionRecover",
+      "cn": "铁竿 · 张力回复倍率",
+      "def": 1.2,
+      "type": "double"
+    },
+    {
+      "key": "rodIronStaminaDrain",
+      "cn": "铁竿 · 体力削减倍率",
+      "def": 1.2,
+      "type": "double"
+    },
+    {
+      "key": "rodIronMaterialFactor",
+      "cn": "铁竿 · 耐久损耗系数",
+      "def": 0.85,
+      "type": "double"
+    },
+    {
+      "key": "rodIronTier",
+      "cn": "铁竿 · 品质档位上限",
+      "def": 4,
+      "type": "int"
+    },
+    {
+      "key": "rodGoldMaxWeightKg",
+      "cn": "金竿 · 承重上限",
+      "def": 21,
+      "type": "double"
+    },
+    {
+      "key": "rodGoldHookWindowBonus",
+      "cn": "金竿 · 提竿窗口加成",
+      "def": 0.25,
+      "type": "double"
+    },
+    {
+      "key": "rodGoldTensionCeiling",
+      "cn": "金竿 · 张力上限倍率",
+      "def": 1.1,
+      "type": "double"
+    },
+    {
+      "key": "rodGoldTensionRecover",
+      "cn": "金竿 · 张力回复倍率",
+      "def": 1.15,
+      "type": "double"
+    },
+    {
+      "key": "rodGoldStaminaDrain",
+      "cn": "金竿 · 体力削减倍率",
+      "def": 1.15,
+      "type": "double"
+    },
+    {
+      "key": "rodGoldMaterialFactor",
+      "cn": "金竿 · 耐久损耗系数",
+      "def": 0.9,
+      "type": "double"
+    },
+    {
+      "key": "rodGoldTier",
+      "cn": "金竿 · 品质档位上限",
+      "def": 6,
+      "type": "int"
+    },
+    {
+      "key": "rodDiamondMaxWeightKg",
+      "cn": "钻石竿 · 承重上限",
+      "def": 50,
+      "type": "double"
+    },
+    {
+      "key": "rodDiamondHookWindowBonus",
+      "cn": "钻石竿 · 提竿窗口加成",
+      "def": 0.2,
+      "type": "double"
+    },
+    {
+      "key": "rodDiamondTensionCeiling",
+      "cn": "钻石竿 · 张力上限倍率",
+      "def": 1.6,
+      "type": "double"
+    },
+    {
+      "key": "rodDiamondTensionRecover",
+      "cn": "钻石竿 · 张力回复倍率",
+      "def": 1.7,
+      "type": "double"
+    },
+    {
+      "key": "rodDiamondStaminaDrain",
+      "cn": "钻石竿 · 体力削减倍率",
+      "def": 1.6,
+      "type": "double"
+    },
+    {
+      "key": "rodDiamondMaterialFactor",
+      "cn": "钻石竿 · 耐久损耗系数",
+      "def": 0.7,
+      "type": "double"
+    },
+    {
+      "key": "rodDiamondTier",
+      "cn": "钻石竿 · 品质档位上限",
+      "def": 4,
+      "type": "int"
+    },
+    {
+      "key": "rodNetheriteMaxWeightKg",
+      "cn": "下界合金竿 · 承重上限",
+      "def": 999,
+      "type": "double"
+    },
+    {
+      "key": "rodNetheriteHookWindowBonus",
+      "cn": "下界合金竿 · 提竿窗口加成",
+      "def": 0.3,
+      "type": "double"
+    },
+    {
+      "key": "rodNetheriteTensionCeiling",
+      "cn": "下界合金竿 · 张力上限倍率",
+      "def": 1.7,
+      "type": "double"
+    },
+    {
+      "key": "rodNetheriteTensionRecover",
+      "cn": "下界合金竿 · 张力回复倍率",
+      "def": 1.9,
+      "type": "double"
+    },
+    {
+      "key": "rodNetheriteStaminaDrain",
+      "cn": "下界合金竿 · 体力削减倍率",
+      "def": 1.8,
+      "type": "double"
+    },
+    {
+      "key": "rodNetheriteMaterialFactor",
+      "cn": "下界合金竿 · 耐久损耗系数",
+      "def": 0.5,
+      "type": "double"
+    },
+    {
+      "key": "rodNetheriteTier",
+      "cn": "下界合金竿 · 品质档位上限",
+      "def": 5,
+      "type": "int"
+    },
+    {
+      "key": "tensionBaseCeiling",
+      "cn": "张力上限基准",
+      "def": 100,
+      "type": "double"
+    },
+    {
+      "key": "pullSprint",
+      "cn": "冲刺时的拉拽基数",
+      "def": 0.95,
+      "type": "double"
+    },
+    {
+      "key": "counterBonus",
+      "cn": "反向控杆奖励",
+      "def": -0.5,
+      "type": "double"
+    },
+    {
+      "key": "counterPenalty",
+      "cn": "同向控杆惩罚",
+      "def": 0.35,
+      "type": "double"
+    },
+    {
+      "key": "minReelGainRatio",
+      "cn": "收线涨势保底比例",
+      "def": 0.25,
+      "type": "double"
+    },
+    {
+      "key": "maxFishSlowdown",
+      "cn": "鱼拖慢收线的上限",
+      "def": 0.9,
+      "type": "double"
+    },
+    {
+      "key": "dampingToCapRatio",
+      "cn": "阻尼折算上限的比例",
+      "def": 0.5,
+      "type": "double"
+    },
+    {
+      "key": "capDampingBonus",
+      "cn": "阻尼对上限的加成",
+      "def": 1.2,
+      "type": "double"
+    },
+    {
+      "key": "totalDrainTarget",
+      "cn": "拉干阈值",
+      "def": 0.9,
+      "type": "double"
+    },
+    {
+      "key": "nearShoreBase",
+      "cn": "近岸基础距离",
+      "def": 6,
+      "type": "double"
+    },
+    {
+      "key": "staminaEpsilonFloor",
+      "cn": "体力判定下限",
+      "def": 0.05,
+      "type": "double"
+    },
+    {
+      "key": "staminaEpsilonRatio",
+      "cn": "体力判定比例",
+      "def": 0.005,
+      "type": "double"
+    },
+    {
+      "key": "inputStaleLimit",
+      "cn": "输入超时上限",
+      "def": 5,
+      "type": "int"
+    },
+    {
+      "key": "tierSpeedBase",
+      "cn": "档位游速底数",
+      "def": 1.12,
+      "type": "double"
+    },
+    {
+      "key": "tierStaminaResistBase",
+      "cn": "档位体力抗性底数",
+      "def": 1.18,
+      "type": "double"
+    },
+    {
+      "key": "tierGoldSpeedScale",
+      "cn": "金档 · 游速手感倍率",
+      "def": 0.84,
+      "type": "double"
+    },
+    {
+      "key": "tierGoldStaminaScale",
+      "cn": "金档 · 体力池倍率",
+      "def": 1,
+      "type": "double"
+    },
+    {
+      "key": "tierRedSpeedScale",
+      "cn": "红档 · 游速手感倍率",
+      "def": 1.05,
+      "type": "double"
+    },
+    {
+      "key": "tierRedStaminaScale",
+      "cn": "红档 · 体力池倍率",
+      "def": 1.5,
+      "type": "double"
+    },
+    {
+      "key": "tierRedStaminaMin",
+      "cn": "红档 · 体力基准下限",
+      "def": 200,
+      "type": "double"
+    },
+    {
+      "key": "fatiguePullMultiplier",
+      "cn": "疲劳期拉拽倍率",
+      "def": 0.42,
+      "type": "double"
+    },
+    {
+      "key": "reelFloorDrainBase",
+      "cn": "保底体力削减（下限）",
+      "def": 5,
+      "type": "double"
+    },
+    {
+      "key": "reelFloorDrainPerDamping",
+      "cn": "保底体力削减 · 每点阻尼转化",
+      "def": 10,
+      "type": "double"
+    },
+    {
+      "key": "reelFloorDrainCap",
+      "cn": "保底体力削减（上限）",
+      "def": 20,
+      "type": "double"
+    },
+    {
+      "key": "floorStruggleBase",
+      "cn": "保底挣扎（白档秒数）",
+      "def": 1,
+      "type": "double"
+    },
+    {
+      "key": "floorStrugglePerTier",
+      "cn": "保底挣扎 · 每档增加",
+      "def": 1,
+      "type": "double"
+    },
+    {
+      "key": "floorStruggleBonusSteady",
+      "cn": "保底挣扎 · 均衡型加成",
+      "def": 0,
+      "type": "double"
+    },
+    {
+      "key": "floorStruggleBonusSluggish",
+      "cn": "保底挣扎 · 黏液型加成",
+      "def": 0,
+      "type": "double"
+    },
+    {
+      "key": "floorStruggleBonusBurst",
+      "cn": "保底挣扎 · 爆发型加成",
+      "def": 1,
+      "type": "double"
+    },
+    {
+      "key": "floorStruggleBonusErratic",
+      "cn": "保底挣扎 · 神经质加成",
+      "def": 0.5,
+      "type": "double"
+    },
+    {
+      "key": "reelResistThreshold",
+      "cn": "收线抵抗 · 起效阈值",
+      "def": 1.2,
+      "type": "double"
+    },
+    {
+      "key": "reelResistTierWhite",
+      "cn": "收线抵抗 · 白档",
+      "def": 0.05,
+      "type": "double"
+    },
+    {
+      "key": "reelResistTierGreen",
+      "cn": "收线抵抗 · 绿档",
+      "def": 0.125,
+      "type": "double"
+    },
+    {
+      "key": "reelResistTierBlue",
+      "cn": "收线抵抗 · 蓝档",
+      "def": 0.185,
+      "type": "double"
+    },
+    {
+      "key": "reelResistTierPurple",
+      "cn": "收线抵抗 · 紫档",
+      "def": 0.275,
+      "type": "double"
+    },
+    {
+      "key": "reelResistTierGold",
+      "cn": "收线抵抗 · 金档",
+      "def": 0.55,
+      "type": "double"
+    },
+    {
+      "key": "reelResistTierRed",
+      "cn": "收线抵抗 · 红档",
+      "def": 0.75,
+      "type": "double"
+    },
+    {
+      "key": "reelResistStratSteady",
+      "cn": "收线抵抗 · 均衡型浮动",
+      "def": 0,
+      "type": "double"
+    },
+    {
+      "key": "reelResistStratSluggish",
+      "cn": "收线抵抗 · 黏液型浮动",
+      "def": -0.05,
+      "type": "double"
+    },
+    {
+      "key": "reelResistStratBurst",
+      "cn": "收线抵抗 · 爆发型浮动",
+      "def": 0.05,
+      "type": "double"
+    },
+    {
+      "key": "reelResistStratErratic",
+      "cn": "收线抵抗 · 神经质浮动",
+      "def": 0,
+      "type": "double"
+    },
+    {
+      "key": "reelResistDampingOffset",
+      "cn": "收线抵抗 · 每点阻尼抵消",
+      "def": 0.5,
+      "type": "double"
+    },
+    {
+      "key": "reelResistDampingCap",
+      "cn": "收线抵抗 · 抵消上限",
+      "def": 0.75,
+      "type": "double"
+    },
+    {
+      "key": "fatiguedReelMinGain",
+      "cn": "力竭期收线保底",
+      "def": 0.05,
+      "type": "double"
+    },
+    {
+      "key": "fatiguedTensionGainScale",
+      "cn": "力竭期 · 变红速度倍率",
+      "def": 0.7,
+      "type": "double"
+    },
+    {
+      "key": "fatiguedTensionRecoverScale",
+      "cn": "力竭期 · 回白速度倍率",
+      "def": 1.35,
+      "type": "double"
+    },
+    {
+      "key": "fatigueThresholdScale",
+      "cn": "力竭阈值倍率（全局）",
+      "def": 1,
+      "type": "double"
+    },
+    {
+      "key": "idleFallFloor",
+      "cn": "中立 · 最小净回落",
+      "def": 0.3,
+      "type": "double"
+    },
+    {
+      "key": "struggleSecondsBase",
+      "cn": "挣扎秒数（白档）",
+      "def": 2,
+      "type": "double"
+    },
+    {
+      "key": "struggleSecondsPerTier",
+      "cn": "挣扎秒数每档增量",
+      "def": 1.6,
+      "type": "double"
+    },
+    {
+      "key": "restSecondsBase",
+      "cn": "休息秒数（白档）",
+      "def": 5,
+      "type": "double"
+    },
+    {
+      "key": "restSecondsPerTier",
+      "cn": "休息秒数每档递减",
+      "def": 0.4,
+      "type": "double"
+    },
+    {
+      "key": "alpineLakeMinY",
+      "cn": "高寒湖 · 最低高度",
+      "def": 120,
+      "type": "int"
+    },
+    {
+      "key": "coldWaterMaxTemp",
+      "cn": "冷水溪流 · 最高温度",
+      "def": 0.3,
+      "type": "double"
+    },
+    {
+      "key": "brokenIceToPackIceMinutes",
+      "cn": "冰钓 · 碎冰变浮冰",
+      "def": 5,
+      "type": "int"
+    },
+    {
+      "key": "packIceToIceMinutes",
+      "cn": "冰钓 · 浮冰变回冰",
+      "def": 10,
+      "type": "int"
+    },
+    {
+      "key": "icePickDurabilityCost",
+      "cn": "冰钓 · 凿一次扣耐久",
+      "def": 1,
+      "type": "int"
+    },
+    {
+      "key": "iceHoleLineWearMultiplier",
+      "cn": "冰钓 · 洞内鱼线磨损",
+      "def": 2,
+      "type": "double"
+    },
+    {
+      "key": "iceHoleHighValueBonus",
+      "cn": "冰钓 · 洞内金红爆率",
+      "def": 0.01,
+      "type": "double"
+    },
+    {
+      "key": "openIceBiteTimeMultiplier",
+      "cn": "冰钓 · 冰上咬钩时间",
+      "def": 1.5,
+      "type": "double"
+    },
+    {
+      "key": "openIceHighValuePenalty",
+      "cn": "冰钓 · 冰上金红爆率",
+      "def": 0.01,
+      "type": "double"
+    },
+    {
+      "key": "fullChargeTicks",
+      "cn": "蓄力满所需 tick",
+      "def": 32,
+      "type": "int"
+    },
+    {
+      "key": "minChargeTicks",
+      "cn": "最短蓄力 tick",
+      "def": 3,
+      "type": "int"
+    },
+    {
+      "key": "chumMinAirTicks",
+      "cn": "窝料最小滞空",
+      "def": 10,
+      "type": "int"
+    },
+    {
+      "key": "oversizeFishAction",
+      "cn": "超重鱼的处理方式",
+      "def": 0,
+      "type": "int"
+    },
+    {
+      "key": "compassSearchRadius",
+      "cn": "追踪罗盘搜索半径",
+      "def": 1200,
+      "type": "int"
+    },
+    {
+      "key": "bigCatchAnnounceValue",
+      "cn": "大鱼公告价值门槛",
+      "def": 5050,
+      "type": "int"
+    },
+    {
+      "key": "bigCatchAnnounceMinIntervalSec",
+      "cn": "大鱼公告最小间隔",
+      "def": 10,
+      "type": "int"
+    }
+  ]
+}

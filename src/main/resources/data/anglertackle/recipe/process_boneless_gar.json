@@ -1,0 +1,13 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    {
+      "item": "anglertackle:alligator_gar"
+    }
+  ],
+  "result": {
+    "count": 1,
+    "id": "anglertackle:boneless_gar"
+  }
+}

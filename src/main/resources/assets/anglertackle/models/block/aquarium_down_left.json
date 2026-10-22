@@ -1,0 +1,35 @@
+{
+  "credit": "垂纶 · 水族箱",
+  "render_type": "minecraft:cutout",
+  "textures": {
+    "frame": "anglertackle:block/aquarium"
+  },
+  "elements": [
+    {
+      "from": [
+        0,
+        0,
+        0
+      ],
+      "to": [
+        1,
+        2,
+        16
+      ],
+      "faces": {
+        "north": {
+          "texture": "#frame"
+        },
+        "south": {
+          "texture": "#frame"
+        },
+        "east": {
+          "texture": "#frame"
+        },
+        "west": {
+          "texture": "#frame"
+        }
+      }
+    }
+  ]
+}

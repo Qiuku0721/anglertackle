@@ -1,0 +1,9 @@
+{
+  "values": [
+    "anglertackle:fish_oil",
+    {
+      "id": "kaleidoscope_cookery:oil",
+      "required": false
+    }
+  ]
+}

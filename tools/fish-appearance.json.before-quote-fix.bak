@@ -1,0 +1,534 @@
+{
+  "_comment": [
+    "垂纶 —— 鱼的外形唯一真源。建模（ModFishModel）与贴图（gen-fish-textures）都从这里读。",
+    "",
+    "配色来源：fish_research/<id>.json。check-fish-appearance.js 会逐条断言这里的每个 hex",
+    "确实出现在对应鱼种的对应字段里 —— 不许凭空发明颜色。",
+    "",
+    "bodies：4 组**默认**体型（W 体宽 / H 体高 / Lb 后段长 / Lh 头长 / Ln 吻长 / Lt 尾鳍长）。",
+    "  组只提供默认值，真正决定长相的是每种鱼自己的 shape。",
+    "",
+    "fish[].shape：形状覆盖，只写要改的项。可用键见 tools/fish-model.js 的 buildParts：",
+    "  snoutShape  normal | duckbill(狗鱼鸭嘴) | upturned(翘嘴上翘口) | blunt(巨骨舌鱼骨板头)",
+    "  snoutLen/snoutWidth/snoutHeight    吻的尺寸",
+    "  lowerJaw    下颌前突量（0=不突出）",
+    "  tailType    fork | round | crescent(金枪鱼新月尾) | heterocercal(鲨鱼歪尾)",
+    "  tailLen/tailHeight                 尾鳍尺寸",
+    "  peduncleLen/peduncleWidth/peduncleHeight  尾柄（越细长越像鲭科）",
+    "  bodyTaper   后段高 / 前段高，<1 表示向后收细",
+    "  headHeight  头高 / 体高",
+    "  dorsalLen/dorsalHeight/dorsalPos   背鳍长度/高度/位置(0=头侧 1=尾侧)",
+    "  secondDorsal/secondDorsalPos/secondDorsalLen  第二背鳍",
+    "  adipose     脂鳍（鲑科）",
+    "  finlets     离鳍数量（金枪鱼）",
+    "  analLen/analHeight/analPos         臀鳍",
+    "  barbels/barbelLen/barbelAt/barbelDroop  口须：数量/长度/位置(mouth|lower)/下垂量",
+    "  gillSlits   鳃裂数（鲨鱼 5）",
+    "  pectoralLen/pectoralDrop           胸鳍",
+    "  eyeScale    眼径倍率（大眼海鲢）",
+    "",
+    "fish[].shape.bands：[背带结束, 体侧结束, 腹带开始] 占体高的比例，默认 [0.26,0.50,0.74]。",
+    "  银白色的鱼（大眼海鲢、鲫鱼、鲑）把第一个数压小，背部深色带就变窄。"
+  ],
+
+  "bodies": {
+    "A": {
+      "label": "高背侧扁",
+      "note": "体长:体高≈2.3:1，横截面≈1:3。罗非鱼/鲫鱼/镜鲤。",
+      "W": 2, "H": 6, "Lb": 8, "Lh": 4, "Ln": 2, "Lt": 4, "tailH": 5,
+      "dorsalLong": 5, "renderScale": [1.2, 1.0, 1.0],
+      "segments": 4, "profile": [0.90, 1.0, 0.99, 0.92, 0.76, 0.52], "top": [0.44, 0.80, 1.00, 0.94, 0.72, 0.40], "bot": [0.40, 0.74, 0.94, 0.98, 0.74, 0.36]
+    },
+    "B": {
+      "label": "纺锤形",
+      "note": "体长:体高≈4:1，横截面≈1:2。梭鱼/梭鲈/鲑/金枪鱼/褐鳟/虎鱼。",
+      "W": 2, "H": 4, "Lb": 10, "Lh": 4, "Ln": 2, "Lt": 5, "tailH": 4,
+      "dorsalLong": 6, "renderScale": [1.0, 1.0, 1.0],
+      "segments": 4, "profile": [0.86, 1.0, 0.96, 0.84, 0.66, 0.44], "top": [0.40, 0.82, 1.00, 0.92, 0.66, 0.32], "bot": [0.36, 0.76, 0.96, 0.96, 0.70, 0.30]
+    },
+    "C": {
+      "label": "侧扁·延长型",
+      "note": "体长:体高≈3.5:1，横截面≈1:4（薄身）。翘嘴鲌/䱗条/条纹鲈/白金龙鱼/大眼海鲢/花鳅。",
+      "W": 1, "H": 4, "Lb": 10, "Lh": 3, "Ln": 1, "Lt": 5, "tailH": 4,
+      "dorsalLong": 6, "renderScale": [1.0, 1.0, 1.0],
+      "segments": 4, "profile": [0.84, 0.98, 0.94, 0.82, 0.64, 0.44], "top": [0.38, 0.80, 0.98, 0.90, 0.68, 0.34], "bot": [0.34, 0.74, 0.94, 0.96, 0.72, 0.32]
+    },
+    "D": {
+      "label": "延长圆筒形",
+      "note": "体长:体高≈6.7:1，横截面≈1:1（近圆）。草鱼/青鱼/狗鱼/巨骨舌鱼/雷龙/幼鲨。",
+      "W": 3, "H": 3, "Lb": 14, "Lh": 4, "Ln": 2, "Lt": 5, "tailH": 4,
+      "dorsalLong": 7, "renderScale": [1.0, 1.0, 1.0],
+      "segments": 5, "profile": [0.92, 1.0, 0.99, 0.95, 0.84, 0.60], "top": [0.46, 0.84, 1.00, 0.98, 0.86, 0.52], "bot": [0.44, 0.80, 0.96, 0.98, 0.88, 0.50]
+    }
+  },
+
+  "fish": {
+    "tilapia": {
+      "_v1": "用户 2026-10-01：第一版可以暂时不用改 → v1 风格",
+      "group": "A", "lengthCm": 24,
+      "colors": { "back": "#6E7A4A", "flank": "#9C9A82", "belly": "#E8E6DC",
+                  "mark": "#3A3B2E", "mark2": "#2E2E28", "fin": "#8A8B80", "finSoft": "#8A8B80",
+                  "eye": "#B9A96A" },
+      "pattern": ["bars"], "patternContrast": 0.34, "barStep": 2,
+      "shape": { "style": "cod", "dorsalLen": 8, "dorsalHeight": 3, "dorsalPos": 0.34, "tailShape": "fan", "tailLen": 4, "tailHeight": 5 },
+      "traits": { "cheekSpot": "#7E8A93" }
+    },
+    "african_butterflyfish": {
+      "_note": "非洲蝴蝶鱼 Pantodon buchholzi —— 表面层鱼。配色全部取自 fish_research/african_butterflyfish.json（FishBase 原文：背部橄榄色、腹侧银黄带洋红、鳍鲜粉红带褐紫色小点）。",
+      "group": "A", "lengthCm": 12,
+      "colors": { "back": "#6B5F3A", "flank": "#C9BC8C", "belly": "#C08A7E",
+                  "mark": "#4A4028", "fin": "#E0A0A8", "finSoft": "#6B4A6E",
+                  "line": "#7A4E7E", "eye": "#C9A227" },
+      "pattern": ["bars"], "patternContrast": 0.34, "barStep": 3,
+      "shape": { "style": "cod", "dorsalLen": 6, "tailShape": "fan", "analLen": 9,
+                 "eyeScale": 1.4 }
+    },
+    "crucian_carp": {
+      "_v1": "用户 2026-10-01：鲫鱼长这屌样吗 → v1 风格",
+      "group": "A", "lengthCm": 20,
+      "colors": { "back": "#4A5A3C", "flank": "#A8ADA2", "belly": "#E9E9DF",
+                  "fin": "#565B52", "finSoft": "#8A8F82", "line": "#8E9488", "eye": "#B99A4E" },
+      "pattern": [],
+      "shape": { "style": "cod", "bands": [0.18, 0.46, 0.76], "dorsalLen": 9, "dorsalHeight": 3, "dorsalPos": 0.32, "tailType": "fork",
+                 "tailLen": 4, "tailTip": 0.35, "headHeight": 0.92 }
+    },
+    "mirror_carp": {
+      "group": "A", "lengthCm": 45,
+      "colors": { "back": "#6B5A3C", "flank": "#D8C878", "belly": "#E8E2C2",
+                  "mark": "#6B5A3C", "fin": "#8A7A50", "finSoft": "#B08A40", "eye": "#C9A227" },
+      "pattern": ["plates"], "patternContrast": 0.5,
+      "shape": { "style": "salmon", "dorsalLen": 10, "dorsalHeight": 3, "dorsalPos": 0.30, "snoutShape": "subterminal",
+                 "tailType": "fork", "barbels": 4, "barbelLen": 1, "barbelAt": "mouth", "barbelDroop": 1.3 }
+    },
+    "jewel_cichlid": {
+      "_note": "红宝石鱼 Rubricatochromis bimaculatus（旧名 Hemichromis bimaculatus）—— 体高侧扁的鲜红慈鲷。配色取自 fish_research/jewel_cichlid.json；三块黑斑的位置是 FishBase Diagnosis 给的硬判据。",
+      "group": "A", "lengthCm": 13,
+      "colors": { "back": "#7A6A3F", "flank": "#C0392B", "belly": "#D2542C",
+                  "mark": "#1B1B22", "fin": "#C0392B", "finSoft": "#D2542C",
+                  "line": "#3E8E7E", "eye": "#26201C" },
+      "pattern": ["spots"], "patternContrast": 0.9, "patternDensity": 0.55,
+      "shape": { "style": "cod", "tailShape": "fan", "dorsalLen": 10,
+                 "analLen": 6, "eyeScale": 1.1 }
+    },
+
+    "mullet": {
+      "_v1": "用户 2026-10-01：真不像 → v1 风格",      "group": "B", "lengthCm": 40,
+      "colors": { "back": "#6B7A7E", "flank": "#C9D2D4", "belly": "#F2F5F4",
+                  "mark": "#3A4247", "fin": "#46503F", "finSoft": "#6E7873", "line": "#A8B4B8",
+                  "eye": "#C4553A" },
+      "pattern": ["stripes"], "patternContrast": 0.7,
+      "shape": { "style": "salmon", "bands": [0.16, 0.42, 0.74], "tailType": "fork", "dorsalLen": 5, "dorsalHeight": 2, "dorsalPos": 0.44,
+                 "tailLen": 4, "snoutShape": "blunt", "snoutHeight": 0.55, "headHeight": 0.95 }
+    },
+    "zander": {
+      "group": "B", "lengthCm": 65,
+      "colors": { "back": "#4A5D3A", "flank": "#8C9E86", "belly": "#EDF1EA",
+                  "mark": "#3A3D2B", "fin": "#C7BC88", "finSoft": "#D9D2AE", "eye": "#C9A24A" },
+      "pattern": ["bars"], "patternContrast": 0.75,
+      "shape": { "secondDorsal": true, "style": "salmon", "tailType": "fork", "dorsalLen": 5, "dorsalHeight": 2, "dorsalPos": 0.26,
+                 "secondDorsal": true, "secondDorsalPos": 0.74, "secondDorsalLen": 4,
+                 "analHeight": 2, "analPos": 0.76, "canines": 2 }
+    },
+    "atlantic_salmon": {
+      "_v1": "用户 2026-10-01：还不够大 → v1 风格",
+      "group": "B", "lengthCm": 175,
+      "colors": { "back": "#3F5B54", "flank": "#C6CFD0", "belly": "#F4F2EC",
+                  "mark": "#33291C", "fin": "#6B6A5E", "finSoft": "#6E7A78", "eye": "#A9A08A" },
+      "pattern": ["spots"], "patternContrast": 0.55, "patternDensity": 0.5,
+      "shape": { "style": "salmon", "bands": [0.16, 0.44, 0.74], "tailType": "fork", "dorsalLen": 4, "dorsalHeight": 2, "dorsalPos": 0.38,
+                 "adipose": true, "analLen": 3, "analHeight": 2, "analPos": 0.64,
+                 "tailLen": 4, "dorsalLen": 3, "dorsalHeight": 1, "dorsalPos": 0.30 }
+    },
+    "bluefin_tuna": {
+      "group": "B", "lengthCm": 200,
+      "colors": { "back": "#1F3F63", "flank": "#2C5578", "belly": "#E9EEF0",
+                  "mark": "#C9D6DC", "fin": "#4A6E8C", "finSoft": "#4A6E8C", "eye": "#3A4A58" },
+      "pattern": ["stripes"], "patternContrast": 0.45,
+      "shape": { "style": "salmon", "bands": [0.3, 0.52, 0.74], "tailType": "crescent", "tailLen": 5, "tailHeight": 7,
+                 "peduncleLen": 0.34, "peduncleWidth": 0.5, "peduncleHeight": 0.42,
+                 "dorsalLen": 4, "dorsalHeight": 2, "dorsalPos": 0.26,
+                 "finlets": 5, "finletsPos": 0.56, "analLen": 4, "analHeight": 2, "analPos": 0.62,
+                 "pectoralLen": 4, "pectoralDrop": 0.22 }
+    },
+    "brown_trout": {
+      "group": "B", "lengthCm": 45,
+      "colors": { "back": "#5A5136", "flank": "#7B7A4B", "belly": "#E3DCA9",
+                  "mark": "#1A1A18", "mark2": "#C0472A", "fin": "#6E6A55", "finSoft": "#8A8578" },
+      "pattern": ["spots", "speckle"], "patternContrast": 0.85, "patternDensity": 1.9,
+      "traits": { "adiposeColor": "#C0472A" },
+      "shape": { "style": "salmon", "tailType": "fork", "dorsalLen": 4, "dorsalHeight": 2, "dorsalPos": 0.36,
+                 "adipose": true, "analLen": 4, "analHeight": 3, "analPos": 0.78,
+                 "tailLen": 4, "tailHeight": 4, "bodyTaper": 1.0, "dorsalPos": 0.46 }
+    },
+    "tigerfish": {
+      "_userNote": "用户 2026-10-01 实机：非洲虎鱼（饰纹狗脂鲤），俗称黄金猛鱼。2026-10-01 用户第二次反馈『不应该是蓝白色』并给了参考图，体色改按参考图取样：背景是中性偏冷白 #EEF2F3（说明图本身没有暖色调），鱼身逐行取样得到 back #6E5C3E / flank #BAAA88 / belly #D3C4A4 / mark #4A3A1E / line #9C8E70 —— 原来是 back #4A6377（冷蓝灰）+ belly #EDF0F2（带蓝的冷白），所以整条鱼读起来是蓝白的",
+      "_v1": "用户 2026-10-01：配色你真的看了吗 → v1 风格",
+      "group": "B", "lengthCm": 70,
+      "colors": { "back": "#6E5C3E", "flank": "#BAAA88", "belly": "#D3C4A4",
+                  "mark": "#4A3A1E", "mark2": "#33280F", "fin": "#D9542B", "finSoft": "#D9542B",
+                  "line": "#9C8E70", "eye": "#C9B47A" },
+      "pattern": ["stripes"], "patternContrast": 0.92,
+      "shape": { "style": "salmon", "bands": [0.16, 0.4, 0.74], "tailType": "fork", "tailLen": 6, "dorsalLen": 4, "dorsalHeight": 2,
+                 "dorsalPos": 0.30, "adipose": true, "analLen": 4, "analHeight": 2, "analPos": 0.74,
+                 "canines": 4, "tailTip": 0.3 }
+    },
+
+    "topmouth_culter": {
+      "_v1": "用户 2026-10-01：嘴和身体连接很诡异 → v1 风格",
+      "group": "C", "lengthCm": 50,
+      "colors": { "back": "#5A6470", "flank": "#C9D2D6", "belly": "#F2F5F5",
+                  "mark": "#9AA6AC", "fin": "#3E4A55", "finSoft": "#DDE2E2", "line": "#9AA6AC" },
+      "pattern": [],
+      "shape": { "style": "salmon", "bands": [0.2, 0.46, 0.74], "snoutShape": "upturned", "snoutLen": 2, "tailType": "fork", "tailLen": 6, "tailLowerLong": true,
+                 "dorsalLen": 4, "dorsalHeight": 2, "dorsalPos": 0.34,
+                 "analLen": 5, "analHeight": 2, "analPos": 0.7, "bodyTaper": 0.85 }
+    },
+    "hemiculter": {
+      "group": "C", "lengthCm": 11,
+      "colors": { "back": "#5A6B70", "flank": "#C9D2D6", "belly": "#E2E7E9",
+                  "line": "#4A5155", "fin": "#8A969B", "finSoft": "#D9D2B4", "eye": "#1B1F22" },
+      "pattern": [],
+      "shape": { "style": "cod", "bands": [0.18, 0.44, 0.74], "tailType": "fork", "tailLen": 3, "tailHeight": 3,
+                 "dorsalLen": 3, "dorsalHeight": 1, "dorsalPos": 0.42,
+                 "analLen": 3, "analHeight": 1, "bodyTaper": 0.8, "pectoralLen": 1 }
+    },
+    "striped_bass": {
+      "group": "C", "lengthCm": 76,
+      "colors": { "back": "#6B7A63", "flank": "#C2C9CC", "belly": "#F2F4F1",
+                  "mark": "#16191B", "fin": "#5A6357", "finSoft": "#D6DBD9", "eye": "#C9CCC4" },
+      "pattern": ["stripes"], "patternContrast": 0.95,
+      "shape": { "style": "salmon", "tailType": "fork", "tailLen": 5, "dorsalLen": 7, "dorsalHeight": 2,
+                 "dorsalPos": 0.34, "analLen": 4, "analHeight": 2, "analPos": 0.7 }
+    },
+    "platinum_arowana": {
+      "group": "C", "lengthCm": 45,
+      "colors": { "back": "#F2F0E8", "flank": "#E8E9EC", "belly": "#FAF8F4",
+                  "mark": "#CFD3DA", "fin": "#F5F3EC", "finSoft": "#F5F3EC", "eye": "#C8322B" },
+      "pattern": ["plates"], "patternContrast": 0.35,
+      "shape": { "style": "salmon", "tailType": "round", "tailLen": 4, "dorsalLen": 5, "dorsalHeight": 2,
+                 "dorsalPos": 0.86, "analLen": 5, "analHeight": 2, "analPos": 0.86,
+                 "lowerJaw": 1, "bodyTaper": 0.72, "headHeight": 0.88,
+                 "snoutShape": "blunt" }
+    },
+    "oxeye_tarpon": {
+      "_v1": "用户 2026-10-01：配色我怎么感觉不对 → v1 风格",
+      "group": "C", "lengthCm": 100,
+      "colors": { "back": "#6E8C7E", "flank": "#EDF2F4", "belly": "#F0F3F4",
+                  "mark": "#A9B4B9", "fin": "#DCD79A", "finSoft": "#A8A46A", "line": "#A9B4B9",
+                  "eye": "#C9B37E" },
+      "pattern": [],
+      "shape": { "style": "salmon", "bands": [0.13, 0.34, 0.7], "tailType": "fork", "tailLen": 4, "tailHeight": 4,
+                 "dorsalLen": 4, "dorsalHeight": 2, "dorsalPos": 0.32,
+                 "analLen": 5, "analHeight": 2, "analPos": 0.68,
+                 "eyeScale": 1.5, "lowerJaw": 1, "bodyTaper": 0.88, "finFilament": 6 }
+    },
+    "banded_loach": {
+      "_v1": "用户 2026-10-01：嘴巴有诡异玩意、尾巴诡异 → v1 风格",
+      "group": "C", "lengthCm": 8,
+      "colors": { "back": "#7A6A4F", "flank": "#C9B98F", "belly": "#F2EFE4",
+                  "mark": "#A8823C", "mark2": "#3A2E20", "fin": "#D8C9A0", "finSoft": "#EDE3C4",
+                  "eye": "#1E1A14" },
+      "pattern": ["plates", "bars"], "patternContrast": 0.9, "barStep": 2,
+      "shape": { "style": "cod", "tailType": "round", "tailLen": 3, "dorsalLen": 3, "dorsalHeight": 1,
+                 "dorsalPos": 0.46, "analLen": 2, "analHeight": 1,
+                 "headHeight": 0.85, "pectoralLen": 1, "cheekSpine": true, "tailTip": 0.5 },
+      "traits": { "squat": 0.9 }
+    },
+    "guppy": {
+      "_note": "孔雀鱼 Poecilia reticulata —— 模组里最小的鱼。配色取自 fish_research/guppy.json（野生型：背橄榄褐、体侧银灰带网状鳞纹、腹部银白；雄鱼尾鳍橙红）。",
+      "group": "A", "lengthCm": 4,
+      "colors": { "back": "#6B5F45", "flank": "#A8A08C", "belly": "#D9D2B8",
+                  "mark": "#1B1B22", "fin": "#E05A2B", "finSoft": "#2E6E8C",
+                  "eye": "#1B1B22" },
+      "pattern": ["spots"], "patternContrast": 0.7, "patternDensity": 1.6,
+      "shape": { "style": "cod", "tailShape": "fan", "dorsalLen": 5,
+                 "analLen": 4, "eyeScale": 1.3 }
+    },
+    "elephantnose": {
+      "_note": "长吻象鼻鱼 Gnathonemus petersii —— 泥底弱电底栖。配色取自 fish_research/elephantnose.json；背鳍与臀鳍在后半身上下对夹、臀鳍更长，尾鳍深叉。",
+      "group": "C", "lengthCm": 25,
+      "colors": { "back": "#4A4038", "flank": "#6E6055", "belly": "#C9C0B4",
+                  "mark": "#2E2822", "mark2": "#3A322A", "fin": "#8E8068",
+                  "finSoft": "#A89C8C", "eye": "#2A2622" },
+      "pattern": ["bars"], "patternContrast": 0.6, "barStep": 6,
+      "shape": { "style": "cod", "tailType": "fork", "tailLen": 5,
+                 "longDorsal": true, "longDorsalLen": 12, "longAnalLen": 14,
+                 "snoutShape": "subterminal", "barbels": 4, "barbelLen": 2,
+                 "barbelAt": "lower", "barbelDroop": 1.4, "eyeScale": 1.0 }
+    },
+
+    "golden_loach": {
+      "_note": "金泥鳅 Paramisgurnus dabryanus 金黄（黄化）品系 —— 洞穴淤泥底层的圆筒形鳅。配色取自 fish_research/golden_loach.json：背 #E8A317、体侧 #FFD24A、腹 #FBF3DC、鳍 #F7CE63（软边 #FFF0BE）、★金红眼 #C0392B（黄化而非白化，广西科技成果原文『眼球金红色』）。体长∶体高 6.6∶1 → D 组；尾鳍圆形、★无脂鳍、须 5 对共 10 根（模型上限只画得下 6 根，故 barbels=6，是全模组须最多的鱼）、头短（头长 < 体高）。★体侧花纹按**用户参考图**：图上是一条明显的橙红色纵带（不是零星小点），所以用 stripes + 0.6 对比，配色 #E08A2B（该 hex 出自资料的 markings）。资料同时注明『权威文字来源一律记通体金黄、未记载斑点』，这条分歧保留在 fish_research 里。",
+      "group": "D", "lengthCm": 18,
+      "colors": { "back": "#E8A317", "flank": "#FFD24A", "belly": "#FBF3DC",
+                  "mark": "#E08A2B", "fin": "#F7CE63", "finSoft": "#FFF0BE",
+                  "eye": "#C0392B" },
+      "pattern": ["stripes"], "patternContrast": 0.6,
+      "shape": { "style": "cod", "tailType": "round", "tailLen": 3, "tailHeight": 3,
+                 "headHeight": 0.92, "dorsalLen": 3, "dorsalHeight": 1, "dorsalPos": 0.58,
+                 "peduncleWidth": 0.6, "bodyTaper": 0.9,
+                 "barbels": 6, "barbelLen": 2, "barbelAt": "mouth", "barbelDroop": 1.2 }
+    },
+
+    "cave_blindfish": {
+      "_userNote": "体型与配色按**用户 2026-10-02 参考图**，与调研资料不同处以此为准：① 参考图是**细长**体型（体长∶体高 ≈ 3.5:1），而资料里 FishBase 照片实测 aspect 2.03（偏短胖）—— 采用参考图的 C 组；② 参考图整体是**灰粉**色（不是资料说的乳白浅肉色），且头部有一块**暗红**；③ 其余（无眼、有脂鳍、尾鳍深叉、不画黑眼点、无须）两处一致。资料原文的分歧写在 fish_research/cave_blindfish.json 里。",
+      "group": "C", "lengthCm": 9,
+      "colors": { "back": "#B49E9A", "flank": "#D8C6C2", "belly": "#EDE3DF",
+                  "mark": "#9E4A42", "fin": "#CBB8B4", "finSoft": "#E4D8D4",
+                  "eye": "#D8C6C2" },
+      "pattern": ["plates"], "patternContrast": 0.5,
+      "shape": { "style": "cod", "tailType": "fork", "tailLen": 5, "tailHeight": 3,
+                 "headHeight": 0.85, "dorsalLen": 4, "dorsalHeight": 2, "dorsalPos": 0.45,
+                 "analLen": 5, "analHeight": 2, "analPos": 0.62,
+                 "adipose": true, "eyeScale": 0.25 }
+    },
+
+    "grass_carp": {
+      "group": "D", "lengthCm": 70,
+      "colors": { "back": "#5A6340", "flank": "#C6C29C", "belly": "#E9E7DB",
+                  "mark": "#4A4A42", "fin": "#B6BAB2", "finSoft": "#C9BC86", "line": "#8E8C74" },
+      "pattern": ["plates"], "patternContrast": 0.55,
+      "shape": { "style": "salmon", "tailType": "fork", "tailLen": 5, "dorsalLen": 9, "dorsalHeight": 2,
+                 "dorsalPos": 0.34, "analLen": 4, "analHeight": 2, "analPos": 0.72 }
+    },
+    "black_carp": {
+      "group": "D", "lengthCm": 90,
+      "colors": { "back": "#2B3338", "flank": "#3D4A4F", "belly": "#8A9296",
+                  "fin": "#262D31", "finSoft": "#20262A" },
+      "pattern": [],
+      "shape": { "style": "salmon", "bands": [0.3, 0.56, 0.82], "tailType": "fork", "tailLen": 5, "dorsalLen": 9, "dorsalHeight": 2,
+                 "dorsalPos": 0.32, "analLen": 4, "analHeight": 2, "analPos": 0.72 }
+    },
+    "pike": {
+      "group": "D", "lengthCm": 70,
+      "colors": { "back": "#3F4A2A", "flank": "#54603A", "belly": "#EDE9DA",
+                  "mark": "#DFE7EC", "mark2": "#C9C77E", "fin": "#54603A", "finSoft": "#54603A",
+                  "eye": "#C8A83C" },
+      "pattern": ["spots"], "patternContrast": 0.85, "patternDensity": 1.3,
+      "shape": { "style": "salmon", "snoutShape": "duckbill", "snoutLen": 4, "snoutWidth": 0.9, "snoutHeight": 0.5,
+                 "headHeight": 0.85, "bodyTaper": 0.92,
+                 "tailType": "fork", "tailLen": 5,
+                 "dorsalLen": 4, "dorsalHeight": 2, "dorsalPos": 0.80,
+                 "analLen": 4, "analHeight": 2, "analPos": 0.80,
+                 "pectoralDrop": 0.36 }
+    },
+    "arapaima": {
+      "group": "D", "lengthCm": 200,
+      "colors": { "back": "#4E6157", "flank": "#93A6A1", "belly": "#D6D2C2",
+                  "mark": "#C1352B", "mark2": "#2E3A33", "fin": "#9E2B25", "finSoft": "#6E7A72",
+                  "eye": "#B08A4E" },
+      "pattern": ["plates"], "patternContrast": 0.6, "rearFade": 0.55,
+      "shape": { "style": "salmon", "snoutShape": "blunt", "snoutLen": 3, "snoutWidth": 0.85,
+                 "lowerJaw": 1, "bodyTaper": 0.82, "headHeight": 0.95,
+                 "tailType": "round", "tailLen": 4,
+                 "dorsalLen": 6, "dorsalHeight": 2, "dorsalPos": 0.86,
+                 "analLen": 6, "analHeight": 2, "analPos": 0.86 }
+    },
+    "north_african_catfish": {
+      "_note": "北非胡子鲇 Clarias gariepinus —— 底栖、耐低氧、能离水。配色取自 fish_research/north_african_catfish.json（FishBase/ADW：背暗灰黑、腹奶油白；成鱼头下侧两条黑纵带；侧线是一条白细线）。四条长须是种征。",
+      "group": "D", "lengthCm": 90,
+      "colors": { "back": "#3D3A33", "flank": "#6B665C", "belly": "#D9D0B8",
+                  "mark": "#1E1C18", "fin": "#5A544A", "finSoft": "#8A8276",
+                  "line": "#C9C2AE", "eye": "#2A241C" },
+      "pattern": [],
+      "shape": { "style": "salmon", "bands": [0.30, 0.56, 0.80], "tailType": "round",
+                 "longDorsal": true, "longDorsalLen": 15, "longAnalLen": 13,
+                 "barbels": 4, "barbelLen": 2, "barbelAt": "mouth", "barbelDroop": 1.1 }
+    },
+    "sapphire_snakehead": {
+      "group": "D", "lengthCm": 23,
+      "colors": { "back": "#3B4650", "flank": "#5E7C86", "belly": "#C9CDCB",
+                  "mark": "#C75B23", "mark2": "#151515", "fin": "#3E7C8C", "finSoft": "#6E7A7C",
+                  "eye": "#7A6A3F" },
+      "pattern": ["spots", "speckle"], "patternContrast": 0.85, "patternDensity": 2.2,
+      "shape": { "style": "cod", "bands": [0.22, 0.5, 0.78], "tailType": "round", "tailLen": 4,
+                 "longDorsal": true, "longDorsalLen": 12, "longAnalLen": 11, "pectoralPairs": 1,
+                 "bodyTaper": 0.95, "headHeight": 0.92, "snoutShape": "blunt" }
+    },
+    "juvenile_shark": {
+      "_userNote": "用户 2026-10-01 实机：应该是蓝背银肚（资料写灰褐，以用户为准）",
+      "_v1": "用户 2026-10-01：你这又啥是啥玩意 → v1 风格",
+      "group": "D", "lengthCm": 95,
+      "colors": { "back": "#2C5578", "flank": "#C8CFD4", "belly": "#E9EEF0",
+                  "mark": "#1E2427", "mark2": "#EDF0F2", "fin": "#4A6E8C", "finSoft": "#8EA0AE",
+                  "eye": "#3A4A58" },
+      "pattern": ["bars", "speckle"], "patternContrast": 0.8, "patternDensity": 0.9,
+      "shape": { "sharkDorsal": true, "mouthSeven": true, "style": "salmon", "bands": [0.34, 0.62, 0.86], "tailType": "shark", "tailLen": 7, "tailHeight": 5,
+                 "dorsalLen": 5, "dorsalHeight": 3, "dorsalPos": 0.40,
+                 "analLen": 3, "analHeight": 1, "analPos": 0.82,
+                 "gillSlits": 5, "headHeight": 0.72, "headWide": 1.35, "pectoralBroad": 1.5, "pectoralLen": 4, "pectoralPos": -1,
+                 "snoutWidth": 1.0, "snoutHeight": 0.7,
+                 "pectoralDrop": 0.45 }
+    },
+
+    "arctic_char": {
+      "_note": "北极红点鲑 Salvelinus alpinus —— 配色全部取自 fish_research/arctic_char.json（DFO/FishBase/NWF 的颜色名换算）。深色底 + 淡色斑点是它的招牌；腹部橙红是繁殖期婚姻色。体长:体高实测 5.2:1（FishBase 形态测量 19.1% TL）。",
+      "group": "B", "lengthCm": 55,
+      "colors": { "back": "#4A4632", "flank": "#C0C4C8", "belly": "#EDE6D8",
+                  "mark": "#E8A0B4", "mark2": "#C8322B", "fin": "#2E2E2A", "finSoft": "#D9D4C4",
+                  "eye": "#C0C4C8" },
+      "pattern": ["spots", "speckle"], "patternContrast": 0.7, "patternDensity": 1.7,
+      "traits": { "adiposeColor": "#2E2E2A" },
+      "shape": { "style": "salmon", "tailType": "fork", "adipose": true,
+                 "dorsalLen": 4, "dorsalHeight": 2, "dorsalPos": 0.40,
+                 "analLen": 4, "analHeight": 3, "analPos": 0.78,
+                 "tailLen": 4, "tailHeight": 4, "bodyTaper": 1.0 }
+    },
+    "whitefish": {
+      "_note": "高白鲑 Coregonus peled（★ 学名 2026-10-08 修正：中国说的「高白鲑」是 peled；Coregonus lavaretus 的中文正名是「真白鲑」，此前策划案把两者混用了）。配色取自 fish_research/whitefish.json —— 银白身无斑、虹膜近白（#F2F2EC）是白鲑属的一眼特征，眼径 26.6% HL 属大眼。体长:体高实测 5.1:1。",
+      "group": "B", "lengthCm": 45,
+      "colors": { "back": "#4A453F", "flank": "#D8DCE0", "belly": "#EFEFE6",
+                  "mark": "#8A8A80", "fin": "#7E827A", "finSoft": "#E0DCC0",
+                  "eye": "#F2F2EC" },
+      "pattern": [], "patternContrast": 0.3,
+      "traits": { "adiposeColor": "#6E7268" },
+      "shape": { "style": "salmon", "tailType": "fork", "adipose": true,
+                 "snoutShape": "subterminal", "snoutLen": 1,
+                 "dorsalLen": 3, "dorsalHeight": 2, "dorsalPos": 0.42,
+                 "analLen": 3, "analHeight": 2, "analPos": 0.76,
+                 "tailLen": 4, "tailHeight": 4, "eyeScale": 1.15 }
+    },
+    "rainbow_trout": {
+      "_note": "虹鳟 Oncorhynchus mykiss —— 配色取自 fish_research/rainbow_trout.json（USGS NAS/ODFW/GISD 原句）。与褐鳟的三处一眼差别：尾鳍有黑斑、各鳍带白边、体侧一条紫红纵带。体长:体高实测 4.4~4.6:1。",
+      "group": "B", "lengthCm": 60,
+      "colors": { "back": "#4A5D23", "flank": "#C0C8CC", "belly": "#F0F0EB",
+                  "mark": "#1A1A1A", "mark2": "#A0244E", "fin": "#6B6552", "finSoft": "#C0C8CC",
+                  "line": "#A0244E", "eye": "#8A7A3C" },
+      "pattern": ["spots", "speckle"], "patternContrast": 0.8, "patternDensity": 1.9,
+      "traits": { "adiposeColor": "#1A1A1A" },
+      "shape": { "style": "salmon", "tailType": "fork", "adipose": true,
+                 "dorsalLen": 4, "dorsalHeight": 2, "dorsalPos": 0.42,
+                 "analLen": 4, "analHeight": 3, "analPos": 0.78,
+                 "tailLen": 4, "tailHeight": 4, "bodyTaper": 1.0 }
+    },
+    "burbot": {
+      "_note": "江鳕 Lota lota —— 配色取自 fish_research/burbot.json（FishBase/ADW/ADFG）。鳕形目的特征在这一条上最全：**一根下颌中央颏须**（长大于眼径 2 倍）、背鳍与臀鳍都是长基鳍、尾鳍圆。体长:体高实测 7.9:1（全模组最细长的一条），眼径只有 12.4% HL。",
+      "group": "D", "lengthCm": 60,
+      "colors": { "back": "#4A4433", "flank": "#7A6A46", "belly": "#E8E2CE",
+                  "mark": "#2E2A22", "mark2": "#C9A94E", "fin": "#3A342A", "finSoft": "#E8E2CE",
+                  "eye": "#8A8A7A" },
+      "pattern": ["speckle"], "patternContrast": 0.62, "patternDensity": 2.4,
+      "shape": { "style": "cod", "tailType": "round", "tailLen": 4, "tailHeight": 4,
+                 "longDorsal": true, "longDorsalLen": 12, "longAnalLen": 10,
+                 "dorsalHeight": 2, "analHeight": 2, "bodyTaper": 0.95, "headHeight": 0.86,
+                 "barbels": 1, "barbelLen": 2, "barbelAt": "lower", "barbelDroop": 0.6 }
+    },
+    "taimen": {
+      "_note": "哲罗鲑 Hucho taimen —— 配色取自 fish_research/taimen.json（FishBase/IUCN/IUCN 中国名录）。银白身 + 小十字黑斑 + 繁殖期铜红（#CD7F32）与尾鳍下叶橙红（#FF4500）。体长:体高实测 7.0:1，头长 21% TL，眼径只有 10.2% HL（小眼是大型掠食鲑科的特征）。",
+      "group": "D", "lengthCm": 100,
+      "colors": { "back": "#6B6A4B", "flank": "#E8E8E0", "belly": "#F0F0F0",
+                  "mark": "#2B2B2B", "mark2": "#CD7F32", "fin": "#7A6A46", "finSoft": "#CFC7B4",
+                  "eye": "#B08A3E" },
+      "pattern": ["spots"], "patternContrast": 0.5, "patternDensity": 1.2,
+      "traits": { "adiposeColor": "#7A6A46" },
+      "shape": { "style": "salmon", "tailType": "fork", "adipose": true, "canines": 4,
+                 "dorsalLen": 4, "dorsalHeight": 2, "dorsalPos": 0.40,
+                 "analLen": 4, "analHeight": 2, "analPos": 0.76,
+                 "tailLen": 5, "tailHeight": 4, "bodyTaper": 0.98, "eyeScale": 0.85 }
+    },
+    "arctic_cod": {
+      "_note": "北极鳕 Boreogadus saida —— 配色取自 fish_research/arctic_cod.json。冰下成群的小型鳕：下颌略长于上颌、须极小（与大西洋鳕正好相反）。",
+      "group": "B", "lengthCm": 25,
+      "colors": { "back": "#6B5A3A", "flank": "#C0C4C8", "belly": "#E8E4D8",
+                  "mark": "#8C9296", "fin": "#8C9296", "finSoft": "#E8E4D8", "eye": "#C0C4C8" },
+      "pattern": ["speckle"], "patternContrast": 0.45, "patternDensity": 1.2,
+      "shape": { "style": "cod", "tailType": "fork", "tailLen": 4, "tailHeight": 4,
+                 "dorsalLen": 4, "dorsalHeight": 2, "dorsalPos": 0.40,
+                 "analLen": 4, "analHeight": 2, "analPos": 0.72,
+                 "barbels": 1, "barbelLen": 1, "barbelAt": "lower", "barbelDroop": 0.4 }
+    },
+    "capelin": {
+      "_note": "毛鳞鱼 Mallotus villosus —— 配色取自 fish_research/capelin.json。极小的银白饵料鱼，无斑、无脂鳍；繁殖期雄鱼腹面泛红。",
+      "group": "B", "lengthCm": 15,
+      "colors": { "back": "#4A5D23", "flank": "#C0C4C8", "belly": "#E8E4D8",
+                  "mark": "#3A4247", "fin": "#8C9296", "finSoft": "#C0C4C8", "eye": "#C0C4C8" },
+      "pattern": [], "patternContrast": 0.3,
+      "shape": { "style": "salmon", "tailType": "fork", "tailLen": 3, "tailHeight": 3,
+                 "dorsalLen": 3, "dorsalHeight": 1, "dorsalPos": 0.44,
+                 "analLen": 3, "analHeight": 1, "analPos": 0.74 }
+    },
+    "atlantic_herring": {
+      "_note": "大西洋鲱 Clupea harengus —— 配色取自 fish_research/atlantic_herring.json。蓝背银身的群游小鱼，三无：无斑、无侧线、无脂鳍。",
+      "group": "B", "lengthCm": 30,
+      "colors": { "back": "#2E4A6B", "flank": "#C0C4C8", "belly": "#F2F2EC",
+                  "mark": "#9AA096", "fin": "#3A4247", "finSoft": "#F2F2EC", "eye": "#1A1A18" },
+      "pattern": [], "patternContrast": 0.25,
+      "shape": { "style": "salmon", "tailType": "fork", "tailLen": 4, "tailHeight": 3,
+                 "dorsalLen": 3, "dorsalHeight": 1, "dorsalPos": 0.46,
+                 "analLen": 4, "analHeight": 1, "analPos": 0.76, "bodyTaper": 0.9 }
+    },
+    "wolffish": {
+      "_note": "狼鱼 Anarhichas lupus —— 配色取自 fish_research/wolffish.json。**无腹鳍 + 从头到尾的连续长背鳍**是它的招牌（碎壳专家）。",
+      "group": "D", "lengthCm": 100,
+      "colors": { "back": "#6E7A6E", "flank": "#4A6070", "belly": "#8A8A7A",
+                  "mark": "#2E2E2A", "fin": "#4A6070", "finSoft": "#8A8A7A", "eye": "#8A8A7A" },
+      "pattern": ["bars"], "patternContrast": 0.55, "barStep": 2,
+      "shape": { "style": "cod", "tailType": "round", "tailLen": 4, "tailHeight": 4,
+                 "longDorsal": true, "longDorsalLen": 14, "longAnalLen": 6,
+                 "dorsalHeight": 2, "analHeight": 2, "bodyTaper": 0.92,
+                 "headHeight": 0.95, "canines": 4 }
+    },
+    "redfish": {
+      "_note": "平鲉（红鱼）Sebastes norvegicus —— 配色取自 fish_research/redfish.json。短身高背、大眼、鲜红；深水红色其实是伪装。",
+      "group": "A", "lengthCm": 45,
+      "colors": { "back": "#D13B27", "flank": "#E08A2E", "belly": "#E8A0A0",
+                  "mark": "#2E2E2A", "fin": "#D13B27", "finSoft": "#E8A0A0", "eye": "#E08A2E" },
+      "pattern": ["speckle"], "patternContrast": 0.5, "patternDensity": 1.0,
+      "shape": { "style": "cod", "tailType": "truncate", "tailLen": 4, "tailHeight": 4,
+                 "dorsalLen": 9, "dorsalHeight": 3, "dorsalPos": 0.32,
+                 "analLen": 4, "analHeight": 2, "analPos": 0.74,
+                 "headHeight": 0.98, "eyeScale": 1.35, "cheekSpine": true }
+    },
+    "sablefish": {
+      "_note": "裸盖鱼（银鳕）Anoplopoma fimbria —— 配色取自 fish_research/sablefish.json。深灰黑、**两个分离良好的背鳍**（这是鲉形目、不是鳕形目）。",
+      "group": "D", "lengthCm": 100,
+      "colors": { "back": "#4A4A4A", "flank": "#8A8A8A", "belly": "#C8C8C8",
+                  "mark": "#2E2E2E", "fin": "#3A4048", "finSoft": "#B8B8B8", "eye": "#8A8A8A" },
+      "pattern": [], "patternContrast": 0.3,
+      "shape": { "style": "cod", "tailType": "fork", "tailLen": 5, "tailHeight": 4,
+                 "dorsalLen": 5, "dorsalHeight": 1, "dorsalPos": 0.34,
+                 "secondDorsal": true, "secondDorsalPos": 0.56, "secondDorsalLen": 4,
+                 "analLen": 4, "analHeight": 2, "analPos": 0.74, "bodyTaper": 0.9 }
+    },
+    "atlantic_cod": {
+      "_note": "大西洋鳕 Gadus morhua —— 配色取自 fish_research/atlantic_cod.json。上颌突出 + 一条**显眼的下颌长须** + 浅色侧线，一米级的饱满纺锤。",
+      "group": "B", "lengthCm": 100,
+      "colors": { "back": "#6B5A3A", "flank": "#8C9296", "belly": "#EDE6D8",
+                  "mark": "#C0C4C8", "mark2": "#4A5D23", "fin": "#6B5A3A", "finSoft": "#EDE6D8",
+                  "line": "#EDE6D8", "eye": "#C0C4C8" },
+      "pattern": ["speckle"], "patternContrast": 0.55, "patternDensity": 1.4,
+      "shape": { "style": "cod", "tailType": "truncate", "tailLen": 5, "tailHeight": 5,
+                 "dorsalLen": 5, "dorsalHeight": 2, "dorsalPos": 0.36,
+                 "analLen": 5, "analHeight": 2, "analPos": 0.72,
+                 "barbels": 1, "barbelLen": 3, "barbelAt": "lower", "barbelDroop": 0.5,
+                 "bodyTaper": 0.95, "headHeight": 0.9 }
+    },
+    "greenland_halibut": {
+      "_note": "格陵兰大比目鱼 Reinhardtius hippoglossoides —— 配色取自 fish_research/greenland_halibut.json。★ 是比目鱼：**两只眼都在背脊那一侧**（模型暂时按普通鱼近似，等专用比目鱼体型，用户已同意"慢慢改"）。",
+      "group": "A", "lengthCm": 120,
+      "colors": { "back": "#5A4A32", "flank": "#7A6A52", "belly": "#C8C0A8",
+                  "mark": "#3A3228", "mark2": "#4A5D3A", "fin": "#5A4A32", "finSoft": "#C8C0A8",
+                  "eye": "#8A7A4A" },
+      "pattern": ["speckle", "spots"], "patternContrast": 0.6, "patternDensity": 2.2,
+      "shape": { "style": "cod", "tailType": "truncate", "tailLen": 5, "tailHeight": 4,
+                 "dorsalLen": 12, "dorsalHeight": 2, "dorsalPos": 0.30,
+                 "analLen": 10, "analHeight": 2, "analPos": 0.70,
+                 "bodyTaper": 0.85, "headHeight": 1.05, "eyeScale": 1.25 }
+    },
+    "greenland_shark": {
+      "_note": "格陵兰鲨 Somniosus microcephalus —— 配色取自 fish_research/greenland_shark.json。灰褐粗壮、圆钝吻、小眼；巡航 0.34 m/s 的慢速巨物（现实里寿命可 270 年以上）。",
+      "group": "D", "lengthCm": 500,
+      "colors": { "back": "#96907F", "flank": "#8A7A66", "belly": "#F0F0EB",
+                  "mark": "#3A3A38", "mark2": "#6B5A46", "fin": "#96907F", "finSoft": "#F0F0EB",
+                  "eye": "#1A1A18" },
+      "pattern": ["speckle"], "patternContrast": 0.35, "patternDensity": 0.8,
+      "shape": { "sharkDorsal": true, "style": "salmon", "tailType": "heterocercal",
+                 "tailLen": 8, "tailHeight": 5,
+                 "dorsalLen": 4, "dorsalHeight": 2, "dorsalPos": 0.52,
+                 "analLen": 3, "analHeight": 1, "analPos": 0.82,
+                 "gillSlits": 5, "headHeight": 0.78, "headWide": 1.25,
+                 "pectoralLen": 4, "pectoralDrop": 0.5, "eyeScale": 0.7,
+                 "snoutShape": "blunt", "bodyTaper": 0.95 }
+    }
+  }
+}

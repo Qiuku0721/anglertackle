@@ -1,0 +1,19 @@
+{
+  "parent": "minecraft:block/block",
+  "textures": {
+    "particle": "anglertackle:block/cushion_yellow",
+    "seat": "anglertackle:block/cushion_yellow",
+    "leg": "anglertackle:block/stool_leg"
+  },
+  "elements": [
+    { "from": [2,6,2], "to": [14,8,14], "faces": { "down":{"texture":"#seat"},"up":{"texture":"#seat"},"north":{"texture":"#seat"},"south":{"texture":"#seat"},"west":{"texture":"#seat"},"east":{"texture":"#seat"} } },
+    { "from": [3,0,3], "to": [5,6,5], "faces": { "down":{"texture":"#leg"},"up":{"texture":"#leg"},"north":{"texture":"#leg"},"south":{"texture":"#leg"},"west":{"texture":"#leg"},"east":{"texture":"#leg"} } },
+    { "from": [11,0,3], "to": [13,6,5], "faces": { "down":{"texture":"#leg"},"up":{"texture":"#leg"},"north":{"texture":"#leg"},"south":{"texture":"#leg"},"west":{"texture":"#leg"},"east":{"texture":"#leg"} } },
+    { "from": [3,0,11], "to": [5,6,13], "faces": { "down":{"texture":"#leg"},"up":{"texture":"#leg"},"north":{"texture":"#leg"},"south":{"texture":"#leg"},"west":{"texture":"#leg"},"east":{"texture":"#leg"} } },
+    { "from": [11,0,11], "to": [13,6,13], "faces": { "down":{"texture":"#leg"},"up":{"texture":"#leg"},"north":{"texture":"#leg"},"south":{"texture":"#leg"},"west":{"texture":"#leg"},"east":{"texture":"#leg"} } },
+    { "from": [3,2,3], "to": [13,3,4], "faces": { "down":{"texture":"#leg"},"up":{"texture":"#leg"},"north":{"texture":"#leg"},"south":{"texture":"#leg"},"west":{"texture":"#leg"},"east":{"texture":"#leg"} } },
+    { "from": [3,2,12], "to": [13,3,13], "faces": { "down":{"texture":"#leg"},"up":{"texture":"#leg"},"north":{"texture":"#leg"},"south":{"texture":"#leg"},"west":{"texture":"#leg"},"east":{"texture":"#leg"} } },
+    { "from": [3,2,4], "to": [4,3,12], "faces": { "down":{"texture":"#leg"},"up":{"texture":"#leg"},"north":{"texture":"#leg"},"south":{"texture":"#leg"},"west":{"texture":"#leg"},"east":{"texture":"#leg"} } },
+    { "from": [12,2,4], "to": [13,3,12], "faces": { "down":{"texture":"#leg"},"up":{"texture":"#leg"},"north":{"texture":"#leg"},"south":{"texture":"#leg"},"west":{"texture":"#leg"},"east":{"texture":"#leg"} } }
+  ]
+}

@@ -1,0 +1,3687 @@
+#抛投 / Casting
+#注意：抛投已在 M2 改成**视角抛投**（低头近 / 平视中 / 抬头远），
+#所以早期设计的"蓄力绿区 / 落点误差"配置项已删除 ——
+#留着它们只会让人以为能调。
+[cast]
+	#蓄力到满所需秒数（只影响 HUD 蓄力条的显示节奏）
+	# Default: 1.6
+	# Range: 0.2 ~ 10.0
+	chargeTimeSeconds = 1.6
+
+#提竿窗口 / Hook window（用户定案：基础 2.0 秒）
+[hookWindow]
+	#基础窗口秒数（鱼钩/鱼竿加成会再加到它上面）
+	# Default: 2.0
+	# Range: 0.05 ~ 5.0
+	base = 2
+	#窗口下限秒数（加成算完后不会低于它）
+	# Default: 1.0
+	# Range: 0.05 ~ 5.0
+	min = 1
+
+#张力模型 / Tension（反馈以鱼线颜色为主，HUD 只做辅助）
+#⚠ whiteMax / yellowMax 是**相对于基准张力上限 100** 的值：
+#代码里按比例使用（whiteMax/100），好线把上限抬到 300 时
+#白区黄区会同步放大，否则"好线反而全程红区"。
+[tension]
+	#收线时每 tick 增加的张力
+	# Default: 0.9
+	# Range: 0.0 ~ 20.0
+	reelGain = 0.9
+	#放线时每 tick 减少的张力
+	# Default: 1.6
+	# Range: 0.0 ~ 20.0
+	releaseLoss = 1.6
+	#不操作时每 tick 自然松弛的张力
+	# Default: 0.35
+	# Range: 0.0 ~ 20.0
+	idleLoss = 0.35
+	#白区（安全）上限，基准 100 的百分比
+	# Default: 55.0
+	# Range: 1.0 ~ 100.0
+	whiteMax = 55
+	#黄区上限（超过进红区），基准 100 的百分比
+	# Default: 82.0
+	# Range: 1.0 ~ 100.0
+	yellowMax = 82
+	#鱼线开始深红闪烁的张力值（基准 100 的百分比）
+	# Default: 98.0
+	# Range: 1.0 ~ 100.0
+	criticalFlash = 98
+	#基础张力回复速率（点/tick，放线时由红转白的速度）
+	# Default: 1.6
+	# Range: 0.0 ~ 20.0
+	baseRecover = 1.6
+
+#咬钩等待 / Bite timing（玩家扛不住长时间干等，上限压到 20 秒）
+[bite]
+	#最短等待秒数
+	# Default: 10.0
+	# Range: 0.1 ~ 60.0
+	minWaitSeconds = 10
+	#最长等待秒数的随机量（实际等待 = min + rand × 本值）
+	# Default: 14.0
+	# Range: 0.1 ~ 120.0
+	maxWaitSeconds = 14
+	#硬上限秒数（任何修正后都不得超过）
+	# Default: 30.0
+	# Range: 1.0 ~ 300.0
+	hardCapSeconds = 30
+	#等待下限秒数（台钓减时 + 打窝叠加后也不会低于它；用户定案 3 秒）
+	# Default: 3.0
+	# Range: 0.1 ~ 60.0
+	floorSeconds = 3
+	#台钓竿专属：咬钩等待下降百分比（路亚竿不吃这一项）
+	# Default: 30.0
+	# Range: 0.0 ~ 100.0
+	floatRodCutPercent = 30
+	#白档饵（0）的额外下降百分比
+	# Default: 5.0
+	# Range: 0.0 ~ 100.0
+	baitCutWhitePercent = 5
+	#绿档饵（1）的额外下降百分比
+	# Default: 8.0
+	# Range: 0.0 ~ 100.0
+	baitCutGreenPercent = 8
+	#蓝档饵（2）的额外下降百分比（当前没有蓝档饵，留给以后）
+	# Default: 12.0
+	# Range: 0.0 ~ 100.0
+	baitCutBluePercent = 12
+	#紫档饵（3，活虾）的额外下降百分比
+	# Default: 16.0
+	# Range: 0.0 ~ 100.0
+	baitCutPurplePercent = 16
+	#金档饵（4，发光饵）的额外下降百分比
+	# Default: 18.5
+	# Range: 0.0 ~ 100.0
+	baitCutGoldPercent = 18.5
+	#红档饵（5，秘制香饵）的额外下降百分比
+	# Default: 21.0
+	# Range: 0.0 ~ 100.0
+	baitCutRedPercent = 21
+
+#时间 / 天气 / 月相 / Time · Weather · Moon
+#环境只改"水里此刻有哪些鱼愿意咬钩"，**不改咬钩节奏**（唯一例外见 biteNightCutPercent）。
+#
+#口径（用户定案）：受加成那一组鱼的**归一化总占比**最多提升这么多个百分点；
+#组内每条鱼乘同一个倍率，倍率由池子反解得出（不写死）。
+#只加不减 —— 组外鱼的权重不会被乘任何小于 1 的数。
+[environment]
+	#环境系统总开关（false = 完全回到未实现前的行为）
+	enabled = true
+	#时段组占比最多提升几个百分点（50/50 一种加成 → 40/60 就是 10）
+	# Default: 10.0
+	# Range: 0.0 ~ 20.0
+	timeDeltaPct = 10
+	#天气组占比最多提升几个百分点
+	# Default: 10.0
+	# Range: 0.0 ~ 20.0
+	weatherDeltaPct = 10
+	#月相：所有金红鱼一起分享的爆率预算（百分点）
+	# Default: 5.0
+	# Range: 0.0 ~ 15.0
+	moonGoldRedDeltaPct = 5
+	#月相：所有紫鱼一起分享的爆率预算（百分点）
+	# Default: 15.0
+	# Range: 0.0 ~ 30.0
+	moonPurpleDeltaPct = 15
+	#月相预算分法：0 = 组内同倍率（总和可能略微超出），1 = 按条数均摊（恰好用完预算）
+	# Default: 1
+	# Range: 0 ~ 1
+	moonShareMode = 1
+	#安全阀：任何一组的占比不得超过这个值（防极端池子算出组占比 100% 的倍率）
+	# Default: 90.0
+	# Range: 50.0 ~ 100.0
+	shareCapPct = 90
+	#在 HUD 上显示当前时段 / 天气 / 月相（一行小字）
+	showCondition = true
+	#调试：每次咬钩把环境与各组实际吃到的增量打到聊天栏
+	logToChat = false
+	#夜间台钓的咬钩等待减免百分比（0 = 关闭；只作用于夜晚 + 台钓竿）
+	# Default: 10.0
+	# Range: 0.0 ~ 50.0
+	nightCutPercent = 10
+
+#六槽配件属性合成 / Part attribute composition
+#权重决定"某项属性由谁主导"，上限防止数值失控。
+#详见 docs/11-配件系统详表.md §2。
+[parts]
+	#鱼线对张力上限的贡献权重
+	# Default: 0.6
+	# Range: 0.0 ~ 1.0
+	lineOnTension = 0.6
+	#鱼竿对张力上限的贡献权重
+	# Default: 0.4
+	# Range: 0.0 ~ 1.0
+	rodOnTension = 0.4
+	#鱼线对张力回复速度的贡献权重
+	# Default: 0.6
+	# Range: 0.0 ~ 1.0
+	lineOnRecover = 0.6
+	#鱼竿对张力回复速度的贡献权重
+	# Default: 0.4
+	# Range: 0.0 ~ 1.0
+	rodOnRecover = 0.4
+	#渔轮对体力削减的贡献权重
+	# Default: 0.6
+	# Range: 0.0 ~ 1.0
+	reelOnDrain = 0.6
+	#鱼竿对体力削减的贡献权重
+	# Default: 0.4
+	# Range: 0.0 ~ 1.0
+	rodOnDrain = 0.4
+	#张力上限倍率硬上限
+	# Default: 3.0
+	# Range: 1.0 ~ 10.0
+	capTensionCeiling = 3
+	#张力回复倍率硬上限（放线时由红转白的速度）
+	# Default: 2.2
+	# Range: 1.0 ~ 10.0
+	capTensionRecover = 2.2
+	#体力削减倍率硬上限
+	# Default: 2.6
+	# Range: 1.0 ~ 10.0
+	capStaminaDrain = 2.6
+	#回拉速度倍率硬上限
+	# Default: 2.3
+	# Range: 1.0 ~ 10.0
+	capPull = 2.3
+	#压制阻尼倍率硬上限
+	# Default: 2.7
+	# Range: 1.0 ~ 10.0
+	capDamping = 2.7
+	#不挣扎时基础回拉速度（格/tick）
+	# Default: 0.15
+	# Range: 0.001 ~ 2.0
+	pullIdleBase = 0.15
+	#挣扎时基础回拉速度（格/tick）
+	# Default: 0.35
+	# Range: 0.001 ~ 2.0
+	pullStruggleBase = 0.35
+	#收线时每秒扣掉的鱼力比例（相对满体力）
+	# Default: 0.2
+	# Range: 0.001 ~ 5.0
+	staminaDrainBase = 0.2
+
+#窝料 / Chum（做成实体、会散开、时长按窝料档次）
+#注意：时长是**每种窝料自己的**（ChumItem 构造参数，30~300 分钟档），
+#所以这里没有"全局时长"配置 —— 那种配置要么被忽略、要么把档次差异抹平。
+[chum]
+	#粒子生成间隔（tick）；越大越省性能
+	# Default: 6
+	# Range: 1 ~ 200
+	particleIntervalTicks = 6
+	#每次生成的粒子数（批量生成，降低总粒子量）
+	# Default: 6
+	# Range: 1 ~ 32
+	particlesPerBurst = 6
+	#窝子半径（格）——白圈画的就是这个半径
+	# Default: 10.0
+	# Range: 1.0 ~ 64.0
+	radius = 10
+	# 全服同时存在的窝料上限（条） 用户 2026-10-11 定案："全服至多存在 40 个窝料"—— 防的是 "一个人一直打窝、全队跟着吃"。到期的窝料自己会释放名额， 所以这个数是**同时存在**的条数，不是"每人能打多少"。 数为 0 或负数时按 1 处理（mod 内部夹取）。
+	serverCap = 40
+
+#耐久 / Durability（咬钩即扣，与是否切线逃离无关）
+[durability]
+	#每次咬钩扣除的鱼竿耐久（还会再乘竿的材质系数）
+	# Default: 2
+	# Range: 0 ~ 100
+	rodPerBite = 2
+	#每次鱼咬钩扣除的鱼线耐久
+	# Default: 1
+	# Range: 0 ~ 100
+	linePerBite = 1
+	#每次鱼咬钩扣除的拟饵耐久
+	# Default: 1
+	# Range: 0 ~ 100
+	lurePerBite = 1
+	#断线时额外扣除的鱼线耐久
+	# Default: 5
+	# Range: 0 ~ 100
+	linePerBreak = 5
+
+#配件数值 / Part stats（每个配件的属性）。
+#由 tools/gen-part-config.js 从 ModItems.java 生成，默认值与代码里的原值一一对应，
+#所以不改这些项时手感和以前完全一样。
+#耐久上限是注册期固定的，改它要重启游戏；其余属性热重载即生效。
+#
+[partsStats]
+	#麻线（hemp_line） · 耐久上限 —— 用一次扣一点，扣光配件就损坏。⚠ 注册期固定，改它必须重启游戏
+	# Default: 50
+	# Range: 0 ~ 100000
+	hempDurability = 50
+	#麻线（hemp_line） · 张力上限 —— 越高，线越不容易被拉崩
+	# Default: 1.08
+	# Range: 0.0 ~ 100.0
+	hempTensionCeiling = 1.08
+	#麻线（hemp_line） · 张力涨速 —— 越小，收线时张力涨得越慢（越小越安全）
+	# Default: 0.97
+	# Range: 0.0 ~ 100.0
+	hempTensionGen = 0.97
+	#麻线（hemp_line） · 张力回复 —— 越大，放线时张力落得越快（越大越安全）
+	# Default: 1.05
+	# Range: 0.0 ~ 100.0
+	hempTensionRecover = 1.05
+	#麻线（hemp_line） · 线长 —— 相对麻线的倍率，决定抛投射程上限
+	# Default: 1.0
+	# Range: 0.0 ~ 100.0
+	hempLineLength = 1
+	#麻线（hemp_line） · 品质档位 —— 1白 2绿 3蓝 4紫 5金 6红
+	# Default: 1
+	# Range: 1 ~ 6
+	hempTier = 1
+	#棉线（cotton_line） · 耐久上限 —— 用一次扣一点，扣光配件就损坏。⚠ 注册期固定，改它必须重启游戏
+	# Default: 50
+	# Range: 0 ~ 100000
+	cottonDurability = 50
+	#棉线（cotton_line） · 张力上限 —— 越高，线越不容易被拉崩
+	# Default: 1.2
+	# Range: 0.0 ~ 100.0
+	cottonTensionCeiling = 1.2
+	#棉线（cotton_line） · 张力涨速 —— 越小，收线时张力涨得越慢（越小越安全）
+	# Default: 0.91
+	# Range: 0.0 ~ 100.0
+	cottonTensionGen = 0.91
+	#棉线（cotton_line） · 张力回复 —— 越大，放线时张力落得越快（越大越安全）
+	# Default: 1.15
+	# Range: 0.0 ~ 100.0
+	cottonTensionRecover = 1.15
+	#棉线（cotton_line） · 线长 —— 相对麻线的倍率，决定抛投射程上限
+	# Default: 1.1666666666666667
+	# Range: 0.0 ~ 100.0
+	cottonLineLength = 1.1666666666666667
+	#棉线（cotton_line） · 品质档位 —— 1白 2绿 3蓝 4紫 5金 6红
+	# Default: 2
+	# Range: 1 ~ 6
+	cottonTier = 2
+	#尼龙线（nylon_line） · 耐久上限 —— 用一次扣一点，扣光配件就损坏。⚠ 注册期固定，改它必须重启游戏
+	# Default: 40
+	# Range: 0 ~ 100000
+	nylonDurability = 40
+	#尼龙线（nylon_line） · 张力上限 —— 越高，线越不容易被拉崩
+	# Default: 1.28
+	# Range: 0.0 ~ 100.0
+	nylonTensionCeiling = 1.28
+	#尼龙线（nylon_line） · 张力涨速 —— 越小，收线时张力涨得越慢（越小越安全）
+	# Default: 0.95
+	# Range: 0.0 ~ 100.0
+	nylonTensionGen = 0.95
+	#尼龙线（nylon_line） · 张力回复 —— 越大，放线时张力落得越快（越大越安全）
+	# Default: 1.3
+	# Range: 0.0 ~ 100.0
+	nylonTensionRecover = 1.3
+	#尼龙线（nylon_line） · 线长 —— 相对麻线的倍率，决定抛投射程上限
+	# Default: 1.5
+	# Range: 0.0 ~ 100.0
+	nylonLineLength = 1.5
+	#尼龙线（nylon_line） · 品质档位 —— 1白 2绿 3蓝 4紫 5金 6红
+	# Default: 3
+	# Range: 1 ~ 6
+	nylonTier = 3
+	#碳氟线（fluoro_line） · 耐久上限 —— 用一次扣一点，扣光配件就损坏。⚠ 注册期固定，改它必须重启游戏
+	# Default: 35
+	# Range: 0 ~ 100000
+	fluoroDurability = 35
+	#碳氟线（fluoro_line） · 张力上限 —— 越高，线越不容易被拉崩
+	# Default: 1.64
+	# Range: 0.0 ~ 100.0
+	fluoroTensionCeiling = 1.64
+	#碳氟线（fluoro_line） · 张力涨速 —— 越小，收线时张力涨得越慢（越小越安全）
+	# Default: 0.78
+	# Range: 0.0 ~ 100.0
+	fluoroTensionGen = 0.78
+	#碳氟线（fluoro_line） · 张力回复 —— 越大，放线时张力落得越快（越大越安全）
+	# Default: 1.42
+	# Range: 0.0 ~ 100.0
+	fluoroTensionRecover = 1.42
+	#碳氟线（fluoro_line） · 线长 —— 相对麻线的倍率，决定抛投射程上限
+	# Default: 2.0
+	# Range: 0.0 ~ 100.0
+	fluoroLineLength = 2
+	#碳氟线（fluoro_line） · 品质档位 —— 1白 2绿 3蓝 4紫 5金 6红
+	# Default: 4
+	# Range: 1 ~ 6
+	fluoroTier = 4
+	#编织 PE 线（pe_line） · 耐久上限 —— 用一次扣一点，扣光配件就损坏。⚠ 注册期固定，改它必须重启游戏
+	# Default: 30
+	# Range: 0 ~ 100000
+	peDurability = 30
+	#编织 PE 线（pe_line） · 张力上限 —— 越高，线越不容易被拉崩
+	# Default: 2.08
+	# Range: 0.0 ~ 100.0
+	peTensionCeiling = 2.08
+	#编织 PE 线（pe_line） · 张力涨速 —— 越小，收线时张力涨得越慢（越小越安全）
+	# Default: 0.64
+	# Range: 0.0 ~ 100.0
+	peTensionGen = 0.64
+	#编织 PE 线（pe_line） · 张力回复 —— 越大，放线时张力落得越快（越大越安全）
+	# Default: 1.52
+	# Range: 0.0 ~ 100.0
+	peTensionRecover = 1.52
+	#编织 PE 线（pe_line） · 线长 —— 相对麻线的倍率，决定抛投射程上限
+	# Default: 2.1666666666666665
+	# Range: 0.0 ~ 100.0
+	peLineLength = 2.1666666666666665
+	#编织 PE 线（pe_line） · 品质档位 —— 1白 2绿 3蓝 4紫 5金 6红
+	# Default: 5
+	# Range: 1 ~ 6
+	peTier = 5
+	#钛合金记忆金属线（titanium_line） · 耐久上限 —— 用一次扣一点，扣光配件就损坏。⚠ 注册期固定，改它必须重启游戏
+	# Default: 30
+	# Range: 0 ~ 100000
+	titaniumDurability = 30
+	#钛合金记忆金属线（titanium_line） · 张力上限 —— 越高，线越不容易被拉崩
+	# Default: 2.36
+	# Range: 0.0 ~ 100.0
+	titaniumTensionCeiling = 2.36
+	#钛合金记忆金属线（titanium_line） · 张力涨速 —— 越小，收线时张力涨得越慢（越小越安全）
+	# Default: 0.56
+	# Range: 0.0 ~ 100.0
+	titaniumTensionGen = 0.56
+	#钛合金记忆金属线（titanium_line） · 张力回复 —— 越大，放线时张力落得越快（越大越安全）
+	# Default: 1.78
+	# Range: 0.0 ~ 100.0
+	titaniumTensionRecover = 1.78
+	#钛合金记忆金属线（titanium_line） · 线长 —— 相对麻线的倍率，决定抛投射程上限
+	# Default: 2.3333333333333335
+	# Range: 0.0 ~ 100.0
+	titaniumLineLength = 2.3333333333333335
+	#钛合金记忆金属线（titanium_line） · 品质档位 —— 1白 2绿 3蓝 4紫 5金 6红
+	# Default: 6
+	# Range: 1 ~ 6
+	titaniumTier = 6
+	#手线轮（hand_reel） · 耐久上限 —— 用一次扣一点，扣光配件就损坏。⚠ 注册期固定，改它必须重启游戏
+	# Default: 0
+	# Range: 0 ~ 100000
+	handDurability = 0
+	#手线轮（hand_reel） · 回拉速度（不挣扎） —— 鱼不挣扎时收线拉回多快
+	# Default: 1.08
+	# Range: 0.0 ~ 100.0
+	handPullIdle = 1.08
+	#手线轮（hand_reel） · 回拉速度（挣扎） —— 鱼挣扎时收线拉回多快
+	# Default: 1.08
+	# Range: 0.0 ~ 100.0
+	handPullStruggle = 1.08
+	#手线轮（hand_reel） · 体力削减 —— 越大，鱼掉体力越快（越大越好钓）
+	# Default: 1.08
+	# Range: 0.0 ~ 100.0
+	handStaminaDrain = 1.08
+	#手线轮（hand_reel） · 压制阻尼 —— 抑制鱼回气；高于 1 的部分另有转化
+	# Default: 1.07
+	# Range: 0.0 ~ 100.0
+	handDamping = 1.07
+	#手线轮（hand_reel） · 品质档位 —— 1白 2绿 3蓝 4紫 5金 6红
+	# Default: 1
+	# Range: 1 ~ 6
+	handTier = 1
+	#纺车轮（spinning_reel） · 耐久上限 —— 用一次扣一点，扣光配件就损坏。⚠ 注册期固定，改它必须重启游戏
+	# Default: 0
+	# Range: 0 ~ 100000
+	spinningDurability = 0
+	#纺车轮（spinning_reel） · 回拉速度（不挣扎） —— 鱼不挣扎时收线拉回多快
+	# Default: 1.25
+	# Range: 0.0 ~ 100.0
+	spinningPullIdle = 1.25
+	#纺车轮（spinning_reel） · 回拉速度（挣扎） —— 鱼挣扎时收线拉回多快
+	# Default: 1.25
+	# Range: 0.0 ~ 100.0
+	spinningPullStruggle = 1.25
+	#纺车轮（spinning_reel） · 体力削减 —— 越大，鱼掉体力越快（越大越好钓）
+	# Default: 1.25
+	# Range: 0.0 ~ 100.0
+	spinningStaminaDrain = 1.25
+	#纺车轮（spinning_reel） · 压制阻尼 —— 抑制鱼回气；高于 1 的部分另有转化
+	# Default: 1.2
+	# Range: 0.0 ~ 100.0
+	spinningDamping = 1.2
+	#纺车轮（spinning_reel） · 品质档位 —— 1白 2绿 3蓝 4紫 5金 6红
+	# Default: 2
+	# Range: 1 ~ 6
+	spinningTier = 2
+	#鼓轮（drum_reel） · 耐久上限 —— 用一次扣一点，扣光配件就损坏。⚠ 注册期固定，改它必须重启游戏
+	# Default: 0
+	# Range: 0 ~ 100000
+	drumDurability = 0
+	#鼓轮（drum_reel） · 回拉速度（不挣扎） —— 鱼不挣扎时收线拉回多快
+	# Default: 1.45
+	# Range: 0.0 ~ 100.0
+	drumPullIdle = 1.45
+	#鼓轮（drum_reel） · 回拉速度（挣扎） —— 鱼挣扎时收线拉回多快
+	# Default: 1.45
+	# Range: 0.0 ~ 100.0
+	drumPullStruggle = 1.45
+	#鼓轮（drum_reel） · 体力削减 —— 越大，鱼掉体力越快（越大越好钓）
+	# Default: 1.6
+	# Range: 0.0 ~ 100.0
+	drumStaminaDrain = 1.6
+	#鼓轮（drum_reel） · 压制阻尼 —— 抑制鱼回气；高于 1 的部分另有转化
+	# Default: 1.45
+	# Range: 0.0 ~ 100.0
+	drumDamping = 1.45
+	#鼓轮（drum_reel） · 品质档位 —— 1白 2绿 3蓝 4紫 5金 6红
+	# Default: 3
+	# Range: 1 ~ 6
+	drumTier = 3
+	#水滴轮（baitcast_reel） · 耐久上限 —— 用一次扣一点，扣光配件就损坏。⚠ 注册期固定，改它必须重启游戏
+	# Default: 0
+	# Range: 0 ~ 100000
+	baitcastDurability = 0
+	#水滴轮（baitcast_reel） · 回拉速度（不挣扎） —— 鱼不挣扎时收线拉回多快
+	# Default: 1.98
+	# Range: 0.0 ~ 100.0
+	baitcastPullIdle = 1.98
+	#水滴轮（baitcast_reel） · 回拉速度（挣扎） —— 鱼挣扎时收线拉回多快
+	# Default: 1.95
+	# Range: 0.0 ~ 100.0
+	baitcastPullStruggle = 1.95
+	#水滴轮（baitcast_reel） · 体力削减 —— 越大，鱼掉体力越快（越大越好钓）
+	# Default: 1.4
+	# Range: 0.0 ~ 100.0
+	baitcastStaminaDrain = 1.4
+	#水滴轮（baitcast_reel） · 压制阻尼 —— 抑制鱼回气；高于 1 的部分另有转化
+	# Default: 1.4
+	# Range: 0.0 ~ 100.0
+	baitcastDamping = 1.4
+	#水滴轮（baitcast_reel） · 品质档位 —— 1白 2绿 3蓝 4紫 5金 6红
+	# Default: 4
+	# Range: 1 ~ 6
+	baitcastTier = 4
+	#大型纺车轮（heavy_reel） · 耐久上限 —— 用一次扣一点，扣光配件就损坏。⚠ 注册期固定，改它必须重启游戏
+	# Default: 0
+	# Range: 0 ~ 100000
+	heavyDurability = 0
+	#大型纺车轮（heavy_reel） · 回拉速度（不挣扎） —— 鱼不挣扎时收线拉回多快
+	# Default: 1.64
+	# Range: 0.0 ~ 100.0
+	heavyPullIdle = 1.64
+	#大型纺车轮（heavy_reel） · 回拉速度（挣扎） —— 鱼挣扎时收线拉回多快
+	# Default: 1.64
+	# Range: 0.0 ~ 100.0
+	heavyPullStruggle = 1.64
+	#大型纺车轮（heavy_reel） · 体力削减 —— 越大，鱼掉体力越快（越大越好钓）
+	# Default: 2.3
+	# Range: 0.0 ~ 100.0
+	heavyStaminaDrain = 2.3
+	#大型纺车轮（heavy_reel） · 压制阻尼 —— 抑制鱼回气；高于 1 的部分另有转化
+	# Default: 2.5
+	# Range: 0.0 ~ 100.0
+	heavyDamping = 2.5
+	#大型纺车轮（heavy_reel） · 品质档位 —— 1白 2绿 3蓝 4紫 5金 6红
+	# Default: 5
+	# Range: 1 ~ 6
+	heavyTier = 5
+	#普通钩（plain_hook） · 耐久上限 —— 用一次扣一点，扣光配件就损坏。⚠ 注册期固定，改它必须重启游戏
+	# Default: 0
+	# Range: 0 ~ 100000
+	plainDurability = 0
+	#普通钩（plain_hook） · 提竿窗口加成 —— 单位是秒，加到基础提竿窗口上
+	# Default: 0.0
+	# Range: 0.0 ~ 100.0
+	plainWindowBonus = 0
+	#倒刺钩（barbed_hook） · 耐久上限 —— 用一次扣一点，扣光配件就损坏。⚠ 注册期固定，改它必须重启游戏
+	# Default: 0
+	# Range: 0 ~ 100000
+	barbedDurability = 0
+	#倒刺钩（barbed_hook） · 提竿窗口加成 —— 单位是秒，加到基础提竿窗口上
+	# Default: 0.08
+	# Range: 0.0 ~ 100.0
+	barbedWindowBonus = 0.08
+	#亮片拟饵（lure_spoon） · 耐久上限 —— 用一次扣一点，扣光配件就损坏。⚠ 注册期固定，改它必须重启游戏
+	# Default: 40
+	# Range: 0 ~ 100000
+	lureSpoonDurability = 40
+	#亮片拟饵（lure_spoon） · 品质档位 —— 1白 2绿 3蓝 4紫 5金 6红
+	# Default: 2
+	# Range: 1 ~ 6
+	lureSpoonTier = 2
+	#荧光亮片（lure_glowspoon） · 耐久上限 —— 用一次扣一点，扣光配件就损坏。⚠ 注册期固定，改它必须重启游戏
+	# Default: 40
+	# Range: 0 ~ 100000
+	lureGlowspoonDurability = 40
+	#荧光亮片（lure_glowspoon） · 品质档位 —— 1白 2绿 3蓝 4紫 5金 6红
+	# Default: 2
+	# Range: 1 ~ 6
+	lureGlowspoonTier = 2
+	#米诺鱼拟饵（lure_minnow） · 耐久上限 —— 用一次扣一点，扣光配件就损坏。⚠ 注册期固定，改它必须重启游戏
+	# Default: 30
+	# Range: 0 ~ 100000
+	lureMinnowDurability = 30
+	#米诺鱼拟饵（lure_minnow） · 品质档位 —— 1白 2绿 3蓝 4紫 5金 6红
+	# Default: 3
+	# Range: 1 ~ 6
+	lureMinnowTier = 3
+	#浅层刺激拟饵（lure_deep） · 耐久上限 —— 用一次扣一点，扣光配件就损坏。⚠ 注册期固定，改它必须重启游戏
+	# Default: 22
+	# Range: 0 ~ 100000
+	lureDeepDurability = 22
+	#浅层刺激拟饵（lure_deep） · 品质档位 —— 1白 2绿 3蓝 4紫 5金 6红
+	# Default: 4
+	# Range: 1 ~ 6
+	lureDeepTier = 4
+	#钢珠声诱拟饵（lure_rattle） · 耐久上限 —— 用一次扣一点，扣光配件就损坏。⚠ 注册期固定，改它必须重启游戏
+	# Default: 20
+	# Range: 0 ~ 100000
+	lureRattleDurability = 20
+	#钢珠声诱拟饵（lure_rattle） · 品质档位 —— 1白 2绿 3蓝 4紫 5金 6红
+	# Default: 5
+	# Range: 1 ~ 6
+	lureRattleTier = 5
+	#镀金竞技拟饵（lure_gilded） · 耐久上限 —— 用一次扣一点，扣光配件就损坏。⚠ 注册期固定，改它必须重启游戏
+	# Default: 20
+	# Range: 0 ~ 100000
+	lureGildedDurability = 20
+	#镀金竞技拟饵（lure_gilded） · 品质档位 —— 1白 2绿 3蓝 4紫 5金 6红
+	# Default: 6
+	# Range: 1 ~ 6
+	lureGildedTier = 6
+	#软虫拟饵（lure_soft） · 耐久上限 —— 用一次扣一点，扣光配件就损坏。⚠ 注册期固定，改它必须重启游戏
+	# Default: 26
+	# Range: 0 ~ 100000
+	lureSoftDurability = 26
+	#软虫拟饵（lure_soft） · 品质档位 —— 1白 2绿 3蓝 4紫 5金 6红
+	# Default: 3
+	# Range: 1 ~ 6
+	lureSoftTier = 3
+	#深水探索米诺（lure_depthfinder） · 耐久上限 —— 用一次扣一点，扣光配件就损坏。⚠ 注册期固定，改它必须重启游戏
+	# Default: 26
+	# Range: 0 ~ 100000
+	lureDepthfinderDurability = 26
+	#深水探索米诺（lure_depthfinder） · 品质档位 —— 1白 2绿 3蓝 4紫 5金 6红
+	# Default: 3
+	# Range: 1 ~ 6
+	lureDepthfinderTier = 3
+	#深水摆尾拟饵（lure_paddletail） · 耐久上限 —— 用一次扣一点，扣光配件就损坏。⚠ 注册期固定，改它必须重启游戏
+	# Default: 22
+	# Range: 0 ~ 100000
+	lurePaddletailDurability = 22
+	#深水摆尾拟饵（lure_paddletail） · 品质档位 —— 1白 2绿 3蓝 4紫 5金 6红
+	# Default: 4
+	# Range: 1 ~ 6
+	lurePaddletailTier = 4
+	#深潜巨物振动饵（lure_vibration） · 耐久上限 —— 用一次扣一点，扣光配件就损坏。⚠ 注册期固定，改它必须重启游戏
+	# Default: 20
+	# Range: 0 ~ 100000
+	lureVibrationDurability = 20
+	#深潜巨物振动饵（lure_vibration） · 品质档位 —— 1白 2绿 3蓝 4紫 5金 6红
+	# Default: 5
+	# Range: 1 ~ 6
+	lureVibrationTier = 5
+	#【测试】红档拟饵（必出红鱼）（lure_test_red） · 耐久上限 —— 用一次扣一点，扣光配件就损坏。⚠ 注册期固定，改它必须重启游戏
+	# Default: 9999
+	# Range: 0 ~ 100000
+	lureTestRedDurability = 9999
+	#【测试】红档拟饵（必出红鱼）（lure_test_red） · 品质档位 —— 1白 2绿 3蓝 4紫 5金 6红
+	# Default: 6
+	# Range: 1 ~ 6
+	lureTestRedTier = 6
+
+#鱼种数值 / Per-fish stats（每条鱼的体重与对抗手感）。
+#由 tools/gen-fish-config.js 从 FishSpecies.java 生成，默认值与代码里的原值一一对应，
+#所以不改这些项时手感和以前完全一样。
+#改完 /atl config reload 即生效：只影响之后咬钩的鱼，不影响正在遛的那条。
+#每条的 13 项含义相同：体重上下限、拉力（不挣扎/疲劳期）、体力、张力涨速、
+#冲刺时长与间隔、变向间隔、假动作概率、进疲劳的体力比例、疲劳持续、不挣扎时回气。
+#
+[fishStats]
+	#鲫鱼（crucian_carp） · 体重下限（kg） —— 这种鱼最小能有多重。⚠ 它和体重上限一起决定档位怎么分——改小了会让低档鱼变少
+	# Default: 0.1
+	# Range: 0.001 ~ 500.0
+	crucianCarpMinKg = 0.1
+	#鲫鱼（crucian_carp） · 体重上限（kg） —— 这种鱼最大能有多重。线长/承重不够时会钓不上来（见 buildPool 的承重过滤）
+	# Default: 1.2
+	# Range: 0.001 ~ 500.0
+	crucianCarpMaxKg = 1.2
+	#鲫鱼（crucian_carp） · 拉力（不挣扎） —— 挣扎时把线拽出去的速度。越大越拉不动。这是「上钩两秒就能感觉出多大」的主要来源。⚠ 这是**基准值**：实际游速 = 本值 × 档位曲线 1.12^档 × 金/红手感修正（金 ×0.84、红 ×1.05）
+	# Default: 0.7
+	# Range: 0.0 ~ 20.0
+	crucianCarpPullSpeed = 1.05
+	#鲫鱼（crucian_carp） · 拉力（疲劳期） —— 遛到疲劳后的拉拽速度。默认 = 正常拉力 × gameplay.fatiguePullMultiplier（当前 0.5）—— 改大就等于「疲劳期反而不划算」
+	# Default: 0.35
+	# Range: 0.0 ~ 20.0
+	crucianCarpFatiguedPullSpeed = 0.441
+	#鲫鱼（crucian_carp） · 体力上限 —— 鱼有多少体力。越大越耐磨，要遛更久。它是「持久战」强度的总开关。⚠ 这是**基准值**（按鱼种）：实际体力池 = 本值 × 档位倍率（金档 ×1.0、红档 ×1.5）。红档还有一条**基准下限**（gameplay.tierRedStaminaMin，默认 200）：基准低于它的红档鱼先被抬到下限，再乘倍率 —— 否则台钓唯一的红鱼（蓝宝石雷龙鱼 130）比一条普通草鱼还好遛。咬钩时日志里会打一行「体力池：X = 基准 Y × 档位倍率 Z」——对账看那一行，别看这里的基准
+	# Default: 80.0
+	# Range: 1.0 ~ 5000.0
+	crucianCarpStamina = 80
+	#鲫鱼（crucian_carp） · 张力涨速 —— 这条鱼让线涨得多快。>1 = 线黄得快（黏液型鱼的味道），<1 = 宽容
+	# Default: 0.9
+	# Range: 0.0 ~ 5.0
+	crucianCarpTensionGain = 0.9
+	#鲫鱼（crucian_carp） · 冲刺时长（秒） —— 每次冲刺持续几秒。0 = 这条鱼不冲刺
+	# Default: 0.6
+	# Range: 0.0 ~ 60.0
+	crucianCarpSprintDurationSec = 0.6
+	#鲫鱼（crucian_carp） · 冲刺间隔（秒） —— 每隔几秒冲一次。越小越凶（爆发型 2.6，黏液型 8.0 几乎不冲）
+	# Default: 5.5
+	# Range: 0.1 ~ 60.0
+	crucianCarpSprintIntervalSec = 5.5
+	#鲫鱼（crucian_carp） · 变向间隔（秒） —— 每隔几秒变一次向。越小越神经质（神经质型 1.3，黏液型 5.5 方向很稳）
+	# Default: 4.5
+	# Range: 0.2 ~ 60.0
+	crucianCarpTurnIntervalSec = 4.5
+	#鲫鱼（crucian_carp） · 假动作概率（0~1） —— 假动作概率：预告一个方向、实际往反方向跑。0~1（神经质型 0.35）
+	# Default: 0.0
+	# Range: 0.0 ~ 1.0
+	crucianCarpFakeOutChance = 0
+	#鲫鱼（crucian_carp） · 进疲劳的体力比例（0~1） —— 体力降到这个比例以下就进疲劳期（0.3 = 剩 30% 时）
+	# Default: 0.3
+	# Range: 0.01 ~ 1.0
+	crucianCarpFatigueThreshold = 0.3
+	#鲫鱼（crucian_carp） · 疲劳持续（秒） —— 疲劳期持续几秒。这段时间是反拉的最佳窗口
+	# Default: 2.0
+	# Range: 0.0 ~ 120.0
+	crucianCarpFatigueDurationSec = 2
+	#鲫鱼（crucian_carp） · 不挣扎时回气（/s） —— 不挣扎时每秒回多少体力（会被渔轮阻尼压制）。越大越难遛翻
+	# Default: 0.02
+	# Range: 0.0 ~ 1.0
+	crucianCarpStaminaRegen = 0.02
+	#罗非鱼（tilapia） · 体重下限（kg） —— 这种鱼最小能有多重。⚠ 它和体重上限一起决定档位怎么分——改小了会让低档鱼变少
+	# Default: 0.2
+	# Range: 0.001 ~ 500.0
+	tilapiaMinKg = 0.2
+	#罗非鱼（tilapia） · 体重上限（kg） —— 这种鱼最大能有多重。线长/承重不够时会钓不上来（见 buildPool 的承重过滤）
+	# Default: 2.0
+	# Range: 0.001 ~ 500.0
+	tilapiaMaxKg = 2
+	#罗非鱼（tilapia） · 拉力（不挣扎） —— 挣扎时把线拽出去的速度。越大越拉不动。这是「上钩两秒就能感觉出多大」的主要来源。⚠ 这是**基准值**：实际游速 = 本值 × 档位曲线 1.12^档 × 金/红手感修正（金 ×0.84、红 ×1.05）
+	# Default: 0.8
+	# Range: 0.0 ~ 20.0
+	tilapiaPullSpeed = 1.2
+	#罗非鱼（tilapia） · 拉力（疲劳期） —— 遛到疲劳后的拉拽速度。默认 = 正常拉力 × gameplay.fatiguePullMultiplier（当前 0.5）—— 改大就等于「疲劳期反而不划算」
+	# Default: 0.4
+	# Range: 0.0 ~ 20.0
+	tilapiaFatiguedPullSpeed = 0.504
+	#罗非鱼（tilapia） · 体力上限 —— 鱼有多少体力。越大越耐磨，要遛更久。它是「持久战」强度的总开关。⚠ 这是**基准值**（按鱼种）：实际体力池 = 本值 × 档位倍率（金档 ×1.0、红档 ×1.5）。红档还有一条**基准下限**（gameplay.tierRedStaminaMin，默认 200）：基准低于它的红档鱼先被抬到下限，再乘倍率 —— 否则台钓唯一的红鱼（蓝宝石雷龙鱼 130）比一条普通草鱼还好遛。咬钩时日志里会打一行「体力池：X = 基准 Y × 档位倍率 Z」——对账看那一行，别看这里的基准
+	# Default: 90.0
+	# Range: 1.0 ~ 5000.0
+	tilapiaStamina = 90
+	#罗非鱼（tilapia） · 张力涨速 —— 这条鱼让线涨得多快。>1 = 线黄得快（黏液型鱼的味道），<1 = 宽容
+	# Default: 0.95
+	# Range: 0.0 ~ 5.0
+	tilapiaTensionGain = 0.95
+	#罗非鱼（tilapia） · 冲刺时长（秒） —— 每次冲刺持续几秒。0 = 这条鱼不冲刺
+	# Default: 0.8
+	# Range: 0.0 ~ 60.0
+	tilapiaSprintDurationSec = 0.8
+	#罗非鱼（tilapia） · 冲刺间隔（秒） —— 每隔几秒冲一次。越小越凶（爆发型 2.6，黏液型 8.0 几乎不冲）
+	# Default: 4.5
+	# Range: 0.1 ~ 60.0
+	tilapiaSprintIntervalSec = 4.5
+	#罗非鱼（tilapia） · 变向间隔（秒） —— 每隔几秒变一次向。越小越神经质（神经质型 1.3，黏液型 5.5 方向很稳）
+	# Default: 3.5
+	# Range: 0.2 ~ 60.0
+	tilapiaTurnIntervalSec = 3.5
+	#罗非鱼（tilapia） · 假动作概率（0~1） —— 假动作概率：预告一个方向、实际往反方向跑。0~1（神经质型 0.35）
+	# Default: 0.0
+	# Range: 0.0 ~ 1.0
+	tilapiaFakeOutChance = 0
+	#罗非鱼（tilapia） · 进疲劳的体力比例（0~1） —— 体力降到这个比例以下就进疲劳期（0.3 = 剩 30% 时）
+	# Default: 0.3
+	# Range: 0.01 ~ 1.0
+	tilapiaFatigueThreshold = 0.3
+	#罗非鱼（tilapia） · 疲劳持续（秒） —— 疲劳期持续几秒。这段时间是反拉的最佳窗口
+	# Default: 2.0
+	# Range: 0.0 ~ 120.0
+	tilapiaFatigueDurationSec = 2
+	#罗非鱼（tilapia） · 不挣扎时回气（/s） —— 不挣扎时每秒回多少体力（会被渔轮阻尼压制）。越大越难遛翻
+	# Default: 0.02
+	# Range: 0.0 ~ 1.0
+	tilapiaStaminaRegen = 0.02
+	#鲻鱼（mullet） · 体重下限（kg） —— 这种鱼最小能有多重。⚠ 它和体重上限一起决定档位怎么分——改小了会让低档鱼变少
+	# Default: 0.3
+	# Range: 0.001 ~ 500.0
+	mulletMinKg = 0.3
+	#鲻鱼（mullet） · 体重上限（kg） —— 这种鱼最大能有多重。线长/承重不够时会钓不上来（见 buildPool 的承重过滤）
+	# Default: 2.5
+	# Range: 0.001 ~ 500.0
+	mulletMaxKg = 2.5
+	#鲻鱼（mullet） · 拉力（不挣扎） —— 挣扎时把线拽出去的速度。越大越拉不动。这是「上钩两秒就能感觉出多大」的主要来源。⚠ 这是**基准值**：实际游速 = 本值 × 档位曲线 1.12^档 × 金/红手感修正（金 ×0.84、红 ×1.05）
+	# Default: 1.0
+	# Range: 0.0 ~ 20.0
+	mulletPullSpeed = 2
+	#鲻鱼（mullet） · 拉力（疲劳期） —— 遛到疲劳后的拉拽速度。默认 = 正常拉力 × gameplay.fatiguePullMultiplier（当前 0.5）—— 改大就等于「疲劳期反而不划算」
+	# Default: 0.5
+	# Range: 0.0 ~ 20.0
+	mulletFatiguedPullSpeed = 0.63
+	#鲻鱼（mullet） · 体力上限 —— 鱼有多少体力。越大越耐磨，要遛更久。它是「持久战」强度的总开关。⚠ 这是**基准值**（按鱼种）：实际体力池 = 本值 × 档位倍率（金档 ×1.0、红档 ×1.5）。红档还有一条**基准下限**（gameplay.tierRedStaminaMin，默认 200）：基准低于它的红档鱼先被抬到下限，再乘倍率 —— 否则台钓唯一的红鱼（蓝宝石雷龙鱼 130）比一条普通草鱼还好遛。咬钩时日志里会打一行「体力池：X = 基准 Y × 档位倍率 Z」——对账看那一行，别看这里的基准
+	# Default: 110.0
+	# Range: 1.0 ~ 5000.0
+	mulletStamina = 110
+	#鲻鱼（mullet） · 张力涨速 —— 这条鱼让线涨得多快。>1 = 线黄得快（黏液型鱼的味道），<1 = 宽容
+	# Default: 1.05
+	# Range: 0.0 ~ 5.0
+	mulletTensionGain = 1.05
+	#鲻鱼（mullet） · 冲刺时长（秒） —— 每次冲刺持续几秒。0 = 这条鱼不冲刺
+	# Default: 0.8
+	# Range: 0.0 ~ 60.0
+	mulletSprintDurationSec = 0.8
+	#鲻鱼（mullet） · 冲刺间隔（秒） —— 每隔几秒冲一次。越小越凶（爆发型 2.6，黏液型 8.0 几乎不冲）
+	# Default: 4.5
+	# Range: 0.1 ~ 60.0
+	mulletSprintIntervalSec = 4.5
+	#鲻鱼（mullet） · 变向间隔（秒） —— 每隔几秒变一次向。越小越神经质（神经质型 1.3，黏液型 5.5 方向很稳）
+	# Default: 3.5
+	# Range: 0.2 ~ 60.0
+	mulletTurnIntervalSec = 3.5
+	#鲻鱼（mullet） · 假动作概率（0~1） —— 假动作概率：预告一个方向、实际往反方向跑。0~1（神经质型 0.35）
+	# Default: 0.0
+	# Range: 0.0 ~ 1.0
+	mulletFakeOutChance = 0
+	#鲻鱼（mullet） · 进疲劳的体力比例（0~1） —— 体力降到这个比例以下就进疲劳期（0.3 = 剩 30% 时）
+	# Default: 0.3
+	# Range: 0.01 ~ 1.0
+	mulletFatigueThreshold = 0.3
+	#鲻鱼（mullet） · 疲劳持续（秒） —— 疲劳期持续几秒。这段时间是反拉的最佳窗口
+	# Default: 2.0
+	# Range: 0.0 ~ 120.0
+	mulletFatigueDurationSec = 2
+	#鲻鱼（mullet） · 不挣扎时回气（/s） —— 不挣扎时每秒回多少体力（会被渔轮阻尼压制）。越大越难遛翻
+	# Default: 0.02
+	# Range: 0.0 ~ 1.0
+	mulletStaminaRegen = 0.02
+	#草鱼（grass_carp） · 体重下限（kg） —— 这种鱼最小能有多重。⚠ 它和体重上限一起决定档位怎么分——改小了会让低档鱼变少
+	# Default: 1.5
+	# Range: 0.001 ~ 500.0
+	grassCarpMinKg = 1.5
+	#草鱼（grass_carp） · 体重上限（kg） —— 这种鱼最大能有多重。线长/承重不够时会钓不上来（见 buildPool 的承重过滤）
+	# Default: 18.0
+	# Range: 0.001 ~ 500.0
+	grassCarpMaxKg = 18
+	#草鱼（grass_carp） · 拉力（不挣扎） —— 挣扎时把线拽出去的速度。越大越拉不动。这是「上钩两秒就能感觉出多大」的主要来源。⚠ 这是**基准值**：实际游速 = 本值 × 档位曲线 1.12^档 × 金/红手感修正（金 ×0.84、红 ×1.05）
+	# Default: 0.75
+	# Range: 0.0 ~ 20.0
+	grassCarpPullSpeed = 1.125
+	#草鱼（grass_carp） · 拉力（疲劳期） —— 遛到疲劳后的拉拽速度。默认 = 正常拉力 × gameplay.fatiguePullMultiplier（当前 0.5）—— 改大就等于「疲劳期反而不划算」
+	# Default: 0.375
+	# Range: 0.0 ~ 20.0
+	grassCarpFatiguedPullSpeed = 0.4725
+	#草鱼（grass_carp） · 体力上限 —— 鱼有多少体力。越大越耐磨，要遛更久。它是「持久战」强度的总开关。⚠ 这是**基准值**（按鱼种）：实际体力池 = 本值 × 档位倍率（金档 ×1.0、红档 ×1.5）。红档还有一条**基准下限**（gameplay.tierRedStaminaMin，默认 200）：基准低于它的红档鱼先被抬到下限，再乘倍率 —— 否则台钓唯一的红鱼（蓝宝石雷龙鱼 130）比一条普通草鱼还好遛。咬钩时日志里会打一行「体力池：X = 基准 Y × 档位倍率 Z」——对账看那一行，别看这里的基准
+	# Default: 220.0
+	# Range: 1.0 ~ 5000.0
+	grassCarpStamina = 220
+	#草鱼（grass_carp） · 张力涨速 —— 这条鱼让线涨得多快。>1 = 线黄得快（黏液型鱼的味道），<1 = 宽容
+	# Default: 1.35
+	# Range: 0.0 ~ 5.0
+	grassCarpTensionGain = 1.35
+	#草鱼（grass_carp） · 冲刺时长（秒） —— 每次冲刺持续几秒。0 = 这条鱼不冲刺
+	# Default: 0.4
+	# Range: 0.0 ~ 60.0
+	grassCarpSprintDurationSec = 0.4
+	#草鱼（grass_carp） · 冲刺间隔（秒） —— 每隔几秒冲一次。越小越凶（爆发型 2.6，黏液型 8.0 几乎不冲）
+	# Default: 8.0
+	# Range: 0.1 ~ 60.0
+	grassCarpSprintIntervalSec = 8
+	#草鱼（grass_carp） · 变向间隔（秒） —— 每隔几秒变一次向。越小越神经质（神经质型 1.3，黏液型 5.5 方向很稳）
+	# Default: 5.5
+	# Range: 0.2 ~ 60.0
+	grassCarpTurnIntervalSec = 5.5
+	#草鱼（grass_carp） · 假动作概率（0~1） —— 假动作概率：预告一个方向、实际往反方向跑。0~1（神经质型 0.35）
+	# Default: 0.0
+	# Range: 0.0 ~ 1.0
+	grassCarpFakeOutChance = 0
+	#草鱼（grass_carp） · 进疲劳的体力比例（0~1） —— 体力降到这个比例以下就进疲劳期（0.3 = 剩 30% 时）
+	# Default: 0.28
+	# Range: 0.01 ~ 1.0
+	grassCarpFatigueThreshold = 0.28
+	#草鱼（grass_carp） · 疲劳持续（秒） —— 疲劳期持续几秒。这段时间是反拉的最佳窗口
+	# Default: 2.6
+	# Range: 0.0 ~ 120.0
+	grassCarpFatigueDurationSec = 2.6
+	#草鱼（grass_carp） · 不挣扎时回气（/s） —— 不挣扎时每秒回多少体力（会被渔轮阻尼压制）。越大越难遛翻
+	# Default: 0.015
+	# Range: 0.0 ~ 1.0
+	grassCarpStaminaRegen = 0.015
+	#青鱼（black_carp） · 体重下限（kg） —— 这种鱼最小能有多重。⚠ 它和体重上限一起决定档位怎么分——改小了会让低档鱼变少
+	# Default: 3.0
+	# Range: 0.001 ~ 500.0
+	blackCarpMinKg = 3
+	#青鱼（black_carp） · 体重上限（kg） —— 这种鱼最大能有多重。线长/承重不够时会钓不上来（见 buildPool 的承重过滤）
+	# Default: 35.0
+	# Range: 0.001 ~ 500.0
+	blackCarpMaxKg = 35
+	#青鱼（black_carp） · 拉力（不挣扎） —— 挣扎时把线拽出去的速度。越大越拉不动。这是「上钩两秒就能感觉出多大」的主要来源。⚠ 这是**基准值**：实际游速 = 本值 × 档位曲线 1.12^档 × 金/红手感修正（金 ×0.84、红 ×1.05）
+	# Default: 0.7
+	# Range: 0.0 ~ 20.0
+	blackCarpPullSpeed = 1.05
+	#青鱼（black_carp） · 拉力（疲劳期） —— 遛到疲劳后的拉拽速度。默认 = 正常拉力 × gameplay.fatiguePullMultiplier（当前 0.5）—— 改大就等于「疲劳期反而不划算」
+	# Default: 0.35
+	# Range: 0.0 ~ 20.0
+	blackCarpFatiguedPullSpeed = 0.441
+	#青鱼（black_carp） · 体力上限 —— 鱼有多少体力。越大越耐磨，要遛更久。它是「持久战」强度的总开关。⚠ 这是**基准值**（按鱼种）：实际体力池 = 本值 × 档位倍率（金档 ×1.0、红档 ×1.5）。红档还有一条**基准下限**（gameplay.tierRedStaminaMin，默认 200）：基准低于它的红档鱼先被抬到下限，再乘倍率 —— 否则台钓唯一的红鱼（蓝宝石雷龙鱼 130）比一条普通草鱼还好遛。咬钩时日志里会打一行「体力池：X = 基准 Y × 档位倍率 Z」——对账看那一行，别看这里的基准
+	# Default: 320.0
+	# Range: 1.0 ~ 5000.0
+	blackCarpStamina = 320
+	#青鱼（black_carp） · 张力涨速 —— 这条鱼让线涨得多快。>1 = 线黄得快（黏液型鱼的味道），<1 = 宽容
+	# Default: 1.55
+	# Range: 0.0 ~ 5.0
+	blackCarpTensionGain = 1.55
+	#青鱼（black_carp） · 冲刺时长（秒） —— 每次冲刺持续几秒。0 = 这条鱼不冲刺
+	# Default: 0.4
+	# Range: 0.0 ~ 60.0
+	blackCarpSprintDurationSec = 0.4
+	#青鱼（black_carp） · 冲刺间隔（秒） —— 每隔几秒冲一次。越小越凶（爆发型 2.6，黏液型 8.0 几乎不冲）
+	# Default: 8.0
+	# Range: 0.1 ~ 60.0
+	blackCarpSprintIntervalSec = 8
+	#青鱼（black_carp） · 变向间隔（秒） —— 每隔几秒变一次向。越小越神经质（神经质型 1.3，黏液型 5.5 方向很稳）
+	# Default: 5.5
+	# Range: 0.2 ~ 60.0
+	blackCarpTurnIntervalSec = 5.5
+	#青鱼（black_carp） · 假动作概率（0~1） —— 假动作概率：预告一个方向、实际往反方向跑。0~1（神经质型 0.35）
+	# Default: 0.0
+	# Range: 0.0 ~ 1.0
+	blackCarpFakeOutChance = 0
+	#青鱼（black_carp） · 进疲劳的体力比例（0~1） —— 体力降到这个比例以下就进疲劳期（0.3 = 剩 30% 时）
+	# Default: 0.28
+	# Range: 0.01 ~ 1.0
+	blackCarpFatigueThreshold = 0.28
+	#青鱼（black_carp） · 疲劳持续（秒） —— 疲劳期持续几秒。这段时间是反拉的最佳窗口
+	# Default: 2.6
+	# Range: 0.0 ~ 120.0
+	blackCarpFatigueDurationSec = 2.6
+	#青鱼（black_carp） · 不挣扎时回气（/s） —— 不挣扎时每秒回多少体力（会被渔轮阻尼压制）。越大越难遛翻
+	# Default: 0.015
+	# Range: 0.0 ~ 1.0
+	blackCarpStaminaRegen = 0.015
+	#横纹鱼（banded_loach） · 体重下限（kg） —— 这种鱼最小能有多重。⚠ 它和体重上限一起决定档位怎么分——改小了会让低档鱼变少
+	# Default: 0.003
+	# Range: 0.001 ~ 500.0
+	bandedLoachMinKg = 0.003
+	#横纹鱼（banded_loach） · 体重上限（kg） —— 这种鱼最大能有多重。线长/承重不够时会钓不上来（见 buildPool 的承重过滤）
+	# Default: 0.03
+	# Range: 0.001 ~ 500.0
+	bandedLoachMaxKg = 0.03
+	#横纹鱼（banded_loach） · 拉力（不挣扎） —— 挣扎时把线拽出去的速度。越大越拉不动。这是「上钩两秒就能感觉出多大」的主要来源。⚠ 这是**基准值**：实际游速 = 本值 × 档位曲线 1.12^档 × 金/红手感修正（金 ×0.84、红 ×1.05）
+	# Default: 0.35
+	# Range: 0.0 ~ 20.0
+	bandedLoachPullSpeed = 0.525
+	#横纹鱼（banded_loach） · 拉力（疲劳期） —— 遛到疲劳后的拉拽速度。默认 = 正常拉力 × gameplay.fatiguePullMultiplier（当前 0.5）—— 改大就等于「疲劳期反而不划算」
+	# Default: 0.175
+	# Range: 0.0 ~ 20.0
+	bandedLoachFatiguedPullSpeed = 0.2205
+	#横纹鱼（banded_loach） · 体力上限 —— 鱼有多少体力。越大越耐磨，要遛更久。它是「持久战」强度的总开关。⚠ 这是**基准值**（按鱼种）：实际体力池 = 本值 × 档位倍率（金档 ×1.0、红档 ×1.5）。红档还有一条**基准下限**（gameplay.tierRedStaminaMin，默认 200）：基准低于它的红档鱼先被抬到下限，再乘倍率 —— 否则台钓唯一的红鱼（蓝宝石雷龙鱼 130）比一条普通草鱼还好遛。咬钩时日志里会打一行「体力池：X = 基准 Y × 档位倍率 Z」——对账看那一行，别看这里的基准
+	# Default: 25.0
+	# Range: 1.0 ~ 5000.0
+	bandedLoachStamina = 25
+	#横纹鱼（banded_loach） · 张力涨速 —— 这条鱼让线涨得多快。>1 = 线黄得快（黏液型鱼的味道），<1 = 宽容
+	# Default: 0.8
+	# Range: 0.0 ~ 5.0
+	bandedLoachTensionGain = 0.8
+	#横纹鱼（banded_loach） · 冲刺时长（秒） —— 每次冲刺持续几秒。0 = 这条鱼不冲刺
+	# Default: 0.8
+	# Range: 0.0 ~ 60.0
+	bandedLoachSprintDurationSec = 0.8
+	#横纹鱼（banded_loach） · 冲刺间隔（秒） —— 每隔几秒冲一次。越小越凶（爆发型 2.6，黏液型 8.0 几乎不冲）
+	# Default: 4.5
+	# Range: 0.1 ~ 60.0
+	bandedLoachSprintIntervalSec = 4.5
+	#横纹鱼（banded_loach） · 变向间隔（秒） —— 每隔几秒变一次向。越小越神经质（神经质型 1.3，黏液型 5.5 方向很稳）
+	# Default: 3.5
+	# Range: 0.2 ~ 60.0
+	bandedLoachTurnIntervalSec = 3.5
+	#横纹鱼（banded_loach） · 假动作概率（0~1） —— 假动作概率：预告一个方向、实际往反方向跑。0~1（神经质型 0.35）
+	# Default: 0.0
+	# Range: 0.0 ~ 1.0
+	bandedLoachFakeOutChance = 0
+	#横纹鱼（banded_loach） · 进疲劳的体力比例（0~1） —— 体力降到这个比例以下就进疲劳期（0.3 = 剩 30% 时）
+	# Default: 0.3
+	# Range: 0.01 ~ 1.0
+	bandedLoachFatigueThreshold = 0.3
+	#横纹鱼（banded_loach） · 疲劳持续（秒） —— 疲劳期持续几秒。这段时间是反拉的最佳窗口
+	# Default: 2.0
+	# Range: 0.0 ~ 120.0
+	bandedLoachFatigueDurationSec = 2
+	#横纹鱼（banded_loach） · 不挣扎时回气（/s） —— 不挣扎时每秒回多少体力（会被渔轮阻尼压制）。越大越难遛翻
+	# Default: 0.02
+	# Range: 0.0 ~ 1.0
+	bandedLoachStaminaRegen = 0.02
+	#白条鱼（hemiculter） · 体重下限（kg） —— 这种鱼最小能有多重。⚠ 它和体重上限一起决定档位怎么分——改小了会让低档鱼变少
+	# Default: 0.02
+	# Range: 0.001 ~ 500.0
+	hemiculterMinKg = 0.02
+	#白条鱼（hemiculter） · 体重上限（kg） —— 这种鱼最大能有多重。线长/承重不够时会钓不上来（见 buildPool 的承重过滤）
+	# Default: 0.232
+	# Range: 0.001 ~ 500.0
+	hemiculterMaxKg = 0.232
+	#白条鱼（hemiculter） · 拉力（不挣扎） —— 挣扎时把线拽出去的速度。越大越拉不动。这是「上钩两秒就能感觉出多大」的主要来源。⚠ 这是**基准值**：实际游速 = 本值 × 档位曲线 1.12^档 × 金/红手感修正（金 ×0.84、红 ×1.05）
+	# Default: 0.95
+	# Range: 0.0 ~ 20.0
+	hemiculterPullSpeed = 1.425
+	#白条鱼（hemiculter） · 拉力（疲劳期） —— 遛到疲劳后的拉拽速度。默认 = 正常拉力 × gameplay.fatiguePullMultiplier（当前 0.5）—— 改大就等于「疲劳期反而不划算」
+	# Default: 0.475
+	# Range: 0.0 ~ 20.0
+	hemiculterFatiguedPullSpeed = 0.5985
+	#白条鱼（hemiculter） · 体力上限 —— 鱼有多少体力。越大越耐磨，要遛更久。它是「持久战」强度的总开关。⚠ 这是**基准值**（按鱼种）：实际体力池 = 本值 × 档位倍率（金档 ×1.0、红档 ×1.5）。红档还有一条**基准下限**（gameplay.tierRedStaminaMin，默认 200）：基准低于它的红档鱼先被抬到下限，再乘倍率 —— 否则台钓唯一的红鱼（蓝宝石雷龙鱼 130）比一条普通草鱼还好遛。咬钩时日志里会打一行「体力池：X = 基准 Y × 档位倍率 Z」——对账看那一行，别看这里的基准
+	# Default: 45.0
+	# Range: 1.0 ~ 5000.0
+	hemiculterStamina = 45
+	#白条鱼（hemiculter） · 张力涨速 —— 这条鱼让线涨得多快。>1 = 线黄得快（黏液型鱼的味道），<1 = 宽容
+	# Default: 1.1
+	# Range: 0.0 ~ 5.0
+	hemiculterTensionGain = 1.1
+	#白条鱼（hemiculter） · 冲刺时长（秒） —— 每次冲刺持续几秒。0 = 这条鱼不冲刺
+	# Default: 0.9
+	# Range: 0.0 ~ 60.0
+	hemiculterSprintDurationSec = 0.9
+	#白条鱼（hemiculter） · 冲刺间隔（秒） —— 每隔几秒冲一次。越小越凶（爆发型 2.6，黏液型 8.0 几乎不冲）
+	# Default: 3.0
+	# Range: 0.1 ~ 60.0
+	hemiculterSprintIntervalSec = 3
+	#白条鱼（hemiculter） · 变向间隔（秒） —— 每隔几秒变一次向。越小越神经质（神经质型 1.3，黏液型 5.5 方向很稳）
+	# Default: 1.3
+	# Range: 0.2 ~ 60.0
+	hemiculterTurnIntervalSec = 1.3
+	#白条鱼（hemiculter） · 假动作概率（0~1） —— 假动作概率：预告一个方向、实际往反方向跑。0~1（神经质型 0.35）
+	# Default: 0.35
+	# Range: 0.0 ~ 1.0
+	hemiculterFakeOutChance = 0.35
+	#白条鱼（hemiculter） · 进疲劳的体力比例（0~1） —— 体力降到这个比例以下就进疲劳期（0.3 = 剩 30% 时）
+	# Default: 0.32
+	# Range: 0.01 ~ 1.0
+	hemiculterFatigueThreshold = 0.32
+	#白条鱼（hemiculter） · 疲劳持续（秒） —— 疲劳期持续几秒。这段时间是反拉的最佳窗口
+	# Default: 2.0
+	# Range: 0.0 ~ 120.0
+	hemiculterFatigueDurationSec = 2
+	#白条鱼（hemiculter） · 不挣扎时回气（/s） —— 不挣扎时每秒回多少体力（会被渔轮阻尼压制）。越大越难遛翻
+	# Default: 0.02
+	# Range: 0.0 ~ 1.0
+	hemiculterStaminaRegen = 0.02
+	#翘嘴（topmouth_culter） · 体重下限（kg） —— 这种鱼最小能有多重。⚠ 它和体重上限一起决定档位怎么分——改小了会让低档鱼变少
+	# Default: 0.6
+	# Range: 0.001 ~ 500.0
+	topmouthCulterMinKg = 0.6
+	#翘嘴（topmouth_culter） · 体重上限（kg） —— 这种鱼最大能有多重。线长/承重不够时会钓不上来（见 buildPool 的承重过滤）
+	# Default: 6.0
+	# Range: 0.001 ~ 500.0
+	topmouthCulterMaxKg = 6
+	#翘嘴（topmouth_culter） · 拉力（不挣扎） —— 挣扎时把线拽出去的速度。越大越拉不动。这是「上钩两秒就能感觉出多大」的主要来源。⚠ 这是**基准值**：实际游速 = 本值 × 档位曲线 1.12^档 × 金/红手感修正（金 ×0.84、红 ×1.05）
+	# Default: 1.35
+	# Range: 0.0 ~ 20.0
+	topmouthCulterPullSpeed = 2.025
+	#翘嘴（topmouth_culter） · 拉力（疲劳期） —— 遛到疲劳后的拉拽速度。默认 = 正常拉力 × gameplay.fatiguePullMultiplier（当前 0.5）—— 改大就等于「疲劳期反而不划算」
+	# Default: 0.675
+	# Range: 0.0 ~ 20.0
+	topmouthCulterFatiguedPullSpeed = 0.8504999999999999
+	#翘嘴（topmouth_culter） · 体力上限 —— 鱼有多少体力。越大越耐磨，要遛更久。它是「持久战」强度的总开关。⚠ 这是**基准值**（按鱼种）：实际体力池 = 本值 × 档位倍率（金档 ×1.0、红档 ×1.5）。红档还有一条**基准下限**（gameplay.tierRedStaminaMin，默认 200）：基准低于它的红档鱼先被抬到下限，再乘倍率 —— 否则台钓唯一的红鱼（蓝宝石雷龙鱼 130）比一条普通草鱼还好遛。咬钩时日志里会打一行「体力池：X = 基准 Y × 档位倍率 Z」——对账看那一行，别看这里的基准
+	# Default: 150.0
+	# Range: 1.0 ~ 5000.0
+	topmouthCulterStamina = 150
+	#翘嘴（topmouth_culter） · 张力涨速 —— 这条鱼让线涨得多快。>1 = 线黄得快（黏液型鱼的味道），<1 = 宽容
+	# Default: 1.2
+	# Range: 0.0 ~ 5.0
+	topmouthCulterTensionGain = 1.2
+	#翘嘴（topmouth_culter） · 冲刺时长（秒） —— 每次冲刺持续几秒。0 = 这条鱼不冲刺
+	# Default: 1.6
+	# Range: 0.0 ~ 60.0
+	topmouthCulterSprintDurationSec = 1.6
+	#翘嘴（topmouth_culter） · 冲刺间隔（秒） —— 每隔几秒冲一次。越小越凶（爆发型 2.6，黏液型 8.0 几乎不冲）
+	# Default: 2.6
+	# Range: 0.1 ~ 60.0
+	topmouthCulterSprintIntervalSec = 2.6
+	#翘嘴（topmouth_culter） · 变向间隔（秒） —— 每隔几秒变一次向。越小越神经质（神经质型 1.3，黏液型 5.5 方向很稳）
+	# Default: 3.0
+	# Range: 0.2 ~ 60.0
+	topmouthCulterTurnIntervalSec = 3
+	#翘嘴（topmouth_culter） · 假动作概率（0~1） —— 假动作概率：预告一个方向、实际往反方向跑。0~1（神经质型 0.35）
+	# Default: 0.1
+	# Range: 0.0 ~ 1.0
+	topmouthCulterFakeOutChance = 0.1
+	#翘嘴（topmouth_culter） · 进疲劳的体力比例（0~1） —— 体力降到这个比例以下就进疲劳期（0.3 = 剩 30% 时）
+	# Default: 0.34
+	# Range: 0.01 ~ 1.0
+	topmouthCulterFatigueThreshold = 0.34
+	#翘嘴（topmouth_culter） · 疲劳持续（秒） —— 疲劳期持续几秒。这段时间是反拉的最佳窗口
+	# Default: 2.4
+	# Range: 0.0 ~ 120.0
+	topmouthCulterFatigueDurationSec = 2.4
+	#翘嘴（topmouth_culter） · 不挣扎时回气（/s） —— 不挣扎时每秒回多少体力（会被渔轮阻尼压制）。越大越难遛翻
+	# Default: 0.02
+	# Range: 0.0 ~ 1.0
+	topmouthCulterStaminaRegen = 0.02
+	#梭鲈（zander） · 体重下限（kg） —— 这种鱼最小能有多重。⚠ 它和体重上限一起决定档位怎么分——改小了会让低档鱼变少
+	# Default: 1.0
+	# Range: 0.001 ~ 500.0
+	zanderMinKg = 1
+	#梭鲈（zander） · 体重上限（kg） —— 这种鱼最大能有多重。线长/承重不够时会钓不上来（见 buildPool 的承重过滤）
+	# Default: 9.0
+	# Range: 0.001 ~ 500.0
+	zanderMaxKg = 9
+	#梭鲈（zander） · 拉力（不挣扎） —— 挣扎时把线拽出去的速度。越大越拉不动。这是「上钩两秒就能感觉出多大」的主要来源。⚠ 这是**基准值**：实际游速 = 本值 × 档位曲线 1.12^档 × 金/红手感修正（金 ×0.84、红 ×1.05）
+	# Default: 1.45
+	# Range: 0.0 ~ 20.0
+	zanderPullSpeed = 2.175
+	#梭鲈（zander） · 拉力（疲劳期） —— 遛到疲劳后的拉拽速度。默认 = 正常拉力 × gameplay.fatiguePullMultiplier（当前 0.5）—— 改大就等于「疲劳期反而不划算」
+	# Default: 0.725
+	# Range: 0.0 ~ 20.0
+	zanderFatiguedPullSpeed = 0.9134999999999999
+	#梭鲈（zander） · 体力上限 —— 鱼有多少体力。越大越耐磨，要遛更久。它是「持久战」强度的总开关。⚠ 这是**基准值**（按鱼种）：实际体力池 = 本值 × 档位倍率（金档 ×1.0、红档 ×1.5）。红档还有一条**基准下限**（gameplay.tierRedStaminaMin，默认 200）：基准低于它的红档鱼先被抬到下限，再乘倍率 —— 否则台钓唯一的红鱼（蓝宝石雷龙鱼 130）比一条普通草鱼还好遛。咬钩时日志里会打一行「体力池：X = 基准 Y × 档位倍率 Z」——对账看那一行，别看这里的基准
+	# Default: 180.0
+	# Range: 1.0 ~ 5000.0
+	zanderStamina = 180
+	#梭鲈（zander） · 张力涨速 —— 这条鱼让线涨得多快。>1 = 线黄得快（黏液型鱼的味道），<1 = 宽容
+	# Default: 1.3
+	# Range: 0.0 ~ 5.0
+	zanderTensionGain = 1.3
+	#梭鲈（zander） · 冲刺时长（秒） —— 每次冲刺持续几秒。0 = 这条鱼不冲刺
+	# Default: 0.9
+	# Range: 0.0 ~ 60.0
+	zanderSprintDurationSec = 0.9
+	#梭鲈（zander） · 冲刺间隔（秒） —— 每隔几秒冲一次。越小越凶（爆发型 2.6，黏液型 8.0 几乎不冲）
+	# Default: 3.0
+	# Range: 0.1 ~ 60.0
+	zanderSprintIntervalSec = 3
+	#梭鲈（zander） · 变向间隔（秒） —— 每隔几秒变一次向。越小越神经质（神经质型 1.3，黏液型 5.5 方向很稳）
+	# Default: 1.3
+	# Range: 0.2 ~ 60.0
+	zanderTurnIntervalSec = 1.3
+	#梭鲈（zander） · 假动作概率（0~1） —— 假动作概率：预告一个方向、实际往反方向跑。0~1（神经质型 0.35）
+	# Default: 0.35
+	# Range: 0.0 ~ 1.0
+	zanderFakeOutChance = 0.35
+	#梭鲈（zander） · 进疲劳的体力比例（0~1） —— 体力降到这个比例以下就进疲劳期（0.3 = 剩 30% 时）
+	# Default: 0.32
+	# Range: 0.01 ~ 1.0
+	zanderFatigueThreshold = 0.32
+	#梭鲈（zander） · 疲劳持续（秒） —— 疲劳期持续几秒。这段时间是反拉的最佳窗口
+	# Default: 2.0
+	# Range: 0.0 ~ 120.0
+	zanderFatigueDurationSec = 2
+	#梭鲈（zander） · 不挣扎时回气（/s） —— 不挣扎时每秒回多少体力（会被渔轮阻尼压制）。越大越难遛翻
+	# Default: 0.02
+	# Range: 0.0 ~ 1.0
+	zanderStaminaRegen = 0.02
+	#蓝宝石雷龙鱼（sapphire_snakehead） · 体重下限（kg） —— 这种鱼最小能有多重。⚠ 它和体重上限一起决定档位怎么分——改小了会让低档鱼变少
+	# Default: 0.15
+	# Range: 0.001 ~ 500.0
+	sapphireSnakeheadMinKg = 0.15
+	#蓝宝石雷龙鱼（sapphire_snakehead） · 体重上限（kg） —— 这种鱼最大能有多重。线长/承重不够时会钓不上来（见 buildPool 的承重过滤）
+	# Default: 0.35
+	# Range: 0.001 ~ 500.0
+	sapphireSnakeheadMaxKg = 0.35
+	#蓝宝石雷龙鱼（sapphire_snakehead） · 拉力（不挣扎） —— 挣扎时把线拽出去的速度。越大越拉不动。这是「上钩两秒就能感觉出多大」的主要来源。⚠ 这是**基准值**：实际游速 = 本值 × 档位曲线 1.12^档 × 金/红手感修正（金 ×0.84、红 ×1.05）
+	# Default: 1.7
+	# Range: 0.0 ~ 20.0
+	sapphireSnakeheadPullSpeed = 2.55
+	#蓝宝石雷龙鱼（sapphire_snakehead） · 拉力（疲劳期） —— 遛到疲劳后的拉拽速度。默认 = 正常拉力 × gameplay.fatiguePullMultiplier（当前 0.5）—— 改大就等于「疲劳期反而不划算」
+	# Default: 0.85
+	# Range: 0.0 ~ 20.0
+	sapphireSnakeheadFatiguedPullSpeed = 1.071
+	#蓝宝石雷龙鱼（sapphire_snakehead） · 体力上限 —— 鱼有多少体力。越大越耐磨，要遛更久。它是「持久战」强度的总开关。⚠ 这是**基准值**（按鱼种）：实际体力池 = 本值 × 档位倍率（金档 ×1.0、红档 ×1.5）。红档还有一条**基准下限**（gameplay.tierRedStaminaMin，默认 200）：基准低于它的红档鱼先被抬到下限，再乘倍率 —— 否则台钓唯一的红鱼（蓝宝石雷龙鱼 130）比一条普通草鱼还好遛。咬钩时日志里会打一行「体力池：X = 基准 Y × 档位倍率 Z」——对账看那一行，别看这里的基准
+	# Default: 130.0
+	# Range: 1.0 ~ 5000.0
+	sapphireSnakeheadStamina = 130
+	#蓝宝石雷龙鱼（sapphire_snakehead） · 张力涨速 —— 这条鱼让线涨得多快。>1 = 线黄得快（黏液型鱼的味道），<1 = 宽容
+	# Default: 1.35
+	# Range: 0.0 ~ 5.0
+	sapphireSnakeheadTensionGain = 1.35
+	#蓝宝石雷龙鱼（sapphire_snakehead） · 冲刺时长（秒） —— 每次冲刺持续几秒。0 = 这条鱼不冲刺
+	# Default: 0.9
+	# Range: 0.0 ~ 60.0
+	sapphireSnakeheadSprintDurationSec = 0.9
+	#蓝宝石雷龙鱼（sapphire_snakehead） · 冲刺间隔（秒） —— 每隔几秒冲一次。越小越凶（爆发型 2.6，黏液型 8.0 几乎不冲）
+	# Default: 3.0
+	# Range: 0.1 ~ 60.0
+	sapphireSnakeheadSprintIntervalSec = 3
+	#蓝宝石雷龙鱼（sapphire_snakehead） · 变向间隔（秒） —— 每隔几秒变一次向。越小越神经质（神经质型 1.3，黏液型 5.5 方向很稳）
+	# Default: 1.3
+	# Range: 0.2 ~ 60.0
+	sapphireSnakeheadTurnIntervalSec = 1.3
+	#蓝宝石雷龙鱼（sapphire_snakehead） · 假动作概率（0~1） —— 假动作概率：预告一个方向、实际往反方向跑。0~1（神经质型 0.35）
+	# Default: 0.35
+	# Range: 0.0 ~ 1.0
+	sapphireSnakeheadFakeOutChance = 0.35
+	#蓝宝石雷龙鱼（sapphire_snakehead） · 进疲劳的体力比例（0~1） —— 体力降到这个比例以下就进疲劳期（0.3 = 剩 30% 时）
+	# Default: 0.32
+	# Range: 0.01 ~ 1.0
+	sapphireSnakeheadFatigueThreshold = 0.32
+	#蓝宝石雷龙鱼（sapphire_snakehead） · 疲劳持续（秒） —— 疲劳期持续几秒。这段时间是反拉的最佳窗口
+	# Default: 2.0
+	# Range: 0.0 ~ 120.0
+	sapphireSnakeheadFatigueDurationSec = 2
+	#蓝宝石雷龙鱼（sapphire_snakehead） · 不挣扎时回气（/s） —— 不挣扎时每秒回多少体力（会被渔轮阻尼压制）。越大越难遛翻
+	# Default: 0.02
+	# Range: 0.0 ~ 1.0
+	sapphireSnakeheadStaminaRegen = 0.02
+	#铂金银龙鱼（platinum_arowana） · 体重下限（kg） —— 这种鱼最小能有多重。⚠ 它和体重上限一起决定档位怎么分——改小了会让低档鱼变少
+	# Default: 1.5
+	# Range: 0.001 ~ 500.0
+	platinumArowanaMinKg = 1.5
+	#铂金银龙鱼（platinum_arowana） · 体重上限（kg） —— 这种鱼最大能有多重。线长/承重不够时会钓不上来（见 buildPool 的承重过滤）
+	# Default: 6.0
+	# Range: 0.001 ~ 500.0
+	platinumArowanaMaxKg = 6
+	#铂金银龙鱼（platinum_arowana） · 拉力（不挣扎） —— 挣扎时把线拽出去的速度。越大越拉不动。这是「上钩两秒就能感觉出多大」的主要来源。⚠ 这是**基准值**：实际游速 = 本值 × 档位曲线 1.12^档 × 金/红手感修正（金 ×0.84、红 ×1.05）
+	# Default: 2.6
+	# Range: 0.0 ~ 20.0
+	platinumArowanaPullSpeed = 3.9
+	#铂金银龙鱼（platinum_arowana） · 拉力（疲劳期） —— 遛到疲劳后的拉拽速度。默认 = 正常拉力 × gameplay.fatiguePullMultiplier（当前 0.5）—— 改大就等于「疲劳期反而不划算」
+	# Default: 1.3
+	# Range: 0.0 ~ 20.0
+	platinumArowanaFatiguedPullSpeed = 1.638
+	#铂金银龙鱼（platinum_arowana） · 体力上限 —— 鱼有多少体力。越大越耐磨，要遛更久。它是「持久战」强度的总开关。⚠ 这是**基准值**（按鱼种）：实际体力池 = 本值 × 档位倍率（金档 ×1.0、红档 ×1.5）。红档还有一条**基准下限**（gameplay.tierRedStaminaMin，默认 200）：基准低于它的红档鱼先被抬到下限，再乘倍率 —— 否则台钓唯一的红鱼（蓝宝石雷龙鱼 130）比一条普通草鱼还好遛。咬钩时日志里会打一行「体力池：X = 基准 Y × 档位倍率 Z」——对账看那一行，别看这里的基准
+	# Default: 300.0
+	# Range: 1.0 ~ 5000.0
+	platinumArowanaStamina = 300
+	#铂金银龙鱼（platinum_arowana） · 张力涨速 —— 这条鱼让线涨得多快。>1 = 线黄得快（黏液型鱼的味道），<1 = 宽容
+	# Default: 1.95
+	# Range: 0.0 ~ 5.0
+	platinumArowanaTensionGain = 1.95
+	#铂金银龙鱼（platinum_arowana） · 冲刺时长（秒） —— 每次冲刺持续几秒。0 = 这条鱼不冲刺
+	# Default: 1.6
+	# Range: 0.0 ~ 60.0
+	platinumArowanaSprintDurationSec = 1.6
+	#铂金银龙鱼（platinum_arowana） · 冲刺间隔（秒） —— 每隔几秒冲一次。越小越凶（爆发型 2.6，黏液型 8.0 几乎不冲）
+	# Default: 2.6
+	# Range: 0.1 ~ 60.0
+	platinumArowanaSprintIntervalSec = 2.6
+	#铂金银龙鱼（platinum_arowana） · 变向间隔（秒） —— 每隔几秒变一次向。越小越神经质（神经质型 1.3，黏液型 5.5 方向很稳）
+	# Default: 3.0
+	# Range: 0.2 ~ 60.0
+	platinumArowanaTurnIntervalSec = 3
+	#铂金银龙鱼（platinum_arowana） · 假动作概率（0~1） —— 假动作概率：预告一个方向、实际往反方向跑。0~1（神经质型 0.35）
+	# Default: 0.1
+	# Range: 0.0 ~ 1.0
+	platinumArowanaFakeOutChance = 0.1
+	#铂金银龙鱼（platinum_arowana） · 进疲劳的体力比例（0~1） —— 体力降到这个比例以下就进疲劳期（0.3 = 剩 30% 时）
+	# Default: 0.34
+	# Range: 0.01 ~ 1.0
+	platinumArowanaFatigueThreshold = 0.34
+	#铂金银龙鱼（platinum_arowana） · 疲劳持续（秒） —— 疲劳期持续几秒。这段时间是反拉的最佳窗口
+	# Default: 2.4
+	# Range: 0.0 ~ 120.0
+	platinumArowanaFatigueDurationSec = 2.4
+	#铂金银龙鱼（platinum_arowana） · 不挣扎时回气（/s） —— 不挣扎时每秒回多少体力（会被渔轮阻尼压制）。越大越难遛翻
+	# Default: 0.02
+	# Range: 0.0 ~ 1.0
+	platinumArowanaStaminaRegen = 0.02
+	#大眼海鲢（oxeye_tarpon） · 体重下限（kg） —— 这种鱼最小能有多重。⚠ 它和体重上限一起决定档位怎么分——改小了会让低档鱼变少
+	# Default: 0.5
+	# Range: 0.001 ~ 500.0
+	oxeyeTarponMinKg = 0.5
+	#大眼海鲢（oxeye_tarpon） · 体重上限（kg） —— 这种鱼最大能有多重。线长/承重不够时会钓不上来（见 buildPool 的承重过滤）
+	# Default: 18.0
+	# Range: 0.001 ~ 500.0
+	oxeyeTarponMaxKg = 18
+	#大眼海鲢（oxeye_tarpon） · 拉力（不挣扎） —— 挣扎时把线拽出去的速度。越大越拉不动。这是「上钩两秒就能感觉出多大」的主要来源。⚠ 这是**基准值**：实际游速 = 本值 × 档位曲线 1.12^档 × 金/红手感修正（金 ×0.84、红 ×1.05）
+	# Default: 3.2
+	# Range: 0.0 ~ 20.0
+	oxeyeTarponPullSpeed = 4.8
+	#大眼海鲢（oxeye_tarpon） · 拉力（疲劳期） —— 遛到疲劳后的拉拽速度。默认 = 正常拉力 × gameplay.fatiguePullMultiplier（当前 0.5）—— 改大就等于「疲劳期反而不划算」
+	# Default: 1.6
+	# Range: 0.0 ~ 20.0
+	oxeyeTarponFatiguedPullSpeed = 2.016
+	#大眼海鲢（oxeye_tarpon） · 体力上限 —— 鱼有多少体力。越大越耐磨，要遛更久。它是「持久战」强度的总开关。⚠ 这是**基准值**（按鱼种）：实际体力池 = 本值 × 档位倍率（金档 ×1.0、红档 ×1.5）。红档还有一条**基准下限**（gameplay.tierRedStaminaMin，默认 200）：基准低于它的红档鱼先被抬到下限，再乘倍率 —— 否则台钓唯一的红鱼（蓝宝石雷龙鱼 130）比一条普通草鱼还好遛。咬钩时日志里会打一行「体力池：X = 基准 Y × 档位倍率 Z」——对账看那一行，别看这里的基准
+	# Default: 400.0
+	# Range: 1.0 ~ 5000.0
+	oxeyeTarponStamina = 400
+	#大眼海鲢（oxeye_tarpon） · 张力涨速 —— 这条鱼让线涨得多快。>1 = 线黄得快（黏液型鱼的味道），<1 = 宽容
+	# Default: 1.65
+	# Range: 0.0 ~ 5.0
+	oxeyeTarponTensionGain = 1.65
+	#大眼海鲢（oxeye_tarpon） · 冲刺时长（秒） —— 每次冲刺持续几秒。0 = 这条鱼不冲刺
+	# Default: 0.9
+	# Range: 0.0 ~ 60.0
+	oxeyeTarponSprintDurationSec = 0.9
+	#大眼海鲢（oxeye_tarpon） · 冲刺间隔（秒） —— 每隔几秒冲一次。越小越凶（爆发型 2.6，黏液型 8.0 几乎不冲）
+	# Default: 3.0
+	# Range: 0.1 ~ 60.0
+	oxeyeTarponSprintIntervalSec = 3
+	#大眼海鲢（oxeye_tarpon） · 变向间隔（秒） —— 每隔几秒变一次向。越小越神经质（神经质型 1.3，黏液型 5.5 方向很稳）
+	# Default: 1.3
+	# Range: 0.2 ~ 60.0
+	oxeyeTarponTurnIntervalSec = 1.3
+	#大眼海鲢（oxeye_tarpon） · 假动作概率（0~1） —— 假动作概率：预告一个方向、实际往反方向跑。0~1（神经质型 0.35）
+	# Default: 0.35
+	# Range: 0.0 ~ 1.0
+	oxeyeTarponFakeOutChance = 0.35
+	#大眼海鲢（oxeye_tarpon） · 进疲劳的体力比例（0~1） —— 体力降到这个比例以下就进疲劳期（0.3 = 剩 30% 时）
+	# Default: 0.32
+	# Range: 0.01 ~ 1.0
+	oxeyeTarponFatigueThreshold = 0.32
+	#大眼海鲢（oxeye_tarpon） · 疲劳持续（秒） —— 疲劳期持续几秒。这段时间是反拉的最佳窗口
+	# Default: 2.0
+	# Range: 0.0 ~ 120.0
+	oxeyeTarponFatigueDurationSec = 2
+	#大眼海鲢（oxeye_tarpon） · 不挣扎时回气（/s） —— 不挣扎时每秒回多少体力（会被渔轮阻尼压制）。越大越难遛翻
+	# Default: 0.02
+	# Range: 0.0 ~ 1.0
+	oxeyeTarponStaminaRegen = 0.02
+	#大西洋鲑（atlantic_salmon） · 体重下限（kg） —— 这种鱼最小能有多重。⚠ 它和体重上限一起决定档位怎么分——改小了会让低档鱼变少
+	# Default: 2.0
+	# Range: 0.001 ~ 500.0
+	atlanticSalmonMinKg = 2
+	#大西洋鲑（atlantic_salmon） · 体重上限（kg） —— 这种鱼最大能有多重。线长/承重不够时会钓不上来（见 buildPool 的承重过滤）
+	# Default: 22.0
+	# Range: 0.001 ~ 500.0
+	atlanticSalmonMaxKg = 22
+	#大西洋鲑（atlantic_salmon） · 拉力（不挣扎） —— 挣扎时把线拽出去的速度。越大越拉不动。这是「上钩两秒就能感觉出多大」的主要来源。⚠ 这是**基准值**：实际游速 = 本值 × 档位曲线 1.12^档 × 金/红手感修正（金 ×0.84、红 ×1.05）
+	# Default: 3.125
+	# Range: 0.0 ~ 20.0
+	atlanticSalmonPullSpeed = 4.6875
+	#大西洋鲑（atlantic_salmon） · 拉力（疲劳期） —— 遛到疲劳后的拉拽速度。默认 = 正常拉力 × gameplay.fatiguePullMultiplier（当前 0.5）—— 改大就等于「疲劳期反而不划算」
+	# Default: 1.5625
+	# Range: 0.0 ~ 20.0
+	atlanticSalmonFatiguedPullSpeed = 1.96875
+	#大西洋鲑（atlantic_salmon） · 体力上限 —— 鱼有多少体力。越大越耐磨，要遛更久。它是「持久战」强度的总开关。⚠ 这是**基准值**（按鱼种）：实际体力池 = 本值 × 档位倍率（金档 ×1.0、红档 ×1.5）。红档还有一条**基准下限**（gameplay.tierRedStaminaMin，默认 200）：基准低于它的红档鱼先被抬到下限，再乘倍率 —— 否则台钓唯一的红鱼（蓝宝石雷龙鱼 130）比一条普通草鱼还好遛。咬钩时日志里会打一行「体力池：X = 基准 Y × 档位倍率 Z」——对账看那一行，别看这里的基准
+	# Default: 260.0
+	# Range: 1.0 ~ 5000.0
+	atlanticSalmonStamina = 360
+	#大西洋鲑（atlantic_salmon） · 张力涨速 —— 这条鱼让线涨得多快。>1 = 线黄得快（黏液型鱼的味道），<1 = 宽容
+	# Default: 1.25
+	# Range: 0.0 ~ 5.0
+	atlanticSalmonTensionGain = 1.25
+	#大西洋鲑（atlantic_salmon） · 冲刺时长（秒） —— 每次冲刺持续几秒。0 = 这条鱼不冲刺
+	# Default: 1.6
+	# Range: 0.0 ~ 60.0
+	atlanticSalmonSprintDurationSec = 1.6
+	#大西洋鲑（atlantic_salmon） · 冲刺间隔（秒） —— 每隔几秒冲一次。越小越凶（爆发型 2.6，黏液型 8.0 几乎不冲）
+	# Default: 2.6
+	# Range: 0.1 ~ 60.0
+	atlanticSalmonSprintIntervalSec = 2.6
+	#大西洋鲑（atlantic_salmon） · 变向间隔（秒） —— 每隔几秒变一次向。越小越神经质（神经质型 1.3，黏液型 5.5 方向很稳）
+	# Default: 3.0
+	# Range: 0.2 ~ 60.0
+	atlanticSalmonTurnIntervalSec = 3
+	#大西洋鲑（atlantic_salmon） · 假动作概率（0~1） —— 假动作概率：预告一个方向、实际往反方向跑。0~1（神经质型 0.35）
+	# Default: 0.1
+	# Range: 0.0 ~ 1.0
+	atlanticSalmonFakeOutChance = 0.1
+	#大西洋鲑（atlantic_salmon） · 进疲劳的体力比例（0~1） —— 体力降到这个比例以下就进疲劳期（0.3 = 剩 30% 时）
+	# Default: 0.34
+	# Range: 0.01 ~ 1.0
+	atlanticSalmonFatigueThreshold = 0.34
+	#大西洋鲑（atlantic_salmon） · 疲劳持续（秒） —— 疲劳期持续几秒。这段时间是反拉的最佳窗口
+	# Default: 2.4
+	# Range: 0.0 ~ 120.0
+	atlanticSalmonFatigueDurationSec = 2.4
+	#大西洋鲑（atlantic_salmon） · 不挣扎时回气（/s） —— 不挣扎时每秒回多少体力（会被渔轮阻尼压制）。越大越难遛翻
+	# Default: 0.02
+	# Range: 0.0 ~ 1.0
+	atlanticSalmonStaminaRegen = 0.02
+	#蓝鳍金枪鱼（bluefin_tuna） · 体重下限（kg） —— 这种鱼最小能有多重。⚠ 它和体重上限一起决定档位怎么分——改小了会让低档鱼变少
+	# Default: 12.0
+	# Range: 0.001 ~ 500.0
+	bluefinTunaMinKg = 12
+	#蓝鳍金枪鱼（bluefin_tuna） · 体重上限（kg） —— 这种鱼最大能有多重。线长/承重不够时会钓不上来（见 buildPool 的承重过滤）
+	# Default: 180.0
+	# Range: 0.001 ~ 500.0
+	bluefinTunaMaxKg = 180
+	#蓝鳍金枪鱼（bluefin_tuna） · 拉力（不挣扎） —— 挣扎时把线拽出去的速度。越大越拉不动。这是「上钩两秒就能感觉出多大」的主要来源。⚠ 这是**基准值**：实际游速 = 本值 × 档位曲线 1.12^档 × 金/红手感修正（金 ×0.84、红 ×1.05）
+	# Default: 3.4375
+	# Range: 0.0 ~ 20.0
+	bluefinTunaPullSpeed = 5.15625
+	#蓝鳍金枪鱼（bluefin_tuna） · 拉力（疲劳期） —— 遛到疲劳后的拉拽速度。默认 = 正常拉力 × gameplay.fatiguePullMultiplier（当前 0.5）—— 改大就等于「疲劳期反而不划算」
+	# Default: 1.71875
+	# Range: 0.0 ~ 20.0
+	bluefinTunaFatiguedPullSpeed = 2.165625
+	#蓝鳍金枪鱼（bluefin_tuna） · 体力上限 —— 鱼有多少体力。越大越耐磨，要遛更久。它是「持久战」强度的总开关。⚠ 这是**基准值**（按鱼种）：实际体力池 = 本值 × 档位倍率（金档 ×1.0、红档 ×1.5）。红档还有一条**基准下限**（gameplay.tierRedStaminaMin，默认 200）：基准低于它的红档鱼先被抬到下限，再乘倍率 —— 否则台钓唯一的红鱼（蓝宝石雷龙鱼 130）比一条普通草鱼还好遛。咬钩时日志里会打一行「体力池：X = 基准 Y × 档位倍率 Z」——对账看那一行，别看这里的基准
+	# Default: 420.0
+	# Range: 1.0 ~ 5000.0
+	bluefinTunaStamina = 420
+	#蓝鳍金枪鱼（bluefin_tuna） · 张力涨速 —— 这条鱼让线涨得多快。>1 = 线黄得快（黏液型鱼的味道），<1 = 宽容
+	# Default: 1.5
+	# Range: 0.0 ~ 5.0
+	bluefinTunaTensionGain = 1.5
+	#蓝鳍金枪鱼（bluefin_tuna） · 冲刺时长（秒） —— 每次冲刺持续几秒。0 = 这条鱼不冲刺
+	# Default: 1.6
+	# Range: 0.0 ~ 60.0
+	bluefinTunaSprintDurationSec = 1.6
+	#蓝鳍金枪鱼（bluefin_tuna） · 冲刺间隔（秒） —— 每隔几秒冲一次。越小越凶（爆发型 2.6，黏液型 8.0 几乎不冲）
+	# Default: 2.6
+	# Range: 0.1 ~ 60.0
+	bluefinTunaSprintIntervalSec = 2.6
+	#蓝鳍金枪鱼（bluefin_tuna） · 变向间隔（秒） —— 每隔几秒变一次向。越小越神经质（神经质型 1.3，黏液型 5.5 方向很稳）
+	# Default: 3.0
+	# Range: 0.2 ~ 60.0
+	bluefinTunaTurnIntervalSec = 3
+	#蓝鳍金枪鱼（bluefin_tuna） · 假动作概率（0~1） —— 假动作概率：预告一个方向、实际往反方向跑。0~1（神经质型 0.35）
+	# Default: 0.1
+	# Range: 0.0 ~ 1.0
+	bluefinTunaFakeOutChance = 0.1
+	#蓝鳍金枪鱼（bluefin_tuna） · 进疲劳的体力比例（0~1） —— 体力降到这个比例以下就进疲劳期（0.3 = 剩 30% 时）
+	# Default: 0.34
+	# Range: 0.01 ~ 1.0
+	bluefinTunaFatigueThreshold = 0.34
+	#蓝鳍金枪鱼（bluefin_tuna） · 疲劳持续（秒） —— 疲劳期持续几秒。这段时间是反拉的最佳窗口
+	# Default: 2.4
+	# Range: 0.0 ~ 120.0
+	bluefinTunaFatigueDurationSec = 2.4
+	#蓝鳍金枪鱼（bluefin_tuna） · 不挣扎时回气（/s） —— 不挣扎时每秒回多少体力（会被渔轮阻尼压制）。越大越难遛翻
+	# Default: 0.02
+	# Range: 0.0 ~ 1.0
+	bluefinTunaStaminaRegen = 0.02
+	#幼鲨（juvenile_shark） · 体重下限（kg） —— 这种鱼最小能有多重。⚠ 它和体重上限一起决定档位怎么分——改小了会让低档鱼变少
+	# Default: 8.0
+	# Range: 0.001 ~ 500.0
+	juvenileSharkMinKg = 8
+	#幼鲨（juvenile_shark） · 体重上限（kg） —— 这种鱼最大能有多重。线长/承重不够时会钓不上来（见 buildPool 的承重过滤）
+	# Default: 90.0
+	# Range: 0.001 ~ 500.0
+	juvenileSharkMaxKg = 90
+	#幼鲨（juvenile_shark） · 拉力（不挣扎） —— 挣扎时把线拽出去的速度。越大越拉不动。这是「上钩两秒就能感觉出多大」的主要来源。⚠ 这是**基准值**：实际游速 = 本值 × 档位曲线 1.12^档 × 金/红手感修正（金 ×0.84、红 ×1.05）
+	# Default: 3.625
+	# Range: 0.0 ~ 20.0
+	juvenileSharkPullSpeed = 5.4375
+	#幼鲨（juvenile_shark） · 拉力（疲劳期） —— 遛到疲劳后的拉拽速度。默认 = 正常拉力 × gameplay.fatiguePullMultiplier（当前 0.5）—— 改大就等于「疲劳期反而不划算」
+	# Default: 1.8125
+	# Range: 0.0 ~ 20.0
+	juvenileSharkFatiguedPullSpeed = 2.28375
+	#幼鲨（juvenile_shark） · 体力上限 —— 鱼有多少体力。越大越耐磨，要遛更久。它是「持久战」强度的总开关。⚠ 这是**基准值**（按鱼种）：实际体力池 = 本值 × 档位倍率（金档 ×1.0、红档 ×1.5）。红档还有一条**基准下限**（gameplay.tierRedStaminaMin，默认 200）：基准低于它的红档鱼先被抬到下限，再乘倍率 —— 否则台钓唯一的红鱼（蓝宝石雷龙鱼 130）比一条普通草鱼还好遛。咬钩时日志里会打一行「体力池：X = 基准 Y × 档位倍率 Z」——对账看那一行，别看这里的基准
+	# Default: 380.0
+	# Range: 1.0 ~ 5000.0
+	juvenileSharkStamina = 380
+	#幼鲨（juvenile_shark） · 张力涨速 —— 这条鱼让线涨得多快。>1 = 线黄得快（黏液型鱼的味道），<1 = 宽容
+	# Default: 1.7
+	# Range: 0.0 ~ 5.0
+	juvenileSharkTensionGain = 1.7
+	#幼鲨（juvenile_shark） · 冲刺时长（秒） —— 每次冲刺持续几秒。0 = 这条鱼不冲刺
+	# Default: 0.9
+	# Range: 0.0 ~ 60.0
+	juvenileSharkSprintDurationSec = 0.9
+	#幼鲨（juvenile_shark） · 冲刺间隔（秒） —— 每隔几秒冲一次。越小越凶（爆发型 2.6，黏液型 8.0 几乎不冲）
+	# Default: 3.0
+	# Range: 0.1 ~ 60.0
+	juvenileSharkSprintIntervalSec = 3
+	#幼鲨（juvenile_shark） · 变向间隔（秒） —— 每隔几秒变一次向。越小越神经质（神经质型 1.3，黏液型 5.5 方向很稳）
+	# Default: 1.3
+	# Range: 0.2 ~ 60.0
+	juvenileSharkTurnIntervalSec = 1.3
+	#幼鲨（juvenile_shark） · 假动作概率（0~1） —— 假动作概率：预告一个方向、实际往反方向跑。0~1（神经质型 0.35）
+	# Default: 0.35
+	# Range: 0.0 ~ 1.0
+	juvenileSharkFakeOutChance = 0.35
+	#幼鲨（juvenile_shark） · 进疲劳的体力比例（0~1） —— 体力降到这个比例以下就进疲劳期（0.3 = 剩 30% 时）
+	# Default: 0.32
+	# Range: 0.01 ~ 1.0
+	juvenileSharkFatigueThreshold = 0.32
+	#幼鲨（juvenile_shark） · 疲劳持续（秒） —— 疲劳期持续几秒。这段时间是反拉的最佳窗口
+	# Default: 2.0
+	# Range: 0.0 ~ 120.0
+	juvenileSharkFatigueDurationSec = 2
+	#幼鲨（juvenile_shark） · 不挣扎时回气（/s） —— 不挣扎时每秒回多少体力（会被渔轮阻尼压制）。越大越难遛翻
+	# Default: 0.02
+	# Range: 0.0 ~ 1.0
+	juvenileSharkStaminaRegen = 0.02
+	#虎鱼（tigerfish） · 体重下限（kg） —— 这种鱼最小能有多重。⚠ 它和体重上限一起决定档位怎么分——改小了会让低档鱼变少
+	# Default: 0.05
+	# Range: 0.001 ~ 500.0
+	tigerfishMinKg = 0.05
+	#虎鱼（tigerfish） · 体重上限（kg） —— 这种鱼最大能有多重。线长/承重不够时会钓不上来（见 buildPool 的承重过滤）
+	# Default: 0.8
+	# Range: 0.001 ~ 500.0
+	tigerfishMaxKg = 0.8
+	#虎鱼（tigerfish） · 拉力（不挣扎） —— 挣扎时把线拽出去的速度。越大越拉不动。这是「上钩两秒就能感觉出多大」的主要来源。⚠ 这是**基准值**：实际游速 = 本值 × 档位曲线 1.12^档 × 金/红手感修正（金 ×0.84、红 ×1.05）
+	# Default: 2.2
+	# Range: 0.0 ~ 20.0
+	tigerfishPullSpeed = 3.3
+	#虎鱼（tigerfish） · 拉力（疲劳期） —— 遛到疲劳后的拉拽速度。默认 = 正常拉力 × gameplay.fatiguePullMultiplier（当前 0.5）—— 改大就等于「疲劳期反而不划算」
+	# Default: 1.1
+	# Range: 0.0 ~ 20.0
+	tigerfishFatiguedPullSpeed = 1.386
+	#虎鱼（tigerfish） · 体力上限 —— 鱼有多少体力。越大越耐磨，要遛更久。它是「持久战」强度的总开关。⚠ 这是**基准值**（按鱼种）：实际体力池 = 本值 × 档位倍率（金档 ×1.0、红档 ×1.5）。红档还有一条**基准下限**（gameplay.tierRedStaminaMin，默认 200）：基准低于它的红档鱼先被抬到下限，再乘倍率 —— 否则台钓唯一的红鱼（蓝宝石雷龙鱼 130）比一条普通草鱼还好遛。咬钩时日志里会打一行「体力池：X = 基准 Y × 档位倍率 Z」——对账看那一行，别看这里的基准
+	# Default: 120.0
+	# Range: 1.0 ~ 5000.0
+	tigerfishStamina = 320
+	#虎鱼（tigerfish） · 张力涨速 —— 这条鱼让线涨得多快。>1 = 线黄得快（黏液型鱼的味道），<1 = 宽容
+	# Default: 3.1
+	# Range: 0.0 ~ 5.0
+	tigerfishTensionGain = 3.1
+	#虎鱼（tigerfish） · 冲刺时长（秒） —— 每次冲刺持续几秒。0 = 这条鱼不冲刺
+	# Default: 0.9
+	# Range: 0.0 ~ 60.0
+	tigerfishSprintDurationSec = 0.9
+	#虎鱼（tigerfish） · 冲刺间隔（秒） —— 每隔几秒冲一次。越小越凶（爆发型 2.6，黏液型 8.0 几乎不冲）
+	# Default: 3.0
+	# Range: 0.1 ~ 60.0
+	tigerfishSprintIntervalSec = 3
+	#虎鱼（tigerfish） · 变向间隔（秒） —— 每隔几秒变一次向。越小越神经质（神经质型 1.3，黏液型 5.5 方向很稳）
+	# Default: 1.3
+	# Range: 0.2 ~ 60.0
+	tigerfishTurnIntervalSec = 1.3
+	#虎鱼（tigerfish） · 假动作概率（0~1） —— 假动作概率：预告一个方向、实际往反方向跑。0~1（神经质型 0.35）
+	# Default: 0.35
+	# Range: 0.0 ~ 1.0
+	tigerfishFakeOutChance = 0.35
+	#虎鱼（tigerfish） · 进疲劳的体力比例（0~1） —— 体力降到这个比例以下就进疲劳期（0.3 = 剩 30% 时）
+	# Default: 0.32
+	# Range: 0.01 ~ 1.0
+	tigerfishFatigueThreshold = 0.32
+	#虎鱼（tigerfish） · 疲劳持续（秒） —— 疲劳期持续几秒。这段时间是反拉的最佳窗口
+	# Default: 2.0
+	# Range: 0.0 ~ 120.0
+	tigerfishFatigueDurationSec = 2
+	#虎鱼（tigerfish） · 不挣扎时回气（/s） —— 不挣扎时每秒回多少体力（会被渔轮阻尼压制）。越大越难遛翻
+	# Default: 0.02
+	# Range: 0.0 ~ 1.0
+	tigerfishStaminaRegen = 0.02
+	#狗鱼（pike） · 体重下限（kg） —— 这种鱼最小能有多重。⚠ 它和体重上限一起决定档位怎么分——改小了会让低档鱼变少
+	# Default: 1.0
+	# Range: 0.001 ~ 500.0
+	pikeMinKg = 1
+	#狗鱼（pike） · 体重上限（kg） —— 这种鱼最大能有多重。线长/承重不够时会钓不上来（见 buildPool 的承重过滤）
+	# Default: 12.0
+	# Range: 0.001 ~ 500.0
+	pikeMaxKg = 12
+	#狗鱼（pike） · 拉力（不挣扎） —— 挣扎时把线拽出去的速度。越大越拉不动。这是「上钩两秒就能感觉出多大」的主要来源。⚠ 这是**基准值**：实际游速 = 本值 × 档位曲线 1.12^档 × 金/红手感修正（金 ×0.84、红 ×1.05）
+	# Default: 2.4
+	# Range: 0.0 ~ 20.0
+	pikePullSpeed = 3.6
+	#狗鱼（pike） · 拉力（疲劳期） —— 遛到疲劳后的拉拽速度。默认 = 正常拉力 × gameplay.fatiguePullMultiplier（当前 0.5）—— 改大就等于「疲劳期反而不划算」
+	# Default: 1.2
+	# Range: 0.0 ~ 20.0
+	pikeFatiguedPullSpeed = 1.512
+	#狗鱼（pike） · 体力上限 —— 鱼有多少体力。越大越耐磨，要遛更久。它是「持久战」强度的总开关。⚠ 这是**基准值**（按鱼种）：实际体力池 = 本值 × 档位倍率（金档 ×1.0、红档 ×1.5）。红档还有一条**基准下限**（gameplay.tierRedStaminaMin，默认 200）：基准低于它的红档鱼先被抬到下限，再乘倍率 —— 否则台钓唯一的红鱼（蓝宝石雷龙鱼 130）比一条普通草鱼还好遛。咬钩时日志里会打一行「体力池：X = 基准 Y × 档位倍率 Z」——对账看那一行，别看这里的基准
+	# Default: 170.0
+	# Range: 1.0 ~ 5000.0
+	pikeStamina = 170
+	#狗鱼（pike） · 张力涨速 —— 这条鱼让线涨得多快。>1 = 线黄得快（黏液型鱼的味道），<1 = 宽容
+	# Default: 1.15
+	# Range: 0.0 ~ 5.0
+	pikeTensionGain = 1.15
+	#狗鱼（pike） · 冲刺时长（秒） —— 每次冲刺持续几秒。0 = 这条鱼不冲刺
+	# Default: 1.6
+	# Range: 0.0 ~ 60.0
+	pikeSprintDurationSec = 1.6
+	#狗鱼（pike） · 冲刺间隔（秒） —— 每隔几秒冲一次。越小越凶（爆发型 2.6，黏液型 8.0 几乎不冲）
+	# Default: 2.6
+	# Range: 0.1 ~ 60.0
+	pikeSprintIntervalSec = 2.6
+	#狗鱼（pike） · 变向间隔（秒） —— 每隔几秒变一次向。越小越神经质（神经质型 1.3，黏液型 5.5 方向很稳）
+	# Default: 3.0
+	# Range: 0.2 ~ 60.0
+	pikeTurnIntervalSec = 3
+	#狗鱼（pike） · 假动作概率（0~1） —— 假动作概率：预告一个方向、实际往反方向跑。0~1（神经质型 0.35）
+	# Default: 0.1
+	# Range: 0.0 ~ 1.0
+	pikeFakeOutChance = 0.1
+	#狗鱼（pike） · 进疲劳的体力比例（0~1） —— 体力降到这个比例以下就进疲劳期（0.3 = 剩 30% 时）
+	# Default: 0.34
+	# Range: 0.01 ~ 1.0
+	pikeFatigueThreshold = 0.34
+	#狗鱼（pike） · 疲劳持续（秒） —— 疲劳期持续几秒。这段时间是反拉的最佳窗口
+	# Default: 2.4
+	# Range: 0.0 ~ 120.0
+	pikeFatigueDurationSec = 2.4
+	#狗鱼（pike） · 不挣扎时回气（/s） —— 不挣扎时每秒回多少体力（会被渔轮阻尼压制）。越大越难遛翻
+	# Default: 0.02
+	# Range: 0.0 ~ 1.0
+	pikeStaminaRegen = 0.02
+	#褐鳟（brown_trout） · 体重下限（kg） —— 这种鱼最小能有多重。⚠ 它和体重上限一起决定档位怎么分——改小了会让低档鱼变少
+	# Default: 0.5
+	# Range: 0.001 ~ 500.0
+	brownTroutMinKg = 0.5
+	#褐鳟（brown_trout） · 体重上限（kg） —— 这种鱼最大能有多重。线长/承重不够时会钓不上来（见 buildPool 的承重过滤）
+	# Default: 6.0
+	# Range: 0.001 ~ 500.0
+	brownTroutMaxKg = 6
+	#褐鳟（brown_trout） · 拉力（不挣扎） —— 挣扎时把线拽出去的速度。越大越拉不动。这是「上钩两秒就能感觉出多大」的主要来源。⚠ 这是**基准值**：实际游速 = 本值 × 档位曲线 1.12^档 × 金/红手感修正（金 ×0.84、红 ×1.05）
+	# Default: 2.3
+	# Range: 0.0 ~ 20.0
+	brownTroutPullSpeed = 3.45
+	#褐鳟（brown_trout） · 拉力（疲劳期） —— 遛到疲劳后的拉拽速度。默认 = 正常拉力 × gameplay.fatiguePullMultiplier（当前 0.5）—— 改大就等于「疲劳期反而不划算」
+	# Default: 1.15
+	# Range: 0.0 ~ 20.0
+	brownTroutFatiguedPullSpeed = 1.449
+	#褐鳟（brown_trout） · 体力上限 —— 鱼有多少体力。越大越耐磨，要遛更久。它是「持久战」强度的总开关。⚠ 这是**基准值**（按鱼种）：实际体力池 = 本值 × 档位倍率（金档 ×1.0、红档 ×1.5）。红档还有一条**基准下限**（gameplay.tierRedStaminaMin，默认 200）：基准低于它的红档鱼先被抬到下限，再乘倍率 —— 否则台钓唯一的红鱼（蓝宝石雷龙鱼 130）比一条普通草鱼还好遛。咬钩时日志里会打一行「体力池：X = 基准 Y × 档位倍率 Z」——对账看那一行，别看这里的基准
+	# Default: 200.0
+	# Range: 1.0 ~ 5000.0
+	brownTroutStamina = 400
+	#褐鳟（brown_trout） · 张力涨速 —— 这条鱼让线涨得多快。>1 = 线黄得快（黏液型鱼的味道），<1 = 宽容
+	# Default: 2.65
+	# Range: 0.0 ~ 5.0
+	brownTroutTensionGain = 2.65
+	#褐鳟（brown_trout） · 冲刺时长（秒） —— 每次冲刺持续几秒。0 = 这条鱼不冲刺
+	# Default: 1.6
+	# Range: 0.0 ~ 60.0
+	brownTroutSprintDurationSec = 1.6
+	#褐鳟（brown_trout） · 冲刺间隔（秒） —— 每隔几秒冲一次。越小越凶（爆发型 2.6，黏液型 8.0 几乎不冲）
+	# Default: 2.6
+	# Range: 0.1 ~ 60.0
+	brownTroutSprintIntervalSec = 2.6
+	#褐鳟（brown_trout） · 变向间隔（秒） —— 每隔几秒变一次向。越小越神经质（神经质型 1.3，黏液型 5.5 方向很稳）
+	# Default: 3.0
+	# Range: 0.2 ~ 60.0
+	brownTroutTurnIntervalSec = 3
+	#褐鳟（brown_trout） · 假动作概率（0~1） —— 假动作概率：预告一个方向、实际往反方向跑。0~1（神经质型 0.35）
+	# Default: 0.1
+	# Range: 0.0 ~ 1.0
+	brownTroutFakeOutChance = 0.1
+	#褐鳟（brown_trout） · 进疲劳的体力比例（0~1） —— 体力降到这个比例以下就进疲劳期（0.3 = 剩 30% 时）
+	# Default: 0.34
+	# Range: 0.01 ~ 1.0
+	brownTroutFatigueThreshold = 0.34
+	#褐鳟（brown_trout） · 疲劳持续（秒） —— 疲劳期持续几秒。这段时间是反拉的最佳窗口
+	# Default: 2.4
+	# Range: 0.0 ~ 120.0
+	brownTroutFatigueDurationSec = 2.4
+	#褐鳟（brown_trout） · 不挣扎时回气（/s） —— 不挣扎时每秒回多少体力（会被渔轮阻尼压制）。越大越难遛翻
+	# Default: 0.02
+	# Range: 0.0 ~ 1.0
+	brownTroutStaminaRegen = 0.02
+	#镜鲤（mirror_carp） · 体重下限（kg） —— 这种鱼最小能有多重。⚠ 它和体重上限一起决定档位怎么分——改小了会让低档鱼变少
+	# Default: 1.5
+	# Range: 0.001 ~ 500.0
+	mirrorCarpMinKg = 1.5
+	#镜鲤（mirror_carp） · 体重上限（kg） —— 这种鱼最大能有多重。线长/承重不够时会钓不上来（见 buildPool 的承重过滤）
+	# Default: 20.0
+	# Range: 0.001 ~ 500.0
+	mirrorCarpMaxKg = 20
+	#镜鲤（mirror_carp） · 拉力（不挣扎） —— 挣扎时把线拽出去的速度。越大越拉不动。这是「上钩两秒就能感觉出多大」的主要来源。⚠ 这是**基准值**：实际游速 = 本值 × 档位曲线 1.12^档 × 金/红手感修正（金 ×0.84、红 ×1.05）
+	# Default: 2.4
+	# Range: 0.0 ~ 20.0
+	mirrorCarpPullSpeed = 3.6
+	#镜鲤（mirror_carp） · 拉力（疲劳期） —— 遛到疲劳后的拉拽速度。默认 = 正常拉力 × gameplay.fatiguePullMultiplier（当前 0.5）—— 改大就等于「疲劳期反而不划算」
+	# Default: 1.2
+	# Range: 0.0 ~ 20.0
+	mirrorCarpFatiguedPullSpeed = 1.512
+	#镜鲤（mirror_carp） · 体力上限 —— 鱼有多少体力。越大越耐磨，要遛更久。它是「持久战」强度的总开关。⚠ 这是**基准值**（按鱼种）：实际体力池 = 本值 × 档位倍率（金档 ×1.0、红档 ×1.5）。红档还有一条**基准下限**（gameplay.tierRedStaminaMin，默认 200）：基准低于它的红档鱼先被抬到下限，再乘倍率 —— 否则台钓唯一的红鱼（蓝宝石雷龙鱼 130）比一条普通草鱼还好遛。咬钩时日志里会打一行「体力池：X = 基准 Y × 档位倍率 Z」——对账看那一行，别看这里的基准
+	# Default: 380.0
+	# Range: 1.0 ~ 5000.0
+	mirrorCarpStamina = 380
+	#镜鲤（mirror_carp） · 张力涨速 —— 这条鱼让线涨得多快。>1 = 线黄得快（黏液型鱼的味道），<1 = 宽容
+	# Default: 2.8
+	# Range: 0.0 ~ 5.0
+	mirrorCarpTensionGain = 2.8
+	#镜鲤（mirror_carp） · 冲刺时长（秒） —— 每次冲刺持续几秒。0 = 这条鱼不冲刺
+	# Default: 0.4
+	# Range: 0.0 ~ 60.0
+	mirrorCarpSprintDurationSec = 0.4
+	#镜鲤（mirror_carp） · 冲刺间隔（秒） —— 每隔几秒冲一次。越小越凶（爆发型 2.6，黏液型 8.0 几乎不冲）
+	# Default: 8.0
+	# Range: 0.1 ~ 60.0
+	mirrorCarpSprintIntervalSec = 8
+	#镜鲤（mirror_carp） · 变向间隔（秒） —— 每隔几秒变一次向。越小越神经质（神经质型 1.3，黏液型 5.5 方向很稳）
+	# Default: 5.5
+	# Range: 0.2 ~ 60.0
+	mirrorCarpTurnIntervalSec = 5.5
+	#镜鲤（mirror_carp） · 假动作概率（0~1） —— 假动作概率：预告一个方向、实际往反方向跑。0~1（神经质型 0.35）
+	# Default: 0.0
+	# Range: 0.0 ~ 1.0
+	mirrorCarpFakeOutChance = 0
+	#镜鲤（mirror_carp） · 进疲劳的体力比例（0~1） —— 体力降到这个比例以下就进疲劳期（0.3 = 剩 30% 时）
+	# Default: 0.28
+	# Range: 0.01 ~ 1.0
+	mirrorCarpFatigueThreshold = 0.28
+	#镜鲤（mirror_carp） · 疲劳持续（秒） —— 疲劳期持续几秒。这段时间是反拉的最佳窗口
+	# Default: 2.6
+	# Range: 0.0 ~ 120.0
+	mirrorCarpFatigueDurationSec = 2.6
+	#镜鲤（mirror_carp） · 不挣扎时回气（/s） —— 不挣扎时每秒回多少体力（会被渔轮阻尼压制）。越大越难遛翻
+	# Default: 0.015
+	# Range: 0.0 ~ 1.0
+	mirrorCarpStaminaRegen = 0.015
+	#条纹鲈（striped_bass） · 体重下限（kg） —— 这种鱼最小能有多重。⚠ 它和体重上限一起决定档位怎么分——改小了会让低档鱼变少
+	# Default: 1.0
+	# Range: 0.001 ~ 500.0
+	stripedBassMinKg = 1
+	#条纹鲈（striped_bass） · 体重上限（kg） —— 这种鱼最大能有多重。线长/承重不够时会钓不上来（见 buildPool 的承重过滤）
+	# Default: 15.0
+	# Range: 0.001 ~ 500.0
+	stripedBassMaxKg = 15
+	#条纹鲈（striped_bass） · 拉力（不挣扎） —— 挣扎时把线拽出去的速度。越大越拉不动。这是「上钩两秒就能感觉出多大」的主要来源。⚠ 这是**基准值**：实际游速 = 本值 × 档位曲线 1.12^档 × 金/红手感修正（金 ×0.84、红 ×1.05）
+	# Default: 1.6
+	# Range: 0.0 ~ 20.0
+	stripedBassPullSpeed = 2.4
+	#条纹鲈（striped_bass） · 拉力（疲劳期） —— 遛到疲劳后的拉拽速度。默认 = 正常拉力 × gameplay.fatiguePullMultiplier（当前 0.5）—— 改大就等于「疲劳期反而不划算」
+	# Default: 0.8
+	# Range: 0.0 ~ 20.0
+	stripedBassFatiguedPullSpeed = 1.008
+	#条纹鲈（striped_bass） · 体力上限 —— 鱼有多少体力。越大越耐磨，要遛更久。它是「持久战」强度的总开关。⚠ 这是**基准值**（按鱼种）：实际体力池 = 本值 × 档位倍率（金档 ×1.0、红档 ×1.5）。红档还有一条**基准下限**（gameplay.tierRedStaminaMin，默认 200）：基准低于它的红档鱼先被抬到下限，再乘倍率 —— 否则台钓唯一的红鱼（蓝宝石雷龙鱼 130）比一条普通草鱼还好遛。咬钩时日志里会打一行「体力池：X = 基准 Y × 档位倍率 Z」——对账看那一行，别看这里的基准
+	# Default: 240.0
+	# Range: 1.0 ~ 5000.0
+	stripedBassStamina = 240
+	#条纹鲈（striped_bass） · 张力涨速 —— 这条鱼让线涨得多快。>1 = 线黄得快（黏液型鱼的味道），<1 = 宽容
+	# Default: 1.2
+	# Range: 0.0 ~ 5.0
+	stripedBassTensionGain = 1.2
+	#条纹鲈（striped_bass） · 冲刺时长（秒） —— 每次冲刺持续几秒。0 = 这条鱼不冲刺
+	# Default: 0.8
+	# Range: 0.0 ~ 60.0
+	stripedBassSprintDurationSec = 0.8
+	#条纹鲈（striped_bass） · 冲刺间隔（秒） —— 每隔几秒冲一次。越小越凶（爆发型 2.6，黏液型 8.0 几乎不冲）
+	# Default: 4.5
+	# Range: 0.1 ~ 60.0
+	stripedBassSprintIntervalSec = 4.5
+	#条纹鲈（striped_bass） · 变向间隔（秒） —— 每隔几秒变一次向。越小越神经质（神经质型 1.3，黏液型 5.5 方向很稳）
+	# Default: 3.5
+	# Range: 0.2 ~ 60.0
+	stripedBassTurnIntervalSec = 3.5
+	#条纹鲈（striped_bass） · 假动作概率（0~1） —— 假动作概率：预告一个方向、实际往反方向跑。0~1（神经质型 0.35）
+	# Default: 0.0
+	# Range: 0.0 ~ 1.0
+	stripedBassFakeOutChance = 0
+	#条纹鲈（striped_bass） · 进疲劳的体力比例（0~1） —— 体力降到这个比例以下就进疲劳期（0.3 = 剩 30% 时）
+	# Default: 0.3
+	# Range: 0.01 ~ 1.0
+	stripedBassFatigueThreshold = 0.3
+	#条纹鲈（striped_bass） · 疲劳持续（秒） —— 疲劳期持续几秒。这段时间是反拉的最佳窗口
+	# Default: 2.0
+	# Range: 0.0 ~ 120.0
+	stripedBassFatigueDurationSec = 2
+	#条纹鲈（striped_bass） · 不挣扎时回气（/s） —— 不挣扎时每秒回多少体力（会被渔轮阻尼压制）。越大越难遛翻
+	# Default: 0.02
+	# Range: 0.0 ~ 1.0
+	stripedBassStaminaRegen = 0.02
+	#巨骨舌鱼（arapaima） · 体重下限（kg） —— 这种鱼最小能有多重。⚠ 它和体重上限一起决定档位怎么分——改小了会让低档鱼变少
+	# Default: 20.0
+	# Range: 0.001 ~ 500.0
+	arapaimaMinKg = 20
+	#巨骨舌鱼（arapaima） · 体重上限（kg） —— 这种鱼最大能有多重。线长/承重不够时会钓不上来（见 buildPool 的承重过滤）
+	# Default: 100.0
+	# Range: 0.001 ~ 500.0
+	arapaimaMaxKg = 100
+	#巨骨舌鱼（arapaima） · 拉力（不挣扎） —— 挣扎时把线拽出去的速度。越大越拉不动。这是「上钩两秒就能感觉出多大」的主要来源。⚠ 这是**基准值**：实际游速 = 本值 × 档位曲线 1.12^档 × 金/红手感修正（金 ×0.84、红 ×1.05）
+	# Default: 1.8
+	# Range: 0.0 ~ 20.0
+	arapaimaPullSpeed = 3.3
+	#巨骨舌鱼（arapaima） · 拉力（疲劳期） —— 遛到疲劳后的拉拽速度。默认 = 正常拉力 × gameplay.fatiguePullMultiplier（当前 0.5）—— 改大就等于「疲劳期反而不划算」
+	# Default: 0.9
+	# Range: 0.0 ~ 20.0
+	arapaimaFatiguedPullSpeed = 1.386
+	#巨骨舌鱼（arapaima） · 体力上限 —— 鱼有多少体力。越大越耐磨，要遛更久。它是「持久战」强度的总开关。⚠ 这是**基准值**（按鱼种）：实际体力池 = 本值 × 档位倍率（金档 ×1.0、红档 ×1.5）。红档还有一条**基准下限**（gameplay.tierRedStaminaMin，默认 200）：基准低于它的红档鱼先被抬到下限，再乘倍率 —— 否则台钓唯一的红鱼（蓝宝石雷龙鱼 130）比一条普通草鱼还好遛。咬钩时日志里会打一行「体力池：X = 基准 Y × 档位倍率 Z」——对账看那一行，别看这里的基准
+	# Default: 520.0
+	# Range: 1.0 ~ 5000.0
+	arapaimaStamina = 520
+	#巨骨舌鱼（arapaima） · 张力涨速 —— 这条鱼让线涨得多快。>1 = 线黄得快（黏液型鱼的味道），<1 = 宽容
+	# Default: 4.0
+	# Range: 0.0 ~ 5.0
+	arapaimaTensionGain = 3.2
+	#巨骨舌鱼（arapaima） · 冲刺时长（秒） —— 每次冲刺持续几秒。0 = 这条鱼不冲刺
+	# Default: 0.8
+	# Range: 0.0 ~ 60.0
+	arapaimaSprintDurationSec = 0.8
+	#巨骨舌鱼（arapaima） · 冲刺间隔（秒） —— 每隔几秒冲一次。越小越凶（爆发型 2.6，黏液型 8.0 几乎不冲）
+	# Default: 4.5
+	# Range: 0.1 ~ 60.0
+	arapaimaSprintIntervalSec = 4.5
+	#巨骨舌鱼（arapaima） · 变向间隔（秒） —— 每隔几秒变一次向。越小越神经质（神经质型 1.3，黏液型 5.5 方向很稳）
+	# Default: 3.5
+	# Range: 0.2 ~ 60.0
+	arapaimaTurnIntervalSec = 3.5
+	#巨骨舌鱼（arapaima） · 假动作概率（0~1） —— 假动作概率：预告一个方向、实际往反方向跑。0~1（神经质型 0.35）
+	# Default: 0.0
+	# Range: 0.0 ~ 1.0
+	arapaimaFakeOutChance = 0
+	#巨骨舌鱼（arapaima） · 进疲劳的体力比例（0~1） —— 体力降到这个比例以下就进疲劳期（0.3 = 剩 30% 时）
+	# Default: 0.3
+	# Range: 0.01 ~ 1.0
+	arapaimaFatigueThreshold = 0.3
+	#巨骨舌鱼（arapaima） · 疲劳持续（秒） —— 疲劳期持续几秒。这段时间是反拉的最佳窗口
+	# Default: 2.0
+	# Range: 0.0 ~ 120.0
+	arapaimaFatigueDurationSec = 2
+	#巨骨舌鱼（arapaima） · 不挣扎时回气（/s） —— 不挣扎时每秒回多少体力（会被渔轮阻尼压制）。越大越难遛翻
+	# Default: 0.02
+	# Range: 0.0 ~ 1.0
+	arapaimaStaminaRegen = 0.02
+	# 齿蝶鱼（african_butterflyfish） · 体重下限（kg） —— 这种鱼最小能有多重。⚠ 它和体重上限一起决定档位怎么分——改小了会让低档鱼变少
+	# Default: 0.003
+	# Range: 0.001 ~ 500.0
+	africanButterflyfishMinKg = 0.003
+	# 齿蝶鱼（african_butterflyfish） · 体重上限（kg） —— 这种鱼最大能有多重。线长/承重不够时会钓不上来（见 buildPool 的承重过滤）
+	# Default: 0.015
+	# Range: 0.001 ~ 500.0
+	africanButterflyfishMaxKg = 0.015
+	# 齿蝶鱼（african_butterflyfish） · 拉力（不挣扎） —— 挣扎时把线拽出去的速度。越大越拉不动。这是「上钩两秒就能感觉出多大」的主要来源。⚠ 这是**基准值**：实际游速 = 本值 × 档位曲线 1.12^档 × 金/红手感修正（金 ×0.84、红 ×1.05）
+	# Default: 1.1
+	# Range: 0.0 ~ 20.0
+	africanButterflyfishPullSpeed = 1.65
+	# 齿蝶鱼（african_butterflyfish） · 拉力（疲劳期） —— 遛到疲劳后的拉拽速度。默认 = 正常拉力 × gameplay.fatiguePullMultiplier（当前 0.5）—— 改大就等于「疲劳期反而不划算」
+	# Default: 0.55
+	# Range: 0.0 ~ 20.0
+	africanButterflyfishFatiguedPullSpeed = 0.693
+	# 齿蝶鱼（african_butterflyfish） · 体力上限 —— 鱼有多少体力。越大越耐磨，要遛更久。它是「持久战」强度的总开关。⚠ 这是**基准值**（按鱼种）：实际体力池 = 本值 × 档位倍率（金档 ×1.0、红档 ×1.5）。红档还有一条**基准下限**（gameplay.tierRedStaminaMin，默认 200）：基准低于它的红档鱼先被抬到下限，再乘倍率 —— 否则台钓唯一的红鱼（蓝宝石雷龙鱼 130）比一条普通草鱼还好遛。咬钩时日志里会打一行「体力池：X = 基准 Y × 档位倍率 Z」——对账看那一行，别看这里的基准
+	# Default: 95.0
+	# Range: 1.0 ~ 5000.0
+	africanButterflyfishStamina = 95
+	# 齿蝶鱼（african_butterflyfish） · 张力涨速 —— 这条鱼让线涨得多快。>1 = 线黄得快（黏液型鱼的味道），<1 = 宽容
+	# Default: 1.0
+	# Range: 0.0 ~ 5.0
+	africanButterflyfishTensionGain = 1
+	# 齿蝶鱼（african_butterflyfish） · 冲刺时长（秒） —— 每次冲刺持续几秒。0 = 这条鱼不冲刺
+	# Default: 0.8
+	# Range: 0.0 ~ 60.0
+	africanButterflyfishSprintDurationSec = 0.8
+	# 齿蝶鱼（african_butterflyfish） · 冲刺间隔（秒） —— 每隔几秒冲一次。越小越凶（爆发型 2.6，黏液型 8.0 几乎不冲）
+	# Default: 4.5
+	# Range: 0.1 ~ 60.0
+	africanButterflyfishSprintIntervalSec = 4.5
+	# 齿蝶鱼（african_butterflyfish） · 变向间隔（秒） —— 每隔几秒变一次向。越小越神经质（神经质型 1.3，黏液型 5.5 方向很稳）
+	# Default: 3.5
+	# Range: 0.2 ~ 60.0
+	africanButterflyfishTurnIntervalSec = 3.5
+	# 齿蝶鱼（african_butterflyfish） · 假动作概率（0~1） —— 假动作概率：预告一个方向、实际往反方向跑。0~1（神经质型 0.35）
+	# Default: 0.0
+	# Range: 0.0 ~ 1.0
+	africanButterflyfishFakeOutChance = 0
+	# 齿蝶鱼（african_butterflyfish） · 进疲劳的体力比例（0~1） —— 体力降到这个比例以下就进疲劳期（0.3 = 剩 30% 时）
+	# Default: 0.3
+	# Range: 0.01 ~ 1.0
+	africanButterflyfishFatigueThreshold = 0.3
+	# 齿蝶鱼（african_butterflyfish） · 疲劳持续（秒） —— 疲劳期持续几秒。这段时间是反拉的最佳窗口
+	# Default: 2.0
+	# Range: 0.0 ~ 120.0
+	africanButterflyfishFatigueDurationSec = 2
+	# 齿蝶鱼（african_butterflyfish） · 不挣扎时回气（/s） —— 不挣扎时每秒回多少体力（会被渔轮阻尼压制）。越大越难遛翻
+	# Default: 0.02
+	# Range: 0.0 ~ 1.0
+	africanButterflyfishStaminaRegen = 0.02
+	#红宝石鱼（jewel_cichlid） · 体重下限（kg） —— 这种鱼最小能有多重。⚠ 它和体重上限一起决定档位怎么分——改小了会让低档鱼变少
+	# Default: 0.02
+	# Range: 0.001 ~ 500.0
+	jewelCichlidMinKg = 0.02
+	#红宝石鱼（jewel_cichlid） · 体重上限（kg） —— 这种鱼最大能有多重。线长/承重不够时会钓不上来（见 buildPool 的承重过滤）
+	# Default: 0.15
+	# Range: 0.001 ~ 500.0
+	jewelCichlidMaxKg = 0.15
+	#红宝石鱼（jewel_cichlid） · 拉力（不挣扎） —— 挣扎时把线拽出去的速度。越大越拉不动。这是「上钩两秒就能感觉出多大」的主要来源。⚠ 这是**基准值**：实际游速 = 本值 × 档位曲线 1.12^档 × 金/红手感修正（金 ×0.84、红 ×1.05）
+	# Default: 1.15
+	# Range: 0.0 ~ 20.0
+	jewelCichlidPullSpeed = 1.725
+	#红宝石鱼（jewel_cichlid） · 拉力（疲劳期） —— 遛到疲劳后的拉拽速度。默认 = 正常拉力 × gameplay.fatiguePullMultiplier（当前 0.5）—— 改大就等于「疲劳期反而不划算」
+	# Default: 0.575
+	# Range: 0.0 ~ 20.0
+	jewelCichlidFatiguedPullSpeed = 0.7245
+	#红宝石鱼（jewel_cichlid） · 体力上限 —— 鱼有多少体力。越大越耐磨，要遛更久。它是「持久战」强度的总开关。⚠ 这是**基准值**（按鱼种）：实际体力池 = 本值 × 档位倍率（金档 ×1.0、红档 ×1.5）。红档还有一条**基准下限**（gameplay.tierRedStaminaMin，默认 200）：基准低于它的红档鱼先被抬到下限，再乘倍率 —— 否则台钓唯一的红鱼（蓝宝石雷龙鱼 130）比一条普通草鱼还好遛。咬钩时日志里会打一行「体力池：X = 基准 Y × 档位倍率 Z」——对账看那一行，别看这里的基准
+	# Default: 130.0
+	# Range: 1.0 ~ 5000.0
+	jewelCichlidStamina = 130
+	#红宝石鱼（jewel_cichlid） · 张力涨速 —— 这条鱼让线涨得多快。>1 = 线黄得快（黏液型鱼的味道），<1 = 宽容
+	# Default: 1.1
+	# Range: 0.0 ~ 5.0
+	jewelCichlidTensionGain = 1.1
+	#红宝石鱼（jewel_cichlid） · 冲刺时长（秒） —— 每次冲刺持续几秒。0 = 这条鱼不冲刺
+	# Default: 0.8
+	# Range: 0.0 ~ 60.0
+	jewelCichlidSprintDurationSec = 0.8
+	#红宝石鱼（jewel_cichlid） · 冲刺间隔（秒） —— 每隔几秒冲一次。越小越凶（爆发型 2.6，黏液型 8.0 几乎不冲）
+	# Default: 4.5
+	# Range: 0.1 ~ 60.0
+	jewelCichlidSprintIntervalSec = 4.5
+	#红宝石鱼（jewel_cichlid） · 变向间隔（秒） —— 每隔几秒变一次向。越小越神经质（神经质型 1.3，黏液型 5.5 方向很稳）
+	# Default: 3.5
+	# Range: 0.2 ~ 60.0
+	jewelCichlidTurnIntervalSec = 3.5
+	#红宝石鱼（jewel_cichlid） · 假动作概率（0~1） —— 假动作概率：预告一个方向、实际往反方向跑。0~1（神经质型 0.35）
+	# Default: 0.0
+	# Range: 0.0 ~ 1.0
+	jewelCichlidFakeOutChance = 0
+	#红宝石鱼（jewel_cichlid） · 进疲劳的体力比例（0~1） —— 体力降到这个比例以下就进疲劳期（0.3 = 剩 30% 时）
+	# Default: 0.3
+	# Range: 0.01 ~ 1.0
+	jewelCichlidFatigueThreshold = 0.3
+	#红宝石鱼（jewel_cichlid） · 疲劳持续（秒） —— 疲劳期持续几秒。这段时间是反拉的最佳窗口
+	# Default: 2.0
+	# Range: 0.0 ~ 120.0
+	jewelCichlidFatigueDurationSec = 2
+	#红宝石鱼（jewel_cichlid） · 不挣扎时回气（/s） —— 不挣扎时每秒回多少体力（会被渔轮阻尼压制）。越大越难遛翻
+	# Default: 0.02
+	# Range: 0.0 ~ 1.0
+	jewelCichlidStaminaRegen = 0.02
+	#孔雀鱼（guppy） · 体重下限（kg） —— 这种鱼最小能有多重。⚠ 它和体重上限一起决定档位怎么分——改小了会让低档鱼变少
+	# Default: 0.001
+	# Range: 0.001 ~ 500.0
+	guppyMinKg = 0.001
+	#孔雀鱼（guppy） · 体重上限（kg） —— 这种鱼最大能有多重。线长/承重不够时会钓不上来（见 buildPool 的承重过滤）
+	# Default: 0.006
+	# Range: 0.001 ~ 500.0
+	guppyMaxKg = 0.006
+	#孔雀鱼（guppy） · 拉力（不挣扎） —— 挣扎时把线拽出去的速度。越大越拉不动。这是「上钩两秒就能感觉出多大」的主要来源。⚠ 这是**基准值**：实际游速 = 本值 × 档位曲线 1.12^档 × 金/红手感修正（金 ×0.84、红 ×1.05）
+	# Default: 1.05
+	# Range: 0.0 ~ 20.0
+	guppyPullSpeed = 1.575
+	#孔雀鱼（guppy） · 拉力（疲劳期） —— 遛到疲劳后的拉拽速度。默认 = 正常拉力 × gameplay.fatiguePullMultiplier（当前 0.5）—— 改大就等于「疲劳期反而不划算」
+	# Default: 0.525
+	# Range: 0.0 ~ 20.0
+	guppyFatiguedPullSpeed = 0.6615
+	#孔雀鱼（guppy） · 体力上限 —— 鱼有多少体力。越大越耐磨，要遛更久。它是「持久战」强度的总开关。⚠ 这是**基准值**（按鱼种）：实际体力池 = 本值 × 档位倍率（金档 ×1.0、红档 ×1.5）。红档还有一条**基准下限**（gameplay.tierRedStaminaMin，默认 200）：基准低于它的红档鱼先被抬到下限，再乘倍率 —— 否则台钓唯一的红鱼（蓝宝石雷龙鱼 130）比一条普通草鱼还好遛。咬钩时日志里会打一行「体力池：X = 基准 Y × 档位倍率 Z」——对账看那一行，别看这里的基准
+	# Default: 60.0
+	# Range: 1.0 ~ 5000.0
+	guppyStamina = 60
+	#孔雀鱼（guppy） · 张力涨速 —— 这条鱼让线涨得多快。>1 = 线黄得快（黏液型鱼的味道），<1 = 宽容
+	# Default: 0.95
+	# Range: 0.0 ~ 5.0
+	guppyTensionGain = 0.95
+	#孔雀鱼（guppy） · 冲刺时长（秒） —— 每次冲刺持续几秒。0 = 这条鱼不冲刺
+	# Default: 0.8
+	# Range: 0.0 ~ 60.0
+	guppySprintDurationSec = 0.8
+	#孔雀鱼（guppy） · 冲刺间隔（秒） —— 每隔几秒冲一次。越小越凶（爆发型 2.6，黏液型 8.0 几乎不冲）
+	# Default: 4.5
+	# Range: 0.1 ~ 60.0
+	guppySprintIntervalSec = 4.5
+	#孔雀鱼（guppy） · 变向间隔（秒） —— 每隔几秒变一次向。越小越神经质（神经质型 1.3，黏液型 5.5 方向很稳）
+	# Default: 3.5
+	# Range: 0.2 ~ 60.0
+	guppyTurnIntervalSec = 3.5
+	#孔雀鱼（guppy） · 假动作概率（0~1） —— 假动作概率：预告一个方向、实际往反方向跑。0~1（神经质型 0.35）
+	# Default: 0.0
+	# Range: 0.0 ~ 1.0
+	guppyFakeOutChance = 0
+	#孔雀鱼（guppy） · 进疲劳的体力比例（0~1） —— 体力降到这个比例以下就进疲劳期（0.3 = 剩 30% 时）
+	# Default: 0.3
+	# Range: 0.01 ~ 1.0
+	guppyFatigueThreshold = 0.3
+	#孔雀鱼（guppy） · 疲劳持续（秒） —— 疲劳期持续几秒。这段时间是反拉的最佳窗口
+	# Default: 2.0
+	# Range: 0.0 ~ 120.0
+	guppyFatigueDurationSec = 2
+	#孔雀鱼（guppy） · 不挣扎时回气（/s） —— 不挣扎时每秒回多少体力（会被渔轮阻尼压制）。越大越难遛翻
+	# Default: 0.02
+	# Range: 0.0 ~ 1.0
+	guppyStaminaRegen = 0.02
+	#长吻象鼻鱼（elephantnose） · 体重下限（kg） —— 这种鱼最小能有多重。⚠ 它和体重上限一起决定档位怎么分——改小了会让低档鱼变少
+	# Default: 0.03
+	# Range: 0.001 ~ 500.0
+	elephantnoseMinKg = 0.03
+	#长吻象鼻鱼（elephantnose） · 体重上限（kg） —— 这种鱼最大能有多重。线长/承重不够时会钓不上来（见 buildPool 的承重过滤）
+	# Default: 0.3
+	# Range: 0.001 ~ 500.0
+	elephantnoseMaxKg = 0.3
+	#长吻象鼻鱼（elephantnose） · 拉力（不挣扎） —— 挣扎时把线拽出去的速度。越大越拉不动。这是「上钩两秒就能感觉出多大」的主要来源。⚠ 这是**基准值**：实际游速 = 本值 × 档位曲线 1.12^档 × 金/红手感修正（金 ×0.84、红 ×1.05）
+	# Default: 1.2
+	# Range: 0.0 ~ 20.0
+	elephantnosePullSpeed = 1.8
+	#长吻象鼻鱼（elephantnose） · 拉力（疲劳期） —— 遛到疲劳后的拉拽速度。默认 = 正常拉力 × gameplay.fatiguePullMultiplier（当前 0.5）—— 改大就等于「疲劳期反而不划算」
+	# Default: 0.6
+	# Range: 0.0 ~ 20.0
+	elephantnoseFatiguedPullSpeed = 0.756
+	#长吻象鼻鱼（elephantnose） · 体力上限 —— 鱼有多少体力。越大越耐磨，要遛更久。它是「持久战」强度的总开关。⚠ 这是**基准值**（按鱼种）：实际体力池 = 本值 × 档位倍率（金档 ×1.0、红档 ×1.5）。红档还有一条**基准下限**（gameplay.tierRedStaminaMin，默认 200）：基准低于它的红档鱼先被抬到下限，再乘倍率 —— 否则台钓唯一的红鱼（蓝宝石雷龙鱼 130）比一条普通草鱼还好遛。咬钩时日志里会打一行「体力池：X = 基准 Y × 档位倍率 Z」——对账看那一行，别看这里的基准
+	# Default: 170.0
+	# Range: 1.0 ~ 5000.0
+	elephantnoseStamina = 170
+	#长吻象鼻鱼（elephantnose） · 张力涨速 —— 这条鱼让线涨得多快。>1 = 线黄得快（黏液型鱼的味道），<1 = 宽容
+	# Default: 1.15
+	# Range: 0.0 ~ 5.0
+	elephantnoseTensionGain = 1.15
+	#长吻象鼻鱼（elephantnose） · 冲刺时长（秒） —— 每次冲刺持续几秒。0 = 这条鱼不冲刺
+	# Default: 0.8
+	# Range: 0.0 ~ 60.0
+	elephantnoseSprintDurationSec = 0.8
+	#长吻象鼻鱼（elephantnose） · 冲刺间隔（秒） —— 每隔几秒冲一次。越小越凶（爆发型 2.6，黏液型 8.0 几乎不冲）
+	# Default: 4.5
+	# Range: 0.1 ~ 60.0
+	elephantnoseSprintIntervalSec = 4.5
+	#长吻象鼻鱼（elephantnose） · 变向间隔（秒） —— 每隔几秒变一次向。越小越神经质（神经质型 1.3，黏液型 5.5 方向很稳）
+	# Default: 3.5
+	# Range: 0.2 ~ 60.0
+	elephantnoseTurnIntervalSec = 3.5
+	#长吻象鼻鱼（elephantnose） · 假动作概率（0~1） —— 假动作概率：预告一个方向、实际往反方向跑。0~1（神经质型 0.35）
+	# Default: 0.0
+	# Range: 0.0 ~ 1.0
+	elephantnoseFakeOutChance = 0
+	#长吻象鼻鱼（elephantnose） · 进疲劳的体力比例（0~1） —— 体力降到这个比例以下就进疲劳期（0.3 = 剩 30% 时）
+	# Default: 0.3
+	# Range: 0.01 ~ 1.0
+	elephantnoseFatigueThreshold = 0.3
+	#长吻象鼻鱼（elephantnose） · 疲劳持续（秒） —— 疲劳期持续几秒。这段时间是反拉的最佳窗口
+	# Default: 2.0
+	# Range: 0.0 ~ 120.0
+	elephantnoseFatigueDurationSec = 2
+	#长吻象鼻鱼（elephantnose） · 不挣扎时回气（/s） —— 不挣扎时每秒回多少体力（会被渔轮阻尼压制）。越大越难遛翻
+	# Default: 0.02
+	# Range: 0.0 ~ 1.0
+	elephantnoseStaminaRegen = 0.02
+	#金泥鳅（golden_loach） · 体重下限（kg） —— 这种鱼最小能有多重。⚠ 它和体重上限一起决定档位怎么分——改小了会让低档鱼变少
+	# Default: 0.03
+	# Range: 0.001 ~ 500.0
+	goldenLoachMinKg = 0.03
+	#金泥鳅（golden_loach） · 体重上限（kg） —— 这种鱼最大能有多重。线长/承重不够时会钓不上来（见 buildPool 的承重过滤）
+	# Default: 0.15
+	# Range: 0.001 ~ 500.0
+	goldenLoachMaxKg = 0.15
+	#金泥鳅（golden_loach） · 拉力（不挣扎） —— 挣扎时把线拽出去的速度。越大越拉不动。这是「上钩两秒就能感觉出多大」的主要来源。⚠ 这是**基准值**：实际游速 = 本值 × 档位曲线 1.12^档 × 金/红手感修正（金 ×0.84、红 ×1.05）
+	# Default: 0.5
+	# Range: 0.0 ~ 20.0
+	goldenLoachPullSpeed = 0.75
+	#金泥鳅（golden_loach） · 拉力（疲劳期） —— 遛到疲劳后的拉拽速度。默认 = 正常拉力 × gameplay.fatiguePullMultiplier（当前 0.5）—— 改大就等于「疲劳期反而不划算」
+	# Default: 0.25
+	# Range: 0.0 ~ 20.0
+	goldenLoachFatiguedPullSpeed = 0.315
+	#金泥鳅（golden_loach） · 体力上限 —— 鱼有多少体力。越大越耐磨，要遛更久。它是「持久战」强度的总开关。⚠ 这是**基准值**（按鱼种）：实际体力池 = 本值 × 档位倍率（金档 ×1.0、红档 ×1.5）。红档还有一条**基准下限**（gameplay.tierRedStaminaMin，默认 200）：基准低于它的红档鱼先被抬到下限，再乘倍率 —— 否则台钓唯一的红鱼（蓝宝石雷龙鱼 130）比一条普通草鱼还好遛。咬钩时日志里会打一行「体力池：X = 基准 Y × 档位倍率 Z」——对账看那一行，别看这里的基准
+	# Default: 60.0
+	# Range: 1.0 ~ 5000.0
+	goldenLoachStamina = 60
+	#金泥鳅（golden_loach） · 张力涨速 —— 这条鱼让线涨得多快。>1 = 线黄得快（黏液型鱼的味道），<1 = 宽容
+	# Default: 0.95
+	# Range: 0.0 ~ 5.0
+	goldenLoachTensionGain = 0.95
+	#金泥鳅（golden_loach） · 冲刺时长（秒） —— 每次冲刺持续几秒。0 = 这条鱼不冲刺
+	# Default: 0.8
+	# Range: 0.0 ~ 60.0
+	goldenLoachSprintDurationSec = 0.8
+	#金泥鳅（golden_loach） · 冲刺间隔（秒） —— 每隔几秒冲一次。越小越凶（爆发型 2.6，黏液型 8.0 几乎不冲）
+	# Default: 4.5
+	# Range: 0.1 ~ 60.0
+	goldenLoachSprintIntervalSec = 4.5
+	#金泥鳅（golden_loach） · 变向间隔（秒） —— 每隔几秒变一次向。越小越神经质（神经质型 1.3，黏液型 5.5 方向很稳）
+	# Default: 3.5
+	# Range: 0.2 ~ 60.0
+	goldenLoachTurnIntervalSec = 3.5
+	#金泥鳅（golden_loach） · 假动作概率（0~1） —— 假动作概率：预告一个方向、实际往反方向跑。0~1（神经质型 0.35）
+	# Default: 0.0
+	# Range: 0.0 ~ 1.0
+	goldenLoachFakeOutChance = 0
+	#金泥鳅（golden_loach） · 进疲劳的体力比例（0~1） —— 体力降到这个比例以下就进疲劳期（0.3 = 剩 30% 时）
+	# Default: 0.3
+	# Range: 0.01 ~ 1.0
+	goldenLoachFatigueThreshold = 0.3
+	#金泥鳅（golden_loach） · 疲劳持续（秒） —— 疲劳期持续几秒。这段时间是反拉的最佳窗口
+	# Default: 2.0
+	# Range: 0.0 ~ 120.0
+	goldenLoachFatigueDurationSec = 2
+	#金泥鳅（golden_loach） · 不挣扎时回气（/s） —— 不挣扎时每秒回多少体力（会被渔轮阻尼压制）。越大越难遛翻
+	# Default: 0.02
+	# Range: 0.0 ~ 1.0
+	goldenLoachStaminaRegen = 0.02
+	#盲鱼（cave_blindfish） · 体重下限（kg） —— 这种鱼最小能有多重。⚠ 它和体重上限一起决定档位怎么分——改小了会让低档鱼变少
+	# Default: 0.005
+	# Range: 0.001 ~ 500.0
+	caveBlindfishMinKg = 0.005
+	#盲鱼（cave_blindfish） · 体重上限（kg） —— 这种鱼最大能有多重。线长/承重不够时会钓不上来（见 buildPool 的承重过滤）
+	# Default: 0.02
+	# Range: 0.001 ~ 500.0
+	caveBlindfishMaxKg = 0.02
+	#盲鱼（cave_blindfish） · 拉力（不挣扎） —— 挣扎时把线拽出去的速度。越大越拉不动。这是「上钩两秒就能感觉出多大」的主要来源。⚠ 这是**基准值**：实际游速 = 本值 × 档位曲线 1.12^档 × 金/红手感修正（金 ×0.84、红 ×1.05）
+	# Default: 0.4
+	# Range: 0.0 ~ 20.0
+	caveBlindfishPullSpeed = 0.6
+	#盲鱼（cave_blindfish） · 拉力（疲劳期） —— 遛到疲劳后的拉拽速度。默认 = 正常拉力 × gameplay.fatiguePullMultiplier（当前 0.5）—— 改大就等于「疲劳期反而不划算」
+	# Default: 0.2
+	# Range: 0.0 ~ 20.0
+	caveBlindfishFatiguedPullSpeed = 0.252
+	#盲鱼（cave_blindfish） · 体力上限 —— 鱼有多少体力。越大越耐磨，要遛更久。它是「持久战」强度的总开关。⚠ 这是**基准值**（按鱼种）：实际体力池 = 本值 × 档位倍率（金档 ×1.0、红档 ×1.5）。红档还有一条**基准下限**（gameplay.tierRedStaminaMin，默认 200）：基准低于它的红档鱼先被抬到下限，再乘倍率 —— 否则台钓唯一的红鱼（蓝宝石雷龙鱼 130）比一条普通草鱼还好遛。咬钩时日志里会打一行「体力池：X = 基准 Y × 档位倍率 Z」——对账看那一行，别看这里的基准
+	# Default: 45.0
+	# Range: 1.0 ~ 5000.0
+	caveBlindfishStamina = 45
+	#盲鱼（cave_blindfish） · 张力涨速 —— 这条鱼让线涨得多快。>1 = 线黄得快（黏液型鱼的味道），<1 = 宽容
+	# Default: 0.85
+	# Range: 0.0 ~ 5.0
+	caveBlindfishTensionGain = 0.85
+	#盲鱼（cave_blindfish） · 冲刺时长（秒） —— 每次冲刺持续几秒。0 = 这条鱼不冲刺
+	# Default: 0.8
+	# Range: 0.0 ~ 60.0
+	caveBlindfishSprintDurationSec = 0.8
+	#盲鱼（cave_blindfish） · 冲刺间隔（秒） —— 每隔几秒冲一次。越小越凶（爆发型 2.6，黏液型 8.0 几乎不冲）
+	# Default: 4.5
+	# Range: 0.1 ~ 60.0
+	caveBlindfishSprintIntervalSec = 4.5
+	#盲鱼（cave_blindfish） · 变向间隔（秒） —— 每隔几秒变一次向。越小越神经质（神经质型 1.3，黏液型 5.5 方向很稳）
+	# Default: 3.5
+	# Range: 0.2 ~ 60.0
+	caveBlindfishTurnIntervalSec = 3.5
+	#盲鱼（cave_blindfish） · 假动作概率（0~1） —— 假动作概率：预告一个方向、实际往反方向跑。0~1（神经质型 0.35）
+	# Default: 0.0
+	# Range: 0.0 ~ 1.0
+	caveBlindfishFakeOutChance = 0
+	#盲鱼（cave_blindfish） · 进疲劳的体力比例（0~1） —— 体力降到这个比例以下就进疲劳期（0.3 = 剩 30% 时）
+	# Default: 0.3
+	# Range: 0.01 ~ 1.0
+	caveBlindfishFatigueThreshold = 0.3
+	#盲鱼（cave_blindfish） · 疲劳持续（秒） —— 疲劳期持续几秒。这段时间是反拉的最佳窗口
+	# Default: 2.0
+	# Range: 0.0 ~ 120.0
+	caveBlindfishFatigueDurationSec = 2
+	#盲鱼（cave_blindfish） · 不挣扎时回气（/s） —— 不挣扎时每秒回多少体力（会被渔轮阻尼压制）。越大越难遛翻
+	# Default: 0.02
+	# Range: 0.0 ~ 1.0
+	caveBlindfishStaminaRegen = 0.02
+	#北非胡子鲇（north_african_catfish） · 体重下限（kg） —— 这种鱼最小能有多重。⚠ 它和体重上限一起决定档位怎么分——改小了会让低档鱼变少
+	# Default: 2.0
+	# Range: 0.001 ~ 500.0
+	northAfricanCatfishMinKg = 2
+	#北非胡子鲇（north_african_catfish） · 体重上限（kg） —— 这种鱼最大能有多重。线长/承重不够时会钓不上来（见 buildPool 的承重过滤）
+	# Default: 16.0
+	# Range: 0.001 ~ 500.0
+	northAfricanCatfishMaxKg = 16
+	#北非胡子鲇（north_african_catfish） · 拉力（不挣扎） —— 挣扎时把线拽出去的速度。越大越拉不动。这是「上钩两秒就能感觉出多大」的主要来源。⚠ 这是**基准值**：实际游速 = 本值 × 档位曲线 1.12^档 × 金/红手感修正（金 ×0.84、红 ×1.05）
+	# Default: 1.9
+	# Range: 0.0 ~ 20.0
+	northAfricanCatfishPullSpeed = 2.85
+	#北非胡子鲇（north_african_catfish） · 拉力（疲劳期） —— 遛到疲劳后的拉拽速度。默认 = 正常拉力 × gameplay.fatiguePullMultiplier（当前 0.5）—— 改大就等于「疲劳期反而不划算」
+	# Default: 0.95
+	# Range: 0.0 ~ 20.0
+	northAfricanCatfishFatiguedPullSpeed = 1.197
+	#北非胡子鲇（north_african_catfish） · 体力上限 —— 鱼有多少体力。越大越耐磨，要遛更久。它是「持久战」强度的总开关。⚠ 这是**基准值**（按鱼种）：实际体力池 = 本值 × 档位倍率（金档 ×1.0、红档 ×1.5）。红档还有一条**基准下限**（gameplay.tierRedStaminaMin，默认 200）：基准低于它的红档鱼先被抬到下限，再乘倍率 —— 否则台钓唯一的红鱼（蓝宝石雷龙鱼 130）比一条普通草鱼还好遛。咬钩时日志里会打一行「体力池：X = 基准 Y × 档位倍率 Z」——对账看那一行，别看这里的基准
+	# Default: 420.0
+	# Range: 1.0 ~ 5000.0
+	northAfricanCatfishStamina = 420
+	#北非胡子鲇（north_african_catfish） · 张力涨速 —— 这条鱼让线涨得多快。>1 = 线黄得快（黏液型鱼的味道），<1 = 宽容
+	# Default: 1.5
+	# Range: 0.0 ~ 5.0
+	northAfricanCatfishTensionGain = 1.5
+	#北非胡子鲇（north_african_catfish） · 冲刺时长（秒） —— 每次冲刺持续几秒。0 = 这条鱼不冲刺
+	# Default: 0.4
+	# Range: 0.0 ~ 60.0
+	northAfricanCatfishSprintDurationSec = 0.4
+	#北非胡子鲇（north_african_catfish） · 冲刺间隔（秒） —— 每隔几秒冲一次。越小越凶（爆发型 2.6，黏液型 8.0 几乎不冲）
+	# Default: 8.0
+	# Range: 0.1 ~ 60.0
+	northAfricanCatfishSprintIntervalSec = 8
+	#北非胡子鲇（north_african_catfish） · 变向间隔（秒） —— 每隔几秒变一次向。越小越神经质（神经质型 1.3，黏液型 5.5 方向很稳）
+	# Default: 5.5
+	# Range: 0.2 ~ 60.0
+	northAfricanCatfishTurnIntervalSec = 5.5
+	#北非胡子鲇（north_african_catfish） · 假动作概率（0~1） —— 假动作概率：预告一个方向、实际往反方向跑。0~1（神经质型 0.35）
+	# Default: 0.0
+	# Range: 0.0 ~ 1.0
+	northAfricanCatfishFakeOutChance = 0
+	#北非胡子鲇（north_african_catfish） · 进疲劳的体力比例（0~1） —— 体力降到这个比例以下就进疲劳期（0.3 = 剩 30% 时）
+	# Default: 0.28
+	# Range: 0.01 ~ 1.0
+	northAfricanCatfishFatigueThreshold = 0.28
+	#北非胡子鲇（north_african_catfish） · 疲劳持续（秒） —— 疲劳期持续几秒。这段时间是反拉的最佳窗口
+	# Default: 2.6
+	# Range: 0.0 ~ 120.0
+	northAfricanCatfishFatigueDurationSec = 2.6
+	#北非胡子鲇（north_african_catfish） · 不挣扎时回气（/s） —— 不挣扎时每秒回多少体力（会被渔轮阻尼压制）。越大越难遛翻
+	# Default: 0.015
+	# Range: 0.0 ~ 1.0
+	northAfricanCatfishStaminaRegen = 0.015
+	#虹鳟（rainbow_trout） · 体重下限（kg） —— 这种鱼最小能有多重。⚠ 它和体重上限一起决定档位怎么分——改小了会让低档鱼变少
+	# Default: 0.4
+	# Range: 0.001 ~ 500.0
+	rainbowTroutMinKg = 0.4
+	#虹鳟（rainbow_trout） · 体重上限（kg） —— 这种鱼最大能有多重。线长/承重不够时会钓不上来（见 buildPool 的承重过滤）
+	# Default: 8.0
+	# Range: 0.001 ~ 500.0
+	rainbowTroutMaxKg = 8
+	#虹鳟（rainbow_trout） · 拉力（不挣扎） —— 挣扎时把线拽出去的速度。越大越拉不动。这是「上钩两秒就能感觉出多大」的主要来源。⚠ 这是**基准值**：实际游速 = 本值 × 档位曲线 1.12^档 × 金/红手感修正（金 ×0.84、红 ×1.05）
+	# Default: 2.65
+	# Range: 0.0 ~ 20.0
+	rainbowTroutPullSpeed = 3.975
+	#虹鳟（rainbow_trout） · 拉力（疲劳期） —— 遛到疲劳后的拉拽速度。默认 = 正常拉力 × gameplay.fatiguePullMultiplier（当前 0.5）—— 改大就等于「疲劳期反而不划算」
+	# Default: 1.325
+	# Range: 0.0 ~ 20.0
+	rainbowTroutFatiguedPullSpeed = 1.6695
+	#虹鳟（rainbow_trout） · 体力上限 —— 鱼有多少体力。越大越耐磨，要遛更久。它是「持久战」强度的总开关。⚠ 这是**基准值**（按鱼种）：实际体力池 = 本值 × 档位倍率（金档 ×1.0、红档 ×1.5）。红档还有一条**基准下限**（gameplay.tierRedStaminaMin，默认 200）：基准低于它的红档鱼先被抬到下限，再乘倍率 —— 否则台钓唯一的红鱼（蓝宝石雷龙鱼 130）比一条普通草鱼还好遛。咬钩时日志里会打一行「体力池：X = 基准 Y × 档位倍率 Z」——对账看那一行，别看这里的基准
+	# Default: 220.0
+	# Range: 1.0 ~ 5000.0
+	rainbowTroutStamina = 280
+	#虹鳟（rainbow_trout） · 张力涨速 —— 这条鱼让线涨得多快。>1 = 线黄得快（黏液型鱼的味道），<1 = 宽容
+	# Default: 1.9
+	# Range: 0.0 ~ 5.0
+	rainbowTroutTensionGain = 1.9
+	#虹鳟（rainbow_trout） · 冲刺时长（秒） —— 每次冲刺持续几秒。0 = 这条鱼不冲刺
+	# Default: 1.6
+	# Range: 0.0 ~ 60.0
+	rainbowTroutSprintDurationSec = 1.6
+	#虹鳟（rainbow_trout） · 冲刺间隔（秒） —— 每隔几秒冲一次。越小越凶（爆发型 2.6，黏液型 8.0 几乎不冲）
+	# Default: 2.6
+	# Range: 0.1 ~ 60.0
+	rainbowTroutSprintIntervalSec = 2.6
+	#虹鳟（rainbow_trout） · 变向间隔（秒） —— 每隔几秒变一次向。越小越神经质（神经质型 1.3，黏液型 5.5 方向很稳）
+	# Default: 3.0
+	# Range: 0.2 ~ 60.0
+	rainbowTroutTurnIntervalSec = 3
+	#虹鳟（rainbow_trout） · 假动作概率（0~1） —— 假动作概率：预告一个方向、实际往反方向跑。0~1（神经质型 0.35）
+	# Default: 0.1
+	# Range: 0.0 ~ 1.0
+	rainbowTroutFakeOutChance = 0.1
+	#虹鳟（rainbow_trout） · 进疲劳的体力比例（0~1） —— 体力降到这个比例以下就进疲劳期（0.3 = 剩 30% 时）
+	# Default: 0.34
+	# Range: 0.01 ~ 1.0
+	rainbowTroutFatigueThreshold = 0.34
+	#虹鳟（rainbow_trout） · 疲劳持续（秒） —— 疲劳期持续几秒。这段时间是反拉的最佳窗口
+	# Default: 2.4
+	# Range: 0.0 ~ 120.0
+	rainbowTroutFatigueDurationSec = 2.4
+	#虹鳟（rainbow_trout） · 不挣扎时回气（/s） —— 不挣扎时每秒回多少体力（会被渔轮阻尼压制）。越大越难遛翻
+	# Default: 0.02
+	# Range: 0.0 ~ 1.0
+	rainbowTroutStaminaRegen = 0.02
+	#北极红点鲑（arctic_char） · 体重下限（kg） —— 这种鱼最小能有多重。⚠ 它和体重上限一起决定档位怎么分——改小了会让低档鱼变少
+	# Default: 0.5
+	# Range: 0.001 ~ 500.0
+	arcticCharMinKg = 0.5
+	#北极红点鲑（arctic_char） · 体重上限（kg） —— 这种鱼最大能有多重。线长/承重不够时会钓不上来（见 buildPool 的承重过滤）
+	# Default: 7.0
+	# Range: 0.001 ~ 500.0
+	arcticCharMaxKg = 7
+	#北极红点鲑（arctic_char） · 拉力（不挣扎） —— 挣扎时把线拽出去的速度。越大越拉不动。这是「上钩两秒就能感觉出多大」的主要来源。⚠ 这是**基准值**：实际游速 = 本值 × 档位曲线 1.12^档 × 金/红手感修正（金 ×0.84、红 ×1.05）
+	# Default: 2.65
+	# Range: 0.0 ~ 20.0
+	arcticCharPullSpeed = 3.975
+	#北极红点鲑（arctic_char） · 拉力（疲劳期） —— 遛到疲劳后的拉拽速度。默认 = 正常拉力 × gameplay.fatiguePullMultiplier（当前 0.5）—— 改大就等于「疲劳期反而不划算」
+	# Default: 1.325
+	# Range: 0.0 ~ 20.0
+	arcticCharFatiguedPullSpeed = 1.6695
+	#北极红点鲑（arctic_char） · 体力上限 —— 鱼有多少体力。越大越耐磨，要遛更久。它是「持久战」强度的总开关。⚠ 这是**基准值**（按鱼种）：实际体力池 = 本值 × 档位倍率（金档 ×1.0、红档 ×1.5）。红档还有一条**基准下限**（gameplay.tierRedStaminaMin，默认 200）：基准低于它的红档鱼先被抬到下限，再乘倍率 —— 否则台钓唯一的红鱼（蓝宝石雷龙鱼 130）比一条普通草鱼还好遛。咬钩时日志里会打一行「体力池：X = 基准 Y × 档位倍率 Z」——对账看那一行，别看这里的基准
+	# Default: 480.0
+	# Range: 1.0 ~ 5000.0
+	arcticCharStamina = 480
+	#北极红点鲑（arctic_char） · 张力涨速 —— 这条鱼让线涨得多快。>1 = 线黄得快（黏液型鱼的味道），<1 = 宽容
+	# Default: 2.3
+	# Range: 0.0 ~ 5.0
+	arcticCharTensionGain = 2.3
+	#北极红点鲑（arctic_char） · 冲刺时长（秒） —— 每次冲刺持续几秒。0 = 这条鱼不冲刺
+	# Default: 0.4
+	# Range: 0.0 ~ 60.0
+	arcticCharSprintDurationSec = 0.4
+	#北极红点鲑（arctic_char） · 冲刺间隔（秒） —— 每隔几秒冲一次。越小越凶（爆发型 2.6，黏液型 8.0 几乎不冲）
+	# Default: 8.0
+	# Range: 0.1 ~ 60.0
+	arcticCharSprintIntervalSec = 8
+	#北极红点鲑（arctic_char） · 变向间隔（秒） —— 每隔几秒变一次向。越小越神经质（神经质型 1.3，黏液型 5.5 方向很稳）
+	# Default: 5.5
+	# Range: 0.2 ~ 60.0
+	arcticCharTurnIntervalSec = 5.5
+	#北极红点鲑（arctic_char） · 假动作概率（0~1） —— 假动作概率：预告一个方向、实际往反方向跑。0~1（神经质型 0.35）
+	# Default: 0.0
+	# Range: 0.0 ~ 1.0
+	arcticCharFakeOutChance = 0
+	#北极红点鲑（arctic_char） · 进疲劳的体力比例（0~1） —— 体力降到这个比例以下就进疲劳期（0.3 = 剩 30% 时）
+	# Default: 0.28
+	# Range: 0.01 ~ 1.0
+	arcticCharFatigueThreshold = 0.28
+	#北极红点鲑（arctic_char） · 疲劳持续（秒） —— 疲劳期持续几秒。这段时间是反拉的最佳窗口
+	# Default: 2.6
+	# Range: 0.0 ~ 120.0
+	arcticCharFatigueDurationSec = 2.6
+	#北极红点鲑（arctic_char） · 不挣扎时回气（/s） —— 不挣扎时每秒回多少体力（会被渔轮阻尼压制）。越大越难遛翻
+	# Default: 0.015
+	# Range: 0.0 ~ 1.0
+	arcticCharStaminaRegen = 0.015
+	#江鳕（burbot） · 体重下限（kg） —— 这种鱼最小能有多重。⚠ 它和体重上限一起决定档位怎么分——改小了会让低档鱼变少
+	# Default: 0.8
+	# Range: 0.001 ~ 500.0
+	burbotMinKg = 0.8
+	#江鳕（burbot） · 体重上限（kg） —— 这种鱼最大能有多重。线长/承重不够时会钓不上来（见 buildPool 的承重过滤）
+	# Default: 12.0
+	# Range: 0.001 ~ 500.0
+	burbotMaxKg = 12
+	#江鳕（burbot） · 拉力（不挣扎） —— 挣扎时把线拽出去的速度。越大越拉不动。这是「上钩两秒就能感觉出多大」的主要来源。⚠ 这是**基准值**：实际游速 = 本值 × 档位曲线 1.12^档 × 金/红手感修正（金 ×0.84、红 ×1.05）
+	# Default: 1.3
+	# Range: 0.0 ~ 20.0
+	burbotPullSpeed = 1.95
+	#江鳕（burbot） · 拉力（疲劳期） —— 遛到疲劳后的拉拽速度。默认 = 正常拉力 × gameplay.fatiguePullMultiplier（当前 0.5）—— 改大就等于「疲劳期反而不划算」
+	# Default: 0.65
+	# Range: 0.0 ~ 20.0
+	burbotFatiguedPullSpeed = 0.819
+	#江鳕（burbot） · 体力上限 —— 鱼有多少体力。越大越耐磨，要遛更久。它是「持久战」强度的总开关。⚠ 这是**基准值**（按鱼种）：实际体力池 = 本值 × 档位倍率（金档 ×1.0、红档 ×1.5）。红档还有一条**基准下限**（gameplay.tierRedStaminaMin，默认 200）：基准低于它的红档鱼先被抬到下限，再乘倍率 —— 否则台钓唯一的红鱼（蓝宝石雷龙鱼 130）比一条普通草鱼还好遛。咬钩时日志里会打一行「体力池：X = 基准 Y × 档位倍率 Z」——对账看那一行，别看这里的基准
+	# Default: 260.0
+	# Range: 1.0 ~ 5000.0
+	burbotStamina = 260
+	#江鳕（burbot） · 张力涨速 —— 这条鱼让线涨得多快。>1 = 线黄得快（黏液型鱼的味道），<1 = 宽容
+	# Default: 1.45
+	# Range: 0.0 ~ 5.0
+	burbotTensionGain = 1.45
+	#江鳕（burbot） · 冲刺时长（秒） —— 每次冲刺持续几秒。0 = 这条鱼不冲刺
+	# Default: 0.4
+	# Range: 0.0 ~ 60.0
+	burbotSprintDurationSec = 0.4
+	#江鳕（burbot） · 冲刺间隔（秒） —— 每隔几秒冲一次。越小越凶（爆发型 2.6，黏液型 8.0 几乎不冲）
+	# Default: 8.0
+	# Range: 0.1 ~ 60.0
+	burbotSprintIntervalSec = 8
+	#江鳕（burbot） · 变向间隔（秒） —— 每隔几秒变一次向。越小越神经质（神经质型 1.3，黏液型 5.5 方向很稳）
+	# Default: 5.5
+	# Range: 0.2 ~ 60.0
+	burbotTurnIntervalSec = 5.5
+	#江鳕（burbot） · 假动作概率（0~1） —— 假动作概率：预告一个方向、实际往反方向跑。0~1（神经质型 0.35）
+	# Default: 0.0
+	# Range: 0.0 ~ 1.0
+	burbotFakeOutChance = 0
+	#江鳕（burbot） · 进疲劳的体力比例（0~1） —— 体力降到这个比例以下就进疲劳期（0.3 = 剩 30% 时）
+	# Default: 0.28
+	# Range: 0.01 ~ 1.0
+	burbotFatigueThreshold = 0.28
+	#江鳕（burbot） · 疲劳持续（秒） —— 疲劳期持续几秒。这段时间是反拉的最佳窗口
+	# Default: 2.6
+	# Range: 0.0 ~ 120.0
+	burbotFatigueDurationSec = 2.6
+	#江鳕（burbot） · 不挣扎时回气（/s） —— 不挣扎时每秒回多少体力（会被渔轮阻尼压制）。越大越难遛翻
+	# Default: 0.015
+	# Range: 0.0 ~ 1.0
+	burbotStaminaRegen = 0.015
+	#高白鲑（whitefish） · 体重下限（kg） —— 这种鱼最小能有多重。⚠ 它和体重上限一起决定档位怎么分——改小了会让低档鱼变少
+	# Default: 0.2
+	# Range: 0.001 ~ 500.0
+	whitefishMinKg = 0.2
+	#高白鲑（whitefish） · 体重上限（kg） —— 这种鱼最大能有多重。线长/承重不够时会钓不上来（见 buildPool 的承重过滤）
+	# Default: 3.0
+	# Range: 0.001 ~ 500.0
+	whitefishMaxKg = 3
+	#高白鲑（whitefish） · 拉力（不挣扎） —— 挣扎时把线拽出去的速度。越大越拉不动。这是「上钩两秒就能感觉出多大」的主要来源。⚠ 这是**基准值**：实际游速 = 本值 × 档位曲线 1.12^档 × 金/红手感修正（金 ×0.84、红 ×1.05）
+	# Default: 0.9
+	# Range: 0.0 ~ 20.0
+	whitefishPullSpeed = 1.35
+	#高白鲑（whitefish） · 拉力（疲劳期） —— 遛到疲劳后的拉拽速度。默认 = 正常拉力 × gameplay.fatiguePullMultiplier（当前 0.5）—— 改大就等于「疲劳期反而不划算」
+	# Default: 0.45
+	# Range: 0.0 ~ 20.0
+	whitefishFatiguedPullSpeed = 0.5670000000000001
+	#高白鲑（whitefish） · 体力上限 —— 鱼有多少体力。越大越耐磨，要遛更久。它是「持久战」强度的总开关。⚠ 这是**基准值**（按鱼种）：实际体力池 = 本值 × 档位倍率（金档 ×1.0、红档 ×1.5）。红档还有一条**基准下限**（gameplay.tierRedStaminaMin，默认 200）：基准低于它的红档鱼先被抬到下限，再乘倍率 —— 否则台钓唯一的红鱼（蓝宝石雷龙鱼 130）比一条普通草鱼还好遛。咬钩时日志里会打一行「体力池：X = 基准 Y × 档位倍率 Z」——对账看那一行，别看这里的基准
+	# Default: 140.0
+	# Range: 1.0 ~ 5000.0
+	whitefishStamina = 140
+	#高白鲑（whitefish） · 张力涨速 —— 这条鱼让线涨得多快。>1 = 线黄得快（黏液型鱼的味道），<1 = 宽容
+	# Default: 1.05
+	# Range: 0.0 ~ 5.0
+	whitefishTensionGain = 1.05
+	#高白鲑（whitefish） · 冲刺时长（秒） —— 每次冲刺持续几秒。0 = 这条鱼不冲刺
+	# Default: 0.8
+	# Range: 0.0 ~ 60.0
+	whitefishSprintDurationSec = 0.8
+	#高白鲑（whitefish） · 冲刺间隔（秒） —— 每隔几秒冲一次。越小越凶（爆发型 2.6，黏液型 8.0 几乎不冲）
+	# Default: 4.5
+	# Range: 0.1 ~ 60.0
+	whitefishSprintIntervalSec = 4.5
+	#高白鲑（whitefish） · 变向间隔（秒） —— 每隔几秒变一次向。越小越神经质（神经质型 1.3，黏液型 5.5 方向很稳）
+	# Default: 3.5
+	# Range: 0.2 ~ 60.0
+	whitefishTurnIntervalSec = 3.5
+	#高白鲑（whitefish） · 假动作概率（0~1） —— 假动作概率：预告一个方向、实际往反方向跑。0~1（神经质型 0.35）
+	# Default: 0.0
+	# Range: 0.0 ~ 1.0
+	whitefishFakeOutChance = 0
+	#高白鲑（whitefish） · 进疲劳的体力比例（0~1） —— 体力降到这个比例以下就进疲劳期（0.3 = 剩 30% 时）
+	# Default: 0.3
+	# Range: 0.01 ~ 1.0
+	whitefishFatigueThreshold = 0.3
+	#高白鲑（whitefish） · 疲劳持续（秒） —— 疲劳期持续几秒。这段时间是反拉的最佳窗口
+	# Default: 2.0
+	# Range: 0.0 ~ 120.0
+	whitefishFatigueDurationSec = 2
+	#高白鲑（whitefish） · 不挣扎时回气（/s） —— 不挣扎时每秒回多少体力（会被渔轮阻尼压制）。越大越难遛翻
+	# Default: 0.02
+	# Range: 0.0 ~ 1.0
+	whitefishStaminaRegen = 0.02
+	#哲罗鲑（taimen） · 体重下限（kg） —— 这种鱼最小能有多重。⚠ 它和体重上限一起决定档位怎么分——改小了会让低档鱼变少
+	# Default: 3.0
+	# Range: 0.001 ~ 500.0
+	taimenMinKg = 3
+	#哲罗鲑（taimen） · 体重上限（kg） —— 这种鱼最大能有多重。线长/承重不够时会钓不上来（见 buildPool 的承重过滤）
+	# Default: 45.0
+	# Range: 0.001 ~ 500.0
+	taimenMaxKg = 45
+	#哲罗鲑（taimen） · 拉力（不挣扎） —— 挣扎时把线拽出去的速度。越大越拉不动。这是「上钩两秒就能感觉出多大」的主要来源。⚠ 这是**基准值**：实际游速 = 本值 × 档位曲线 1.12^档 × 金/红手感修正（金 ×0.84、红 ×1.05）
+	# Default: 3.2
+	# Range: 0.0 ~ 20.0
+	taimenPullSpeed = 4.8
+	#哲罗鲑（taimen） · 拉力（疲劳期） —— 遛到疲劳后的拉拽速度。默认 = 正常拉力 × gameplay.fatiguePullMultiplier（当前 0.5）—— 改大就等于「疲劳期反而不划算」
+	# Default: 1.6
+	# Range: 0.0 ~ 20.0
+	taimenFatiguedPullSpeed = 2.016
+	#哲罗鲑（taimen） · 体力上限 —— 鱼有多少体力。越大越耐磨，要遛更久。它是「持久战」强度的总开关。⚠ 这是**基准值**（按鱼种）：实际体力池 = 本值 × 档位倍率（金档 ×1.0、红档 ×1.5）。红档还有一条**基准下限**（gameplay.tierRedStaminaMin，默认 200）：基准低于它的红档鱼先被抬到下限，再乘倍率 —— 否则台钓唯一的红鱼（蓝宝石雷龙鱼 130）比一条普通草鱼还好遛。咬钩时日志里会打一行「体力池：X = 基准 Y × 档位倍率 Z」——对账看那一行，别看这里的基准
+	# Default: 560.0
+	# Range: 1.0 ~ 5000.0
+	taimenStamina = 560
+	#哲罗鲑（taimen） · 张力涨速 —— 这条鱼让线涨得多快。>1 = 线黄得快（黏液型鱼的味道），<1 = 宽容
+	# Default: 1.45
+	# Range: 0.0 ~ 5.0
+	taimenTensionGain = 1.45
+	#哲罗鲑（taimen） · 冲刺时长（秒） —— 每次冲刺持续几秒。0 = 这条鱼不冲刺
+	# Default: 1.6
+	# Range: 0.0 ~ 60.0
+	taimenSprintDurationSec = 1.6
+	#哲罗鲑（taimen） · 冲刺间隔（秒） —— 每隔几秒冲一次。越小越凶（爆发型 2.6，黏液型 8.0 几乎不冲）
+	# Default: 2.6
+	# Range: 0.1 ~ 60.0
+	taimenSprintIntervalSec = 2.6
+	#哲罗鲑（taimen） · 变向间隔（秒） —— 每隔几秒变一次向。越小越神经质（神经质型 1.3，黏液型 5.5 方向很稳）
+	# Default: 3.0
+	# Range: 0.2 ~ 60.0
+	taimenTurnIntervalSec = 3
+	#哲罗鲑（taimen） · 假动作概率（0~1） —— 假动作概率：预告一个方向、实际往反方向跑。0~1（神经质型 0.35）
+	# Default: 0.1
+	# Range: 0.0 ~ 1.0
+	taimenFakeOutChance = 0.1
+	#哲罗鲑（taimen） · 进疲劳的体力比例（0~1） —— 体力降到这个比例以下就进疲劳期（0.3 = 剩 30% 时）
+	# Default: 0.34
+	# Range: 0.01 ~ 1.0
+	taimenFatigueThreshold = 0.34
+	#哲罗鲑（taimen） · 疲劳持续（秒） —— 疲劳期持续几秒。这段时间是反拉的最佳窗口
+	# Default: 2.4
+	# Range: 0.0 ~ 120.0
+	taimenFatigueDurationSec = 2.4
+	#哲罗鲑（taimen） · 不挣扎时回气（/s） —— 不挣扎时每秒回多少体力（会被渔轮阻尼压制）。越大越难遛翻
+	# Default: 0.02
+	# Range: 0.0 ~ 1.0
+	taimenStaminaRegen = 0.02
+	#北极鳕（arctic_cod） · 体重下限（kg） —— 这种鱼最小能有多重。⚠ 它和体重上限一起决定档位怎么分——改小了会让低档鱼变少
+	# Default: 0.05
+	# Range: 0.001 ~ 500.0
+	arcticCodMinKg = 0.05
+	#北极鳕（arctic_cod） · 体重上限（kg） —— 这种鱼最大能有多重。线长/承重不够时会钓不上来（见 buildPool 的承重过滤）
+	# Default: 0.5
+	# Range: 0.001 ~ 500.0
+	arcticCodMaxKg = 0.5
+	#北极鳕（arctic_cod） · 拉力（不挣扎） —— 挣扎时把线拽出去的速度。越大越拉不动。这是「上钩两秒就能感觉出多大」的主要来源。⚠ 这是**基准值**：实际游速 = 本值 × 档位曲线 1.12^档 × 金/红手感修正（金 ×0.84、红 ×1.05）
+	# Default: 0.6
+	# Range: 0.0 ~ 20.0
+	arcticCodPullSpeed = 0.9
+	#北极鳕（arctic_cod） · 拉力（疲劳期） —— 遛到疲劳后的拉拽速度。默认 = 正常拉力 × gameplay.fatiguePullMultiplier（当前 0.5）—— 改大就等于「疲劳期反而不划算」
+	# Default: 0.3
+	# Range: 0.0 ~ 20.0
+	arcticCodFatiguedPullSpeed = 0.378
+	#北极鳕（arctic_cod） · 体力上限 —— 鱼有多少体力。越大越耐磨，要遛更久。它是「持久战」强度的总开关。⚠ 这是**基准值**（按鱼种）：实际体力池 = 本值 × 档位倍率（金档 ×1.0、红档 ×1.5）。红档还有一条**基准下限**（gameplay.tierRedStaminaMin，默认 200）：基准低于它的红档鱼先被抬到下限，再乘倍率 —— 否则台钓唯一的红鱼（蓝宝石雷龙鱼 130）比一条普通草鱼还好遛。咬钩时日志里会打一行「体力池：X = 基准 Y × 档位倍率 Z」——对账看那一行，别看这里的基准
+	# Default: 60.0
+	# Range: 1.0 ~ 5000.0
+	arcticCodStamina = 60
+	#北极鳕（arctic_cod） · 张力涨速 —— 这条鱼让线涨得多快。>1 = 线黄得快（黏液型鱼的味道），<1 = 宽容
+	# Default: 0.95
+	# Range: 0.0 ~ 5.0
+	arcticCodTensionGain = 0.95
+	#北极鳕（arctic_cod） · 冲刺时长（秒） —— 每次冲刺持续几秒。0 = 这条鱼不冲刺
+	# Default: 0.8
+	# Range: 0.0 ~ 60.0
+	arcticCodSprintDurationSec = 0.8
+	#北极鳕（arctic_cod） · 冲刺间隔（秒） —— 每隔几秒冲一次。越小越凶（爆发型 2.6，黏液型 8.0 几乎不冲）
+	# Default: 4.5
+	# Range: 0.1 ~ 60.0
+	arcticCodSprintIntervalSec = 4.5
+	#北极鳕（arctic_cod） · 变向间隔（秒） —— 每隔几秒变一次向。越小越神经质（神经质型 1.3，黏液型 5.5 方向很稳）
+	# Default: 3.5
+	# Range: 0.2 ~ 60.0
+	arcticCodTurnIntervalSec = 3.5
+	#北极鳕（arctic_cod） · 假动作概率（0~1） —— 假动作概率：预告一个方向、实际往反方向跑。0~1（神经质型 0.35）
+	# Default: 0.0
+	# Range: 0.0 ~ 1.0
+	arcticCodFakeOutChance = 0
+	#北极鳕（arctic_cod） · 进疲劳的体力比例（0~1） —— 体力降到这个比例以下就进疲劳期（0.3 = 剩 30% 时）
+	# Default: 0.3
+	# Range: 0.01 ~ 1.0
+	arcticCodFatigueThreshold = 0.3
+	#北极鳕（arctic_cod） · 疲劳持续（秒） —— 疲劳期持续几秒。这段时间是反拉的最佳窗口
+	# Default: 2.0
+	# Range: 0.0 ~ 120.0
+	arcticCodFatigueDurationSec = 2
+	#北极鳕（arctic_cod） · 不挣扎时回气（/s） —— 不挣扎时每秒回多少体力（会被渔轮阻尼压制）。越大越难遛翻
+	# Default: 0.02
+	# Range: 0.0 ~ 1.0
+	arcticCodStaminaRegen = 0.02
+	#毛鳞鱼（capelin） · 体重下限（kg） —— 这种鱼最小能有多重。⚠ 它和体重上限一起决定档位怎么分——改小了会让低档鱼变少
+	# Default: 0.01
+	# Range: 0.001 ~ 500.0
+	capelinMinKg = 0.01
+	#毛鳞鱼（capelin） · 体重上限（kg） —— 这种鱼最大能有多重。线长/承重不够时会钓不上来（见 buildPool 的承重过滤）
+	# Default: 0.1
+	# Range: 0.001 ~ 500.0
+	capelinMaxKg = 0.1
+	#毛鳞鱼（capelin） · 拉力（不挣扎） —— 挣扎时把线拽出去的速度。越大越拉不动。这是「上钩两秒就能感觉出多大」的主要来源。⚠ 这是**基准值**：实际游速 = 本值 × 档位曲线 1.12^档 × 金/红手感修正（金 ×0.84、红 ×1.05）
+	# Default: 0.5
+	# Range: 0.0 ~ 20.0
+	capelinPullSpeed = 0.75
+	#毛鳞鱼（capelin） · 拉力（疲劳期） —— 遛到疲劳后的拉拽速度。默认 = 正常拉力 × gameplay.fatiguePullMultiplier（当前 0.5）—— 改大就等于「疲劳期反而不划算」
+	# Default: 0.25
+	# Range: 0.0 ~ 20.0
+	capelinFatiguedPullSpeed = 0.315
+	#毛鳞鱼（capelin） · 体力上限 —— 鱼有多少体力。越大越耐磨，要遛更久。它是「持久战」强度的总开关。⚠ 这是**基准值**（按鱼种）：实际体力池 = 本值 × 档位倍率（金档 ×1.0、红档 ×1.5）。红档还有一条**基准下限**（gameplay.tierRedStaminaMin，默认 200）：基准低于它的红档鱼先被抬到下限，再乘倍率 —— 否则台钓唯一的红鱼（蓝宝石雷龙鱼 130）比一条普通草鱼还好遛。咬钩时日志里会打一行「体力池：X = 基准 Y × 档位倍率 Z」——对账看那一行，别看这里的基准
+	# Default: 40.0
+	# Range: 1.0 ~ 5000.0
+	capelinStamina = 40
+	#毛鳞鱼（capelin） · 张力涨速 —— 这条鱼让线涨得多快。>1 = 线黄得快（黏液型鱼的味道），<1 = 宽容
+	# Default: 0.9
+	# Range: 0.0 ~ 5.0
+	capelinTensionGain = 0.9
+	#毛鳞鱼（capelin） · 冲刺时长（秒） —— 每次冲刺持续几秒。0 = 这条鱼不冲刺
+	# Default: 0.8
+	# Range: 0.0 ~ 60.0
+	capelinSprintDurationSec = 0.8
+	#毛鳞鱼（capelin） · 冲刺间隔（秒） —— 每隔几秒冲一次。越小越凶（爆发型 2.6，黏液型 8.0 几乎不冲）
+	# Default: 4.5
+	# Range: 0.1 ~ 60.0
+	capelinSprintIntervalSec = 4.5
+	#毛鳞鱼（capelin） · 变向间隔（秒） —— 每隔几秒变一次向。越小越神经质（神经质型 1.3，黏液型 5.5 方向很稳）
+	# Default: 3.5
+	# Range: 0.2 ~ 60.0
+	capelinTurnIntervalSec = 3.5
+	#毛鳞鱼（capelin） · 假动作概率（0~1） —— 假动作概率：预告一个方向、实际往反方向跑。0~1（神经质型 0.35）
+	# Default: 0.0
+	# Range: 0.0 ~ 1.0
+	capelinFakeOutChance = 0
+	#毛鳞鱼（capelin） · 进疲劳的体力比例（0~1） —— 体力降到这个比例以下就进疲劳期（0.3 = 剩 30% 时）
+	# Default: 0.3
+	# Range: 0.01 ~ 1.0
+	capelinFatigueThreshold = 0.3
+	#毛鳞鱼（capelin） · 疲劳持续（秒） —— 疲劳期持续几秒。这段时间是反拉的最佳窗口
+	# Default: 2.0
+	# Range: 0.0 ~ 120.0
+	capelinFatigueDurationSec = 2
+	#毛鳞鱼（capelin） · 不挣扎时回气（/s） —— 不挣扎时每秒回多少体力（会被渔轮阻尼压制）。越大越难遛翻
+	# Default: 0.02
+	# Range: 0.0 ~ 1.0
+	capelinStaminaRegen = 0.02
+	#大西洋鲱（atlantic_herring） · 体重下限（kg） —— 这种鱼最小能有多重。⚠ 它和体重上限一起决定档位怎么分——改小了会让低档鱼变少
+	# Default: 0.1
+	# Range: 0.001 ~ 500.0
+	atlanticHerringMinKg = 0.1
+	#大西洋鲱（atlantic_herring） · 体重上限（kg） —— 这种鱼最大能有多重。线长/承重不够时会钓不上来（见 buildPool 的承重过滤）
+	# Default: 1.0
+	# Range: 0.001 ~ 500.0
+	atlanticHerringMaxKg = 1
+	#大西洋鲱（atlantic_herring） · 拉力（不挣扎） —— 挣扎时把线拽出去的速度。越大越拉不动。这是「上钩两秒就能感觉出多大」的主要来源。⚠ 这是**基准值**：实际游速 = 本值 × 档位曲线 1.12^档 × 金/红手感修正（金 ×0.84、红 ×1.05）
+	# Default: 0.85
+	# Range: 0.0 ~ 20.0
+	atlanticHerringPullSpeed = 1.275
+	#大西洋鲱（atlantic_herring） · 拉力（疲劳期） —— 遛到疲劳后的拉拽速度。默认 = 正常拉力 × gameplay.fatiguePullMultiplier（当前 0.5）—— 改大就等于「疲劳期反而不划算」
+	# Default: 0.425
+	# Range: 0.0 ~ 20.0
+	atlanticHerringFatiguedPullSpeed = 0.5355
+	#大西洋鲱（atlantic_herring） · 体力上限 —— 鱼有多少体力。越大越耐磨，要遛更久。它是「持久战」强度的总开关。⚠ 这是**基准值**（按鱼种）：实际体力池 = 本值 × 档位倍率（金档 ×1.0、红档 ×1.5）。红档还有一条**基准下限**（gameplay.tierRedStaminaMin，默认 200）：基准低于它的红档鱼先被抬到下限，再乘倍率 —— 否则台钓唯一的红鱼（蓝宝石雷龙鱼 130）比一条普通草鱼还好遛。咬钩时日志里会打一行「体力池：X = 基准 Y × 档位倍率 Z」——对账看那一行，别看这里的基准
+	# Default: 110.0
+	# Range: 1.0 ~ 5000.0
+	atlanticHerringStamina = 110
+	#大西洋鲱（atlantic_herring） · 张力涨速 —— 这条鱼让线涨得多快。>1 = 线黄得快（黏液型鱼的味道），<1 = 宽容
+	# Default: 1.0
+	# Range: 0.0 ~ 5.0
+	atlanticHerringTensionGain = 1
+	#大西洋鲱（atlantic_herring） · 冲刺时长（秒） —— 每次冲刺持续几秒。0 = 这条鱼不冲刺
+	# Default: 0.8
+	# Range: 0.0 ~ 60.0
+	atlanticHerringSprintDurationSec = 0.8
+	#大西洋鲱（atlantic_herring） · 冲刺间隔（秒） —— 每隔几秒冲一次。越小越凶（爆发型 2.6，黏液型 8.0 几乎不冲）
+	# Default: 4.5
+	# Range: 0.1 ~ 60.0
+	atlanticHerringSprintIntervalSec = 4.5
+	#大西洋鲱（atlantic_herring） · 变向间隔（秒） —— 每隔几秒变一次向。越小越神经质（神经质型 1.3，黏液型 5.5 方向很稳）
+	# Default: 3.5
+	# Range: 0.2 ~ 60.0
+	atlanticHerringTurnIntervalSec = 3.5
+	#大西洋鲱（atlantic_herring） · 假动作概率（0~1） —— 假动作概率：预告一个方向、实际往反方向跑。0~1（神经质型 0.35）
+	# Default: 0.0
+	# Range: 0.0 ~ 1.0
+	atlanticHerringFakeOutChance = 0
+	#大西洋鲱（atlantic_herring） · 进疲劳的体力比例（0~1） —— 体力降到这个比例以下就进疲劳期（0.3 = 剩 30% 时）
+	# Default: 0.3
+	# Range: 0.01 ~ 1.0
+	atlanticHerringFatigueThreshold = 0.3
+	#大西洋鲱（atlantic_herring） · 疲劳持续（秒） —— 疲劳期持续几秒。这段时间是反拉的最佳窗口
+	# Default: 2.0
+	# Range: 0.0 ~ 120.0
+	atlanticHerringFatigueDurationSec = 2
+	#大西洋鲱（atlantic_herring） · 不挣扎时回气（/s） —— 不挣扎时每秒回多少体力（会被渔轮阻尼压制）。越大越难遛翻
+	# Default: 0.02
+	# Range: 0.0 ~ 1.0
+	atlanticHerringStaminaRegen = 0.02
+	#狼鱼（wolffish） · 体重下限（kg） —— 这种鱼最小能有多重。⚠ 它和体重上限一起决定档位怎么分——改小了会让低档鱼变少
+	# Default: 3.0
+	# Range: 0.001 ~ 500.0
+	wolffishMinKg = 3
+	#狼鱼（wolffish） · 体重上限（kg） —— 这种鱼最大能有多重。线长/承重不够时会钓不上来（见 buildPool 的承重过滤）
+	# Default: 20.0
+	# Range: 0.001 ~ 500.0
+	wolffishMaxKg = 20
+	#狼鱼（wolffish） · 拉力（不挣扎） —— 挣扎时把线拽出去的速度。越大越拉不动。这是「上钩两秒就能感觉出多大」的主要来源。⚠ 这是**基准值**：实际游速 = 本值 × 档位曲线 1.12^档 × 金/红手感修正（金 ×0.84、红 ×1.05）
+	# Default: 1.55
+	# Range: 0.0 ~ 20.0
+	wolffishPullSpeed = 2.325
+	#狼鱼（wolffish） · 拉力（疲劳期） —— 遛到疲劳后的拉拽速度。默认 = 正常拉力 × gameplay.fatiguePullMultiplier（当前 0.5）—— 改大就等于「疲劳期反而不划算」
+	# Default: 0.775
+	# Range: 0.0 ~ 20.0
+	wolffishFatiguedPullSpeed = 0.9765
+	#狼鱼（wolffish） · 体力上限 —— 鱼有多少体力。越大越耐磨，要遛更久。它是「持久战」强度的总开关。⚠ 这是**基准值**（按鱼种）：实际体力池 = 本值 × 档位倍率（金档 ×1.0、红档 ×1.5）。红档还有一条**基准下限**（gameplay.tierRedStaminaMin，默认 200）：基准低于它的红档鱼先被抬到下限，再乘倍率 —— 否则台钓唯一的红鱼（蓝宝石雷龙鱼 130）比一条普通草鱼还好遛。咬钩时日志里会打一行「体力池：X = 基准 Y × 档位倍率 Z」——对账看那一行，别看这里的基准
+	# Default: 300.0
+	# Range: 1.0 ~ 5000.0
+	wolffishStamina = 300
+	#狼鱼（wolffish） · 张力涨速 —— 这条鱼让线涨得多快。>1 = 线黄得快（黏液型鱼的味道），<1 = 宽容
+	# Default: 1.5
+	# Range: 0.0 ~ 5.0
+	wolffishTensionGain = 1.5
+	#狼鱼（wolffish） · 冲刺时长（秒） —— 每次冲刺持续几秒。0 = 这条鱼不冲刺
+	# Default: 0.4
+	# Range: 0.0 ~ 60.0
+	wolffishSprintDurationSec = 0.4
+	#狼鱼（wolffish） · 冲刺间隔（秒） —— 每隔几秒冲一次。越小越凶（爆发型 2.6，黏液型 8.0 几乎不冲）
+	# Default: 8.0
+	# Range: 0.1 ~ 60.0
+	wolffishSprintIntervalSec = 8
+	#狼鱼（wolffish） · 变向间隔（秒） —— 每隔几秒变一次向。越小越神经质（神经质型 1.3，黏液型 5.5 方向很稳）
+	# Default: 5.5
+	# Range: 0.2 ~ 60.0
+	wolffishTurnIntervalSec = 5.5
+	#狼鱼（wolffish） · 假动作概率（0~1） —— 假动作概率：预告一个方向、实际往反方向跑。0~1（神经质型 0.35）
+	# Default: 0.0
+	# Range: 0.0 ~ 1.0
+	wolffishFakeOutChance = 0
+	#狼鱼（wolffish） · 进疲劳的体力比例（0~1） —— 体力降到这个比例以下就进疲劳期（0.3 = 剩 30% 时）
+	# Default: 0.28
+	# Range: 0.01 ~ 1.0
+	wolffishFatigueThreshold = 0.28
+	#狼鱼（wolffish） · 疲劳持续（秒） —— 疲劳期持续几秒。这段时间是反拉的最佳窗口
+	# Default: 2.6
+	# Range: 0.0 ~ 120.0
+	wolffishFatigueDurationSec = 2.6
+	#狼鱼（wolffish） · 不挣扎时回气（/s） —— 不挣扎时每秒回多少体力（会被渔轮阻尼压制）。越大越难遛翻
+	# Default: 0.015
+	# Range: 0.0 ~ 1.0
+	wolffishStaminaRegen = 0.015
+	#平鲉（redfish） · 体重下限（kg） —— 这种鱼最小能有多重。⚠ 它和体重上限一起决定档位怎么分——改小了会让低档鱼变少
+	# Default: 1.0
+	# Range: 0.001 ~ 500.0
+	redfishMinKg = 1
+	#平鲉（redfish） · 体重上限（kg） —— 这种鱼最大能有多重。线长/承重不够时会钓不上来（见 buildPool 的承重过滤）
+	# Default: 15.0
+	# Range: 0.001 ~ 500.0
+	redfishMaxKg = 15
+	#平鲉（redfish） · 拉力（不挣扎） —— 挣扎时把线拽出去的速度。越大越拉不动。这是「上钩两秒就能感觉出多大」的主要来源。⚠ 这是**基准值**：实际游速 = 本值 × 档位曲线 1.12^档 × 金/红手感修正（金 ×0.84、红 ×1.05）
+	# Default: 2.65
+	# Range: 0.0 ~ 20.0
+	redfishPullSpeed = 4.2
+	#平鲉（redfish） · 拉力（疲劳期） —— 遛到疲劳后的拉拽速度。默认 = 正常拉力 × gameplay.fatiguePullMultiplier（当前 0.5）—— 改大就等于「疲劳期反而不划算」
+	# Default: 1.325
+	# Range: 0.0 ~ 20.0
+	redfishFatiguedPullSpeed = 1.764
+	#平鲉（redfish） · 体力上限 —— 鱼有多少体力。越大越耐磨，要遛更久。它是「持久战」强度的总开关。⚠ 这是**基准值**（按鱼种）：实际体力池 = 本值 × 档位倍率（金档 ×1.0、红档 ×1.5）。红档还有一条**基准下限**（gameplay.tierRedStaminaMin，默认 200）：基准低于它的红档鱼先被抬到下限，再乘倍率 —— 否则台钓唯一的红鱼（蓝宝石雷龙鱼 130）比一条普通草鱼还好遛。咬钩时日志里会打一行「体力池：X = 基准 Y × 档位倍率 Z」——对账看那一行，别看这里的基准
+	# Default: 380.0
+	# Range: 1.0 ~ 5000.0
+	redfishStamina = 380
+	#平鲉（redfish） · 张力涨速 —— 这条鱼让线涨得多快。>1 = 线黄得快（黏液型鱼的味道），<1 = 宽容
+	# Default: 2.3
+	# Range: 0.0 ~ 5.0
+	redfishTensionGain = 2.3
+	#平鲉（redfish） · 冲刺时长（秒） —— 每次冲刺持续几秒。0 = 这条鱼不冲刺
+	# Default: 0.4
+	# Range: 0.0 ~ 60.0
+	redfishSprintDurationSec = 0.4
+	#平鲉（redfish） · 冲刺间隔（秒） —— 每隔几秒冲一次。越小越凶（爆发型 2.6，黏液型 8.0 几乎不冲）
+	# Default: 8.0
+	# Range: 0.1 ~ 60.0
+	redfishSprintIntervalSec = 8
+	#平鲉（redfish） · 变向间隔（秒） —— 每隔几秒变一次向。越小越神经质（神经质型 1.3，黏液型 5.5 方向很稳）
+	# Default: 5.5
+	# Range: 0.2 ~ 60.0
+	redfishTurnIntervalSec = 5.5
+	#平鲉（redfish） · 假动作概率（0~1） —— 假动作概率：预告一个方向、实际往反方向跑。0~1（神经质型 0.35）
+	# Default: 0.0
+	# Range: 0.0 ~ 1.0
+	redfishFakeOutChance = 0
+	#平鲉（redfish） · 进疲劳的体力比例（0~1） —— 体力降到这个比例以下就进疲劳期（0.3 = 剩 30% 时）
+	# Default: 0.28
+	# Range: 0.01 ~ 1.0
+	redfishFatigueThreshold = 0.28
+	#平鲉（redfish） · 疲劳持续（秒） —— 疲劳期持续几秒。这段时间是反拉的最佳窗口
+	# Default: 2.6
+	# Range: 0.0 ~ 120.0
+	redfishFatigueDurationSec = 2.6
+	#平鲉（redfish） · 不挣扎时回气（/s） —— 不挣扎时每秒回多少体力（会被渔轮阻尼压制）。越大越难遛翻
+	# Default: 0.015
+	# Range: 0.0 ~ 1.0
+	redfishStaminaRegen = 0.015
+	#裸盖鱼（sablefish） · 体重下限（kg） —— 这种鱼最小能有多重。⚠ 它和体重上限一起决定档位怎么分——改小了会让低档鱼变少
+	# Default: 5.0
+	# Range: 0.001 ~ 500.0
+	sablefishMinKg = 5
+	#裸盖鱼（sablefish） · 体重上限（kg） —— 这种鱼最大能有多重。线长/承重不够时会钓不上来（见 buildPool 的承重过滤）
+	# Default: 40.0
+	# Range: 0.001 ~ 500.0
+	sablefishMaxKg = 40
+	#裸盖鱼（sablefish） · 拉力（不挣扎） —— 挣扎时把线拽出去的速度。越大越拉不动。这是「上钩两秒就能感觉出多大」的主要来源。⚠ 这是**基准值**：实际游速 = 本值 × 档位曲线 1.12^档 × 金/红手感修正（金 ×0.84、红 ×1.05）
+	# Default: 1.6
+	# Range: 0.0 ~ 20.0
+	sablefishPullSpeed = 2.4
+	#裸盖鱼（sablefish） · 拉力（疲劳期） —— 遛到疲劳后的拉拽速度。默认 = 正常拉力 × gameplay.fatiguePullMultiplier（当前 0.5）—— 改大就等于「疲劳期反而不划算」
+	# Default: 0.8
+	# Range: 0.0 ~ 20.0
+	sablefishFatiguedPullSpeed = 1.008
+	#裸盖鱼（sablefish） · 体力上限 —— 鱼有多少体力。越大越耐磨，要遛更久。它是「持久战」强度的总开关。⚠ 这是**基准值**（按鱼种）：实际体力池 = 本值 × 档位倍率（金档 ×1.0、红档 ×1.5）。红档还有一条**基准下限**（gameplay.tierRedStaminaMin，默认 200）：基准低于它的红档鱼先被抬到下限，再乘倍率 —— 否则台钓唯一的红鱼（蓝宝石雷龙鱼 130）比一条普通草鱼还好遛。咬钩时日志里会打一行「体力池：X = 基准 Y × 档位倍率 Z」——对账看那一行，别看这里的基准
+	# Default: 380.0
+	# Range: 1.0 ~ 5000.0
+	sablefishStamina = 380
+	#裸盖鱼（sablefish） · 张力涨速 —— 这条鱼让线涨得多快。>1 = 线黄得快（黏液型鱼的味道），<1 = 宽容
+	# Default: 1.25
+	# Range: 0.0 ~ 5.0
+	sablefishTensionGain = 1.25
+	#裸盖鱼（sablefish） · 冲刺时长（秒） —— 每次冲刺持续几秒。0 = 这条鱼不冲刺
+	# Default: 0.4
+	# Range: 0.0 ~ 60.0
+	sablefishSprintDurationSec = 0.4
+	#裸盖鱼（sablefish） · 冲刺间隔（秒） —— 每隔几秒冲一次。越小越凶（爆发型 2.6，黏液型 8.0 几乎不冲）
+	# Default: 8.0
+	# Range: 0.1 ~ 60.0
+	sablefishSprintIntervalSec = 8
+	#裸盖鱼（sablefish） · 变向间隔（秒） —— 每隔几秒变一次向。越小越神经质（神经质型 1.3，黏液型 5.5 方向很稳）
+	# Default: 5.5
+	# Range: 0.2 ~ 60.0
+	sablefishTurnIntervalSec = 5.5
+	#裸盖鱼（sablefish） · 假动作概率（0~1） —— 假动作概率：预告一个方向、实际往反方向跑。0~1（神经质型 0.35）
+	# Default: 0.0
+	# Range: 0.0 ~ 1.0
+	sablefishFakeOutChance = 0
+	#裸盖鱼（sablefish） · 进疲劳的体力比例（0~1） —— 体力降到这个比例以下就进疲劳期（0.3 = 剩 30% 时）
+	# Default: 0.28
+	# Range: 0.01 ~ 1.0
+	sablefishFatigueThreshold = 0.28
+	#裸盖鱼（sablefish） · 疲劳持续（秒） —— 疲劳期持续几秒。这段时间是反拉的最佳窗口
+	# Default: 2.6
+	# Range: 0.0 ~ 120.0
+	sablefishFatigueDurationSec = 2.6
+	#裸盖鱼（sablefish） · 不挣扎时回气（/s） —— 不挣扎时每秒回多少体力（会被渔轮阻尼压制）。越大越难遛翻
+	# Default: 0.015
+	# Range: 0.0 ~ 1.0
+	sablefishStaminaRegen = 0.015
+	#大西洋鳕（atlantic_cod） · 体重下限（kg） —— 这种鱼最小能有多重。⚠ 它和体重上限一起决定档位怎么分——改小了会让低档鱼变少
+	# Default: 2.0
+	# Range: 0.001 ~ 500.0
+	atlanticCodMinKg = 2
+	#大西洋鳕（atlantic_cod） · 体重上限（kg） —— 这种鱼最大能有多重。线长/承重不够时会钓不上来（见 buildPool 的承重过滤）
+	# Default: 40.0
+	# Range: 0.001 ~ 500.0
+	atlanticCodMaxKg = 40
+	#大西洋鳕（atlantic_cod） · 拉力（不挣扎） —— 挣扎时把线拽出去的速度。越大越拉不动。这是「上钩两秒就能感觉出多大」的主要来源。⚠ 这是**基准值**：实际游速 = 本值 × 档位曲线 1.12^档 × 金/红手感修正（金 ×0.84、红 ×1.05）
+	# Default: 1.7
+	# Range: 0.0 ~ 20.0
+	atlanticCodPullSpeed = 2.55
+	#大西洋鳕（atlantic_cod） · 拉力（疲劳期） —— 遛到疲劳后的拉拽速度。默认 = 正常拉力 × gameplay.fatiguePullMultiplier（当前 0.5）—— 改大就等于「疲劳期反而不划算」
+	# Default: 0.85
+	# Range: 0.0 ~ 20.0
+	atlanticCodFatiguedPullSpeed = 1.071
+	#大西洋鳕（atlantic_cod） · 体力上限 —— 鱼有多少体力。越大越耐磨，要遛更久。它是「持久战」强度的总开关。⚠ 这是**基准值**（按鱼种）：实际体力池 = 本值 × 档位倍率（金档 ×1.0、红档 ×1.5）。红档还有一条**基准下限**（gameplay.tierRedStaminaMin，默认 200）：基准低于它的红档鱼先被抬到下限，再乘倍率 —— 否则台钓唯一的红鱼（蓝宝石雷龙鱼 130）比一条普通草鱼还好遛。咬钩时日志里会打一行「体力池：X = 基准 Y × 档位倍率 Z」——对账看那一行，别看这里的基准
+	# Default: 320.0
+	# Range: 1.0 ~ 5000.0
+	atlanticCodStamina = 320
+	#大西洋鳕（atlantic_cod） · 张力涨速 —— 这条鱼让线涨得多快。>1 = 线黄得快（黏液型鱼的味道），<1 = 宽容
+	# Default: 1.15
+	# Range: 0.0 ~ 5.0
+	atlanticCodTensionGain = 1.15
+	#大西洋鳕（atlantic_cod） · 冲刺时长（秒） —— 每次冲刺持续几秒。0 = 这条鱼不冲刺
+	# Default: 0.8
+	# Range: 0.0 ~ 60.0
+	atlanticCodSprintDurationSec = 0.8
+	#大西洋鳕（atlantic_cod） · 冲刺间隔（秒） —— 每隔几秒冲一次。越小越凶（爆发型 2.6，黏液型 8.0 几乎不冲）
+	# Default: 4.5
+	# Range: 0.1 ~ 60.0
+	atlanticCodSprintIntervalSec = 4.5
+	#大西洋鳕（atlantic_cod） · 变向间隔（秒） —— 每隔几秒变一次向。越小越神经质（神经质型 1.3，黏液型 5.5 方向很稳）
+	# Default: 3.5
+	# Range: 0.2 ~ 60.0
+	atlanticCodTurnIntervalSec = 3.5
+	#大西洋鳕（atlantic_cod） · 假动作概率（0~1） —— 假动作概率：预告一个方向、实际往反方向跑。0~1（神经质型 0.35）
+	# Default: 0.0
+	# Range: 0.0 ~ 1.0
+	atlanticCodFakeOutChance = 0
+	#大西洋鳕（atlantic_cod） · 进疲劳的体力比例（0~1） —— 体力降到这个比例以下就进疲劳期（0.3 = 剩 30% 时）
+	# Default: 0.3
+	# Range: 0.01 ~ 1.0
+	atlanticCodFatigueThreshold = 0.3
+	#大西洋鳕（atlantic_cod） · 疲劳持续（秒） —— 疲劳期持续几秒。这段时间是反拉的最佳窗口
+	# Default: 2.0
+	# Range: 0.0 ~ 120.0
+	atlanticCodFatigueDurationSec = 2
+	#大西洋鳕（atlantic_cod） · 不挣扎时回气（/s） —— 不挣扎时每秒回多少体力（会被渔轮阻尼压制）。越大越难遛翻
+	# Default: 0.02
+	# Range: 0.0 ~ 1.0
+	atlanticCodStaminaRegen = 0.02
+	#格陵兰大比目鱼（greenland_halibut） · 体重下限（kg） —— 这种鱼最小能有多重。⚠ 它和体重上限一起决定档位怎么分——改小了会让低档鱼变少
+	# Default: 20.0
+	# Range: 0.001 ~ 500.0
+	greenlandHalibutMinKg = 20
+	#格陵兰大比目鱼（greenland_halibut） · 体重上限（kg） —— 这种鱼最大能有多重。线长/承重不够时会钓不上来（见 buildPool 的承重过滤）
+	# Default: 200.0
+	# Range: 0.001 ~ 500.0
+	greenlandHalibutMaxKg = 200
+	#格陵兰大比目鱼（greenland_halibut） · 拉力（不挣扎） —— 挣扎时把线拽出去的速度。越大越拉不动。这是「上钩两秒就能感觉出多大」的主要来源。⚠ 这是**基准值**：实际游速 = 本值 × 档位曲线 1.12^档 × 金/红手感修正（金 ×0.84、红 ×1.05）
+	# Default: 1.9
+	# Range: 0.0 ~ 20.0
+	greenlandHalibutPullSpeed = 2.85
+	#格陵兰大比目鱼（greenland_halibut） · 拉力（疲劳期） —— 遛到疲劳后的拉拽速度。默认 = 正常拉力 × gameplay.fatiguePullMultiplier（当前 0.5）—— 改大就等于「疲劳期反而不划算」
+	# Default: 0.95
+	# Range: 0.0 ~ 20.0
+	greenlandHalibutFatiguedPullSpeed = 1.197
+	#格陵兰大比目鱼（greenland_halibut） · 体力上限 —— 鱼有多少体力。越大越耐磨，要遛更久。它是「持久战」强度的总开关。⚠ 这是**基准值**（按鱼种）：实际体力池 = 本值 × 档位倍率（金档 ×1.0、红档 ×1.5）。红档还有一条**基准下限**（gameplay.tierRedStaminaMin，默认 200）：基准低于它的红档鱼先被抬到下限，再乘倍率 —— 否则台钓唯一的红鱼（蓝宝石雷龙鱼 130）比一条普通草鱼还好遛。咬钩时日志里会打一行「体力池：X = 基准 Y × 档位倍率 Z」——对账看那一行，别看这里的基准
+	# Default: 600.0
+	# Range: 1.0 ~ 5000.0
+	greenlandHalibutStamina = 600
+	#格陵兰大比目鱼（greenland_halibut） · 张力涨速 —— 这条鱼让线涨得多快。>1 = 线黄得快（黏液型鱼的味道），<1 = 宽容
+	# Default: 1.45
+	# Range: 0.0 ~ 5.0
+	greenlandHalibutTensionGain = 1.45
+	#格陵兰大比目鱼（greenland_halibut） · 冲刺时长（秒） —— 每次冲刺持续几秒。0 = 这条鱼不冲刺
+	# Default: 0.4
+	# Range: 0.0 ~ 60.0
+	greenlandHalibutSprintDurationSec = 0.4
+	#格陵兰大比目鱼（greenland_halibut） · 冲刺间隔（秒） —— 每隔几秒冲一次。越小越凶（爆发型 2.6，黏液型 8.0 几乎不冲）
+	# Default: 8.0
+	# Range: 0.1 ~ 60.0
+	greenlandHalibutSprintIntervalSec = 8
+	#格陵兰大比目鱼（greenland_halibut） · 变向间隔（秒） —— 每隔几秒变一次向。越小越神经质（神经质型 1.3，黏液型 5.5 方向很稳）
+	# Default: 5.5
+	# Range: 0.2 ~ 60.0
+	greenlandHalibutTurnIntervalSec = 5.5
+	#格陵兰大比目鱼（greenland_halibut） · 假动作概率（0~1） —— 假动作概率：预告一个方向、实际往反方向跑。0~1（神经质型 0.35）
+	# Default: 0.0
+	# Range: 0.0 ~ 1.0
+	greenlandHalibutFakeOutChance = 0
+	#格陵兰大比目鱼（greenland_halibut） · 进疲劳的体力比例（0~1） —— 体力降到这个比例以下就进疲劳期（0.3 = 剩 30% 时）
+	# Default: 0.28
+	# Range: 0.01 ~ 1.0
+	greenlandHalibutFatigueThreshold = 0.28
+	#格陵兰大比目鱼（greenland_halibut） · 疲劳持续（秒） —— 疲劳期持续几秒。这段时间是反拉的最佳窗口
+	# Default: 2.6
+	# Range: 0.0 ~ 120.0
+	greenlandHalibutFatigueDurationSec = 2.6
+	#格陵兰大比目鱼（greenland_halibut） · 不挣扎时回气（/s） —— 不挣扎时每秒回多少体力（会被渔轮阻尼压制）。越大越难遛翻
+	# Default: 0.015
+	# Range: 0.0 ~ 1.0
+	greenlandHalibutStaminaRegen = 0.015
+	#格陵兰鲨（greenland_shark） · 体重下限（kg） —— 这种鱼最小能有多重。⚠ 它和体重上限一起决定档位怎么分——改小了会让低档鱼变少
+	# Default: 80.0
+	# Range: 0.001 ~ 500.0
+	greenlandSharkMinKg = 80
+	#格陵兰鲨（greenland_shark） · 体重上限（kg） —— 这种鱼最大能有多重。线长/承重不够时会钓不上来（见 buildPool 的承重过滤）
+	# Default: 500.0
+	# Range: 0.001 ~ 500.0
+	greenlandSharkMaxKg = 500
+	#格陵兰鲨（greenland_shark） · 拉力（不挣扎） —— 挣扎时把线拽出去的速度。越大越拉不动。这是「上钩两秒就能感觉出多大」的主要来源。⚠ 这是**基准值**：实际游速 = 本值 × 档位曲线 1.12^档 × 金/红手感修正（金 ×0.84、红 ×1.05）
+	# Default: 2.9
+	# Range: 0.0 ~ 20.0
+	greenlandSharkPullSpeed = 4.8
+	#格陵兰鲨（greenland_shark） · 拉力（疲劳期） —— 遛到疲劳后的拉拽速度。默认 = 正常拉力 × gameplay.fatiguePullMultiplier（当前 0.5）—— 改大就等于「疲劳期反而不划算」
+	# Default: 1.45
+	# Range: 0.0 ~ 20.0
+	greenlandSharkFatiguedPullSpeed = 2.016
+	#格陵兰鲨（greenland_shark） · 体力上限 —— 鱼有多少体力。越大越耐磨，要遛更久。它是「持久战」强度的总开关。⚠ 这是**基准值**（按鱼种）：实际体力池 = 本值 × 档位倍率（金档 ×1.0、红档 ×1.5）。红档还有一条**基准下限**（gameplay.tierRedStaminaMin，默认 200）：基准低于它的红档鱼先被抬到下限，再乘倍率 —— 否则台钓唯一的红鱼（蓝宝石雷龙鱼 130）比一条普通草鱼还好遛。咬钩时日志里会打一行「体力池：X = 基准 Y × 档位倍率 Z」——对账看那一行，别看这里的基准
+	# Default: 900.0
+	# Range: 1.0 ~ 5000.0
+	greenlandSharkStamina = 400
+	#格陵兰鲨（greenland_shark） · 张力涨速 —— 这条鱼让线涨得多快。>1 = 线黄得快（黏液型鱼的味道），<1 = 宽容
+	# Default: 1.75
+	# Range: 0.0 ~ 5.0
+	greenlandSharkTensionGain = 1.75
+	#格陵兰鲨（greenland_shark） · 冲刺时长（秒） —— 每次冲刺持续几秒。0 = 这条鱼不冲刺
+	# Default: 0.4
+	# Range: 0.0 ~ 60.0
+	greenlandSharkSprintDurationSec = 0.4
+	#格陵兰鲨（greenland_shark） · 冲刺间隔（秒） —— 每隔几秒冲一次。越小越凶（爆发型 2.6，黏液型 8.0 几乎不冲）
+	# Default: 8.0
+	# Range: 0.1 ~ 60.0
+	greenlandSharkSprintIntervalSec = 8
+	#格陵兰鲨（greenland_shark） · 变向间隔（秒） —— 每隔几秒变一次向。越小越神经质（神经质型 1.3，黏液型 5.5 方向很稳）
+	# Default: 5.5
+	# Range: 0.2 ~ 60.0
+	greenlandSharkTurnIntervalSec = 5.5
+	#格陵兰鲨（greenland_shark） · 假动作概率（0~1） —— 假动作概率：预告一个方向、实际往反方向跑。0~1（神经质型 0.35）
+	# Default: 0.0
+	# Range: 0.0 ~ 1.0
+	greenlandSharkFakeOutChance = 0
+	#格陵兰鲨（greenland_shark） · 进疲劳的体力比例（0~1） —— 体力降到这个比例以下就进疲劳期（0.3 = 剩 30% 时）
+	# Default: 0.28
+	# Range: 0.01 ~ 1.0
+	greenlandSharkFatigueThreshold = 0.28
+	#格陵兰鲨（greenland_shark） · 疲劳持续（秒） —— 疲劳期持续几秒。这段时间是反拉的最佳窗口
+	# Default: 2.6
+	# Range: 0.0 ~ 120.0
+	greenlandSharkFatigueDurationSec = 2.6
+	#格陵兰鲨（greenland_shark） · 不挣扎时回气（/s） —— 不挣扎时每秒回多少体力（会被渔轮阻尼压制）。越大越难遛翻
+	# Default: 0.015
+	# Range: 0.0 ~ 1.0
+	greenlandSharkStaminaRegen = 0.015
+	#雨伞旗鱼（sailfish） · 体重下限（kg） —— 这种鱼最小能有多重。⚠ 它和体重上限一起决定档位怎么分——改小了会让低档鱼变少
+	# Default: 20.0
+	# Range: 0.001 ~ 500.0
+	sailfishMinKg = 20
+	#雨伞旗鱼（sailfish） · 体重上限（kg） —— 这种鱼最大能有多重。线长/承重不够时会钓不上来（见 buildPool 的承重过滤）
+	# Default: 90.0
+	# Range: 0.001 ~ 500.0
+	sailfishMaxKg = 90
+	#雨伞旗鱼（sailfish） · 拉力（不挣扎） —— 挣扎时把线拽出去的速度。越大越拉不动。这是「上钩两秒就能感觉出多大」的主要来源。⚠ 这是**基准值**：实际游速 = 本值 × 档位曲线 1.12^档 × 金/红手感修正（金 ×0.84、红 ×1.05）
+	# Default: 3.5
+	# Range: 0.0 ~ 20.0
+	sailfishPullSpeed = 6.3
+	#雨伞旗鱼（sailfish） · 拉力（疲劳期） —— 遛到疲劳后的拉拽速度。默认 = 正常拉力 × gameplay.fatiguePullMultiplier（当前 0.5）—— 改大就等于「疲劳期反而不划算」
+	# Default: 1.75
+	# Range: 0.0 ~ 20.0
+	sailfishFatiguedPullSpeed = 2.646
+	#雨伞旗鱼（sailfish） · 体力上限 —— 鱼有多少体力。越大越耐磨，要遛更久。它是「持久战」强度的总开关。⚠ 这是**基准值**（按鱼种）：实际体力池 = 本值 × 档位倍率（金档 ×1.0、红档 ×1.5）。红档还有一条**基准下限**（gameplay.tierRedStaminaMin，默认 200）：基准低于它的红档鱼先被抬到下限，再乘倍率 —— 否则台钓唯一的红鱼（蓝宝石雷龙鱼 130）比一条普通草鱼还好遛。咬钩时日志里会打一行「体力池：X = 基准 Y × 档位倍率 Z」——对账看那一行，别看这里的基准
+	# Default: 300.0
+	# Range: 1.0 ~ 5000.0
+	sailfishStamina = 380
+	#雨伞旗鱼（sailfish） · 张力涨速 —— 这条鱼让线涨得多快。>1 = 线黄得快（黏液型鱼的味道），<1 = 宽容
+	# Default: 1.2
+	# Range: 0.0 ~ 5.0
+	sailfishTensionGain = 1.25
+	#雨伞旗鱼（sailfish） · 冲刺时长（秒） —— 每次冲刺持续几秒。0 = 这条鱼不冲刺
+	# Default: 1.6
+	# Range: 0.0 ~ 60.0
+	sailfishSprintDurationSec = 1.6
+	#雨伞旗鱼（sailfish） · 冲刺间隔（秒） —— 每隔几秒冲一次。越小越凶（爆发型 2.6，黏液型 8.0 几乎不冲）
+	# Default: 2.6
+	# Range: 0.1 ~ 60.0
+	sailfishSprintIntervalSec = 2.6
+	#雨伞旗鱼（sailfish） · 变向间隔（秒） —— 每隔几秒变一次向。越小越神经质（神经质型 1.3，黏液型 5.5 方向很稳）
+	# Default: 3.0
+	# Range: 0.2 ~ 60.0
+	sailfishTurnIntervalSec = 3
+	#雨伞旗鱼（sailfish） · 假动作概率（0~1） —— 假动作概率：预告一个方向、实际往反方向跑。0~1（神经质型 0.35）
+	# Default: 0.1
+	# Range: 0.0 ~ 1.0
+	sailfishFakeOutChance = 0.1
+	#雨伞旗鱼（sailfish） · 进疲劳的体力比例（0~1） —— 体力降到这个比例以下就进疲劳期（0.3 = 剩 30% 时）
+	# Default: 0.34
+	# Range: 0.01 ~ 1.0
+	sailfishFatigueThreshold = 0.34
+	#雨伞旗鱼（sailfish） · 疲劳持续（秒） —— 疲劳期持续几秒。这段时间是反拉的最佳窗口
+	# Default: 2.4
+	# Range: 0.0 ~ 120.0
+	sailfishFatigueDurationSec = 2.4
+	#雨伞旗鱼（sailfish） · 不挣扎时回气（/s） —— 不挣扎时每秒回多少体力（会被渔轮阻尼压制）。越大越难遛翻
+	# Default: 0.02
+	# Range: 0.0 ~ 1.0
+	sailfishStaminaRegen = 0.02
+	#鲯鳅（mahi_mahi） · 体重下限（kg） —— 这种鱼最小能有多重。⚠ 它和体重上限一起决定档位怎么分——改小了会让低档鱼变少
+	# Default: 1.0
+	# Range: 0.001 ~ 500.0
+	mahiMahiMinKg = 1
+	#鲯鳅（mahi_mahi） · 体重上限（kg） —— 这种鱼最大能有多重。线长/承重不够时会钓不上来（见 buildPool 的承重过滤）
+	# Default: 20.0
+	# Range: 0.001 ~ 500.0
+	mahiMahiMaxKg = 20
+	#鲯鳅（mahi_mahi） · 拉力（不挣扎） —— 挣扎时把线拽出去的速度。越大越拉不动。这是「上钩两秒就能感觉出多大」的主要来源。⚠ 这是**基准值**：实际游速 = 本值 × 档位曲线 1.12^档 × 金/红手感修正（金 ×0.84、红 ×1.05）
+	# Default: 3.0
+	# Range: 0.0 ~ 20.0
+	mahiMahiPullSpeed = 5
+	#鲯鳅（mahi_mahi） · 拉力（疲劳期） —— 遛到疲劳后的拉拽速度。默认 = 正常拉力 × gameplay.fatiguePullMultiplier（当前 0.5）—— 改大就等于「疲劳期反而不划算」
+	# Default: 1.5
+	# Range: 0.0 ~ 20.0
+	mahiMahiFatiguedPullSpeed = 1.8900000000000001
+	#鲯鳅（mahi_mahi） · 体力上限 —— 鱼有多少体力。越大越耐磨，要遛更久。它是「持久战」强度的总开关。⚠ 这是**基准值**（按鱼种）：实际体力池 = 本值 × 档位倍率（金档 ×1.0、红档 ×1.5）。红档还有一条**基准下限**（gameplay.tierRedStaminaMin，默认 200）：基准低于它的红档鱼先被抬到下限，再乘倍率 —— 否则台钓唯一的红鱼（蓝宝石雷龙鱼 130）比一条普通草鱼还好遛。咬钩时日志里会打一行「体力池：X = 基准 Y × 档位倍率 Z」——对账看那一行，别看这里的基准
+	# Default: 240.0
+	# Range: 1.0 ~ 5000.0
+	mahiMahiStamina = 240
+	#鲯鳅（mahi_mahi） · 张力涨速 —— 这条鱼让线涨得多快。>1 = 线黄得快（黏液型鱼的味道），<1 = 宽容
+	# Default: 1.55
+	# Range: 0.0 ~ 5.0
+	mahiMahiTensionGain = 1.55
+	#鲯鳅（mahi_mahi） · 冲刺时长（秒） —— 每次冲刺持续几秒。0 = 这条鱼不冲刺
+	# Default: 1.6
+	# Range: 0.0 ~ 60.0
+	mahiMahiSprintDurationSec = 1.6
+	#鲯鳅（mahi_mahi） · 冲刺间隔（秒） —— 每隔几秒冲一次。越小越凶（爆发型 2.6，黏液型 8.0 几乎不冲）
+	# Default: 2.6
+	# Range: 0.1 ~ 60.0
+	mahiMahiSprintIntervalSec = 2.6
+	#鲯鳅（mahi_mahi） · 变向间隔（秒） —— 每隔几秒变一次向。越小越神经质（神经质型 1.3，黏液型 5.5 方向很稳）
+	# Default: 3.0
+	# Range: 0.2 ~ 60.0
+	mahiMahiTurnIntervalSec = 3
+	#鲯鳅（mahi_mahi） · 假动作概率（0~1） —— 假动作概率：预告一个方向、实际往反方向跑。0~1（神经质型 0.35）
+	# Default: 0.1
+	# Range: 0.0 ~ 1.0
+	mahiMahiFakeOutChance = 0.1
+	#鲯鳅（mahi_mahi） · 进疲劳的体力比例（0~1） —— 体力降到这个比例以下就进疲劳期（0.3 = 剩 30% 时）
+	# Default: 0.34
+	# Range: 0.01 ~ 1.0
+	mahiMahiFatigueThreshold = 0.34
+	#鲯鳅（mahi_mahi） · 疲劳持续（秒） —— 疲劳期持续几秒。这段时间是反拉的最佳窗口
+	# Default: 2.4
+	# Range: 0.0 ~ 120.0
+	mahiMahiFatigueDurationSec = 2.4
+	#鲯鳅（mahi_mahi） · 不挣扎时回气（/s） —— 不挣扎时每秒回多少体力（会被渔轮阻尼压制）。越大越难遛翻
+	# Default: 0.02
+	# Range: 0.0 ~ 1.0
+	mahiMahiStaminaRegen = 0.02
+	#鳄雀鳝（alligator_gar） · 体重下限（kg） —— 这种鱼最小能有多重。⚠ 它和体重上限一起决定档位怎么分——改小了会让低档鱼变少
+	# Default: 20.0
+	# Range: 0.001 ~ 500.0
+	alligatorGarMinKg = 20
+	#鳄雀鳝（alligator_gar） · 体重上限（kg） —— 这种鱼最大能有多重。线长/承重不够时会钓不上来（见 buildPool 的承重过滤）
+	# Default: 80.0
+	# Range: 0.001 ~ 500.0
+	alligatorGarMaxKg = 80
+	#鳄雀鳝（alligator_gar） · 拉力（不挣扎） —— 挣扎时把线拽出去的速度。越大越拉不动。这是「上钩两秒就能感觉出多大」的主要来源。⚠ 这是**基准值**：实际游速 = 本值 × 档位曲线 1.12^档 × 金/红手感修正（金 ×0.84、红 ×1.05）
+	# Default: 2.95
+	# Range: 0.0 ~ 20.0
+	alligatorGarPullSpeed = 4.425
+	#鳄雀鳝（alligator_gar） · 拉力（疲劳期） —— 遛到疲劳后的拉拽速度。默认 = 正常拉力 × gameplay.fatiguePullMultiplier（当前 0.5）—— 改大就等于「疲劳期反而不划算」
+	# Default: 1.475
+	# Range: 0.0 ~ 20.0
+	alligatorGarFatiguedPullSpeed = 1.8584999999999998
+	#鳄雀鳝（alligator_gar） · 体力上限 —— 鱼有多少体力。越大越耐磨，要遛更久。它是「持久战」强度的总开关。⚠ 这是**基准值**（按鱼种）：实际体力池 = 本值 × 档位倍率（金档 ×1.0、红档 ×1.5）。红档还有一条**基准下限**（gameplay.tierRedStaminaMin，默认 200）：基准低于它的红档鱼先被抬到下限，再乘倍率 —— 否则台钓唯一的红鱼（蓝宝石雷龙鱼 130）比一条普通草鱼还好遛。咬钩时日志里会打一行「体力池：X = 基准 Y × 档位倍率 Z」——对账看那一行，别看这里的基准
+	# Default: 480.0
+	# Range: 1.0 ~ 5000.0
+	alligatorGarStamina = 480
+	#鳄雀鳝（alligator_gar） · 张力涨速 —— 这条鱼让线涨得多快。>1 = 线黄得快（黏液型鱼的味道），<1 = 宽容
+	# Default: 1.55
+	# Range: 0.0 ~ 5.0
+	alligatorGarTensionGain = 1.55
+	#鳄雀鳝（alligator_gar） · 冲刺时长（秒） —— 每次冲刺持续几秒。0 = 这条鱼不冲刺
+	# Default: 0.9
+	# Range: 0.0 ~ 60.0
+	alligatorGarSprintDurationSec = 0.9
+	#鳄雀鳝（alligator_gar） · 冲刺间隔（秒） —— 每隔几秒冲一次。越小越凶（爆发型 2.6，黏液型 8.0 几乎不冲）
+	# Default: 3.0
+	# Range: 0.1 ~ 60.0
+	alligatorGarSprintIntervalSec = 3
+	#鳄雀鳝（alligator_gar） · 变向间隔（秒） —— 每隔几秒变一次向。越小越神经质（神经质型 1.3，黏液型 5.5 方向很稳）
+	# Default: 1.3
+	# Range: 0.2 ~ 60.0
+	alligatorGarTurnIntervalSec = 1.3
+	#鳄雀鳝（alligator_gar） · 假动作概率（0~1） —— 假动作概率：预告一个方向、实际往反方向跑。0~1（神经质型 0.35）
+	# Default: 0.35
+	# Range: 0.0 ~ 1.0
+	alligatorGarFakeOutChance = 0.35
+	#鳄雀鳝（alligator_gar） · 进疲劳的体力比例（0~1） —— 体力降到这个比例以下就进疲劳期（0.3 = 剩 30% 时）
+	# Default: 0.32
+	# Range: 0.01 ~ 1.0
+	alligatorGarFatigueThreshold = 0.32
+	#鳄雀鳝（alligator_gar） · 疲劳持续（秒） —— 疲劳期持续几秒。这段时间是反拉的最佳窗口
+	# Default: 2.0
+	# Range: 0.0 ~ 120.0
+	alligatorGarFatigueDurationSec = 2
+	#鳄雀鳝（alligator_gar） · 不挣扎时回气（/s） —— 不挣扎时每秒回多少体力（会被渔轮阻尼压制）。越大越难遛翻
+	# Default: 0.02
+	# Range: 0.0 ~ 1.0
+	alligatorGarStaminaRegen = 0.02
+	#巨暹罗鲤（giant_siamese_carp） · 体重下限（kg） —— 这种鱼最小能有多重。⚠ 它和体重上限一起决定档位怎么分——改小了会让低档鱼变少
+	# Default: 30.0
+	# Range: 0.001 ~ 500.0
+	giantSiameseCarpMinKg = 30
+	#巨暹罗鲤（giant_siamese_carp） · 体重上限（kg） —— 这种鱼最大能有多重。线长/承重不够时会钓不上来（见 buildPool 的承重过滤）
+	# Default: 200.0
+	# Range: 0.001 ~ 500.0
+	giantSiameseCarpMaxKg = 200
+	#巨暹罗鲤（giant_siamese_carp） · 拉力（不挣扎） —— 挣扎时把线拽出去的速度。越大越拉不动。这是「上钩两秒就能感觉出多大」的主要来源。⚠ 这是**基准值**：实际游速 = 本值 × 档位曲线 1.12^档 × 金/红手感修正（金 ×0.84、红 ×1.05）
+	# Default: 2.65
+	# Range: 0.0 ~ 20.0
+	giantSiameseCarpPullSpeed = 3.975
+	#巨暹罗鲤（giant_siamese_carp） · 拉力（疲劳期） —— 遛到疲劳后的拉拽速度。默认 = 正常拉力 × gameplay.fatiguePullMultiplier（当前 0.5）—— 改大就等于「疲劳期反而不划算」
+	# Default: 1.325
+	# Range: 0.0 ~ 20.0
+	giantSiameseCarpFatiguedPullSpeed = 1.6695
+	#巨暹罗鲤（giant_siamese_carp） · 体力上限 —— 鱼有多少体力。越大越耐磨，要遛更久。它是「持久战」强度的总开关。⚠ 这是**基准值**（按鱼种）：实际体力池 = 本值 × 档位倍率（金档 ×1.0、红档 ×1.5）。红档还有一条**基准下限**（gameplay.tierRedStaminaMin，默认 200）：基准低于它的红档鱼先被抬到下限，再乘倍率 —— 否则台钓唯一的红鱼（蓝宝石雷龙鱼 130）比一条普通草鱼还好遛。咬钩时日志里会打一行「体力池：X = 基准 Y × 档位倍率 Z」——对账看那一行，别看这里的基准
+	# Default: 600.0
+	# Range: 1.0 ~ 5000.0
+	giantSiameseCarpStamina = 480
+	#巨暹罗鲤（giant_siamese_carp） · 张力涨速 —— 这条鱼让线涨得多快。>1 = 线黄得快（黏液型鱼的味道），<1 = 宽容
+	# Default: 1.6
+	# Range: 0.0 ~ 5.0
+	giantSiameseCarpTensionGain = 1.6
+	#巨暹罗鲤（giant_siamese_carp） · 冲刺时长（秒） —— 每次冲刺持续几秒。0 = 这条鱼不冲刺
+	# Default: 0.4
+	# Range: 0.0 ~ 60.0
+	giantSiameseCarpSprintDurationSec = 0.4
+	#巨暹罗鲤（giant_siamese_carp） · 冲刺间隔（秒） —— 每隔几秒冲一次。越小越凶（爆发型 2.6，黏液型 8.0 几乎不冲）
+	# Default: 8.0
+	# Range: 0.1 ~ 60.0
+	giantSiameseCarpSprintIntervalSec = 8
+	#巨暹罗鲤（giant_siamese_carp） · 变向间隔（秒） —— 每隔几秒变一次向。越小越神经质（神经质型 1.3，黏液型 5.5 方向很稳）
+	# Default: 5.5
+	# Range: 0.2 ~ 60.0
+	giantSiameseCarpTurnIntervalSec = 5.5
+	#巨暹罗鲤（giant_siamese_carp） · 假动作概率（0~1） —— 假动作概率：预告一个方向、实际往反方向跑。0~1（神经质型 0.35）
+	# Default: 0.0
+	# Range: 0.0 ~ 1.0
+	giantSiameseCarpFakeOutChance = 0
+	#巨暹罗鲤（giant_siamese_carp） · 进疲劳的体力比例（0~1） —— 体力降到这个比例以下就进疲劳期（0.3 = 剩 30% 时）
+	# Default: 0.28
+	# Range: 0.01 ~ 1.0
+	giantSiameseCarpFatigueThreshold = 0.28
+	#巨暹罗鲤（giant_siamese_carp） · 疲劳持续（秒） —— 疲劳期持续几秒。这段时间是反拉的最佳窗口
+	# Default: 2.6
+	# Range: 0.0 ~ 120.0
+	giantSiameseCarpFatigueDurationSec = 2.6
+	#巨暹罗鲤（giant_siamese_carp） · 不挣扎时回气（/s） —— 不挣扎时每秒回多少体力（会被渔轮阻尼压制）。越大越难遛翻
+	# Default: 0.015
+	# Range: 0.0 ~ 1.0
+	giantSiameseCarpStaminaRegen = 0.015
+	#电鳗（electric_eel） · 体重下限（kg） —— 这种鱼最小能有多重。⚠ 它和体重上限一起决定档位怎么分——改小了会让低档鱼变少
+	# Default: 1.0
+	# Range: 0.001 ~ 500.0
+	electricEelMinKg = 1
+	#电鳗（electric_eel） · 体重上限（kg） —— 这种鱼最大能有多重。线长/承重不够时会钓不上来（见 buildPool 的承重过滤）
+	# Default: 12.0
+	# Range: 0.001 ~ 500.0
+	electricEelMaxKg = 12
+	#电鳗（electric_eel） · 拉力（不挣扎） —— 挣扎时把线拽出去的速度。越大越拉不动。这是「上钩两秒就能感觉出多大」的主要来源。⚠ 这是**基准值**：实际游速 = 本值 × 档位曲线 1.12^档 × 金/红手感修正（金 ×0.84、红 ×1.05）
+	# Default: 1.8
+	# Range: 0.0 ~ 20.0
+	electricEelPullSpeed = 2.7
+	#电鳗（electric_eel） · 拉力（疲劳期） —— 遛到疲劳后的拉拽速度。默认 = 正常拉力 × gameplay.fatiguePullMultiplier（当前 0.5）—— 改大就等于「疲劳期反而不划算」
+	# Default: 0.9
+	# Range: 0.0 ~ 20.0
+	electricEelFatiguedPullSpeed = 1.1340000000000001
+	#电鳗（electric_eel） · 体力上限 —— 鱼有多少体力。越大越耐磨，要遛更久。它是「持久战」强度的总开关。⚠ 这是**基准值**（按鱼种）：实际体力池 = 本值 × 档位倍率（金档 ×1.0、红档 ×1.5）。红档还有一条**基准下限**（gameplay.tierRedStaminaMin，默认 200）：基准低于它的红档鱼先被抬到下限，再乘倍率 —— 否则台钓唯一的红鱼（蓝宝石雷龙鱼 130）比一条普通草鱼还好遛。咬钩时日志里会打一行「体力池：X = 基准 Y × 档位倍率 Z」——对账看那一行，别看这里的基准
+	# Default: 260.0
+	# Range: 1.0 ~ 5000.0
+	electricEelStamina = 260
+	#电鳗（electric_eel） · 张力涨速 —— 这条鱼让线涨得多快。>1 = 线黄得快（黏液型鱼的味道），<1 = 宽容
+	# Default: 1.45
+	# Range: 0.0 ~ 5.0
+	electricEelTensionGain = 1.45
+	#电鳗（electric_eel） · 冲刺时长（秒） —— 每次冲刺持续几秒。0 = 这条鱼不冲刺
+	# Default: 0.9
+	# Range: 0.0 ~ 60.0
+	electricEelSprintDurationSec = 0.9
+	#电鳗（electric_eel） · 冲刺间隔（秒） —— 每隔几秒冲一次。越小越凶（爆发型 2.6，黏液型 8.0 几乎不冲）
+	# Default: 3.0
+	# Range: 0.1 ~ 60.0
+	electricEelSprintIntervalSec = 3
+	#电鳗（electric_eel） · 变向间隔（秒） —— 每隔几秒变一次向。越小越神经质（神经质型 1.3，黏液型 5.5 方向很稳）
+	# Default: 1.3
+	# Range: 0.2 ~ 60.0
+	electricEelTurnIntervalSec = 1.3
+	#电鳗（electric_eel） · 假动作概率（0~1） —— 假动作概率：预告一个方向、实际往反方向跑。0~1（神经质型 0.35）
+	# Default: 0.35
+	# Range: 0.0 ~ 1.0
+	electricEelFakeOutChance = 0.35
+	#电鳗（electric_eel） · 进疲劳的体力比例（0~1） —— 体力降到这个比例以下就进疲劳期（0.3 = 剩 30% 时）
+	# Default: 0.32
+	# Range: 0.01 ~ 1.0
+	electricEelFatigueThreshold = 0.32
+	#电鳗（electric_eel） · 疲劳持续（秒） —— 疲劳期持续几秒。这段时间是反拉的最佳窗口
+	# Default: 2.0
+	# Range: 0.0 ~ 120.0
+	electricEelFatigueDurationSec = 2
+	#电鳗（electric_eel） · 不挣扎时回气（/s） —— 不挣扎时每秒回多少体力（会被渔轮阻尼压制）。越大越难遛翻
+	# Default: 0.02
+	# Range: 0.0 ~ 1.0
+	electricEelStaminaRegen = 0.02
+
+#玩法数值 / Gameplay constants（决胜手感的那些系数）。
+#鱼竿五种材质、张力模型、档位曲面、抛投与窝料 —— 这些原本写死在代码里，
+#现在都能调。默认值与源码原值逐位相同，不改就与以前完全一样。
+#改完 /atl config reload 即生效（正在遛的鱼不受影响）。
+#
+[gameplay]
+	#木竿 · 承重上限（kg） —— 这根竿能钓多重的鱼（0 = 不限）。⚠ 这是硬闸门：超过的鱼**钓不上来**
+	# Default: 8.0
+	# Range: 0.0 ~ 1000.0
+	rodWoodMaxWeightKg = 8
+	#木竿 · 提竿窗口加成（秒） —— 加到基础提竿窗口上的秒数
+	# Default: 0.0
+	# Range: 0.0 ~ 5.0
+	rodWoodHookWindowBonus = 0
+	#木竿 · 张力上限倍率 —— 与鱼线按权重合成，决定"线绷到多少会断"
+	# Default: 1.0
+	# Range: 0.0 ~ 10.0
+	rodWoodTensionCeiling = 1
+	#木竿 · 张力回复倍率 —— 与鱼线合成，决定放线时张力落多快
+	# Default: 1.0
+	# Range: 0.0 ~ 10.0
+	rodWoodTensionRecover = 1
+	#木竿 · 体力削减倍率 —— 与渔轮合成，决定收线时鱼掉体力多快
+	# Default: 1.0
+	# Range: 0.0 ~ 10.0
+	rodWoodStaminaDrain = 1
+	#木竿 · 耐久损耗系数 —— 越小越耐用（扣耐久时乘它）
+	# Default: 1.0
+	# Range: 0.0 ~ 5.0
+	rodWoodMaterialFactor = 1
+	#木竿 · 品质档位上限（1~6） —— 这根竿最高能出到几档（1白 2绿 3蓝 4紫 5金 6红）。⚠ 调高会让高级鱼变容易出
+	# Default: 3
+	# Range: 1 ~ 6
+	rodWoodTier = 3
+	#铁竿 · 承重上限（kg） —— 这根竿能钓多重的鱼（0 = 不限）。⚠ 这是硬闸门：超过的鱼**钓不上来**
+	# Default: 30.0
+	# Range: 0.0 ~ 1000.0
+	rodIronMaxWeightKg = 30
+	#铁竿 · 提竿窗口加成（秒） —— 加到基础提竿窗口上的秒数
+	# Default: 0.1
+	# Range: 0.0 ~ 5.0
+	rodIronHookWindowBonus = 0.1
+	#铁竿 · 张力上限倍率 —— 与鱼线按权重合成，决定"线绷到多少会断"
+	# Default: 1.2
+	# Range: 0.0 ~ 10.0
+	rodIronTensionCeiling = 1.2
+	#铁竿 · 张力回复倍率 —— 与鱼线合成，决定放线时张力落多快
+	# Default: 1.2
+	# Range: 0.0 ~ 10.0
+	rodIronTensionRecover = 1.2
+	#铁竿 · 体力削减倍率 —— 与渔轮合成，决定收线时鱼掉体力多快
+	# Default: 1.2
+	# Range: 0.0 ~ 10.0
+	rodIronStaminaDrain = 1.2
+	#铁竿 · 耐久损耗系数 —— 越小越耐用（扣耐久时乘它）
+	# Default: 0.85
+	# Range: 0.0 ~ 5.0
+	rodIronMaterialFactor = 0.85
+	#铁竿 · 品质档位上限（1~6） —— 这根竿最高能出到几档（1白 2绿 3蓝 4紫 5金 6红）。⚠ 调高会让高级鱼变容易出
+	# Default: 4
+	# Range: 1 ~ 6
+	rodIronTier = 4
+	#金竿 · 承重上限（kg） —— 这根竿能钓多重的鱼（0 = 不限）。⚠ 这是硬闸门：超过的鱼**钓不上来**
+	# Default: 21.0
+	# Range: 0.0 ~ 1000.0
+	rodGoldMaxWeightKg = 21
+	#金竿 · 提竿窗口加成（秒） —— 加到基础提竿窗口上的秒数
+	# Default: 0.25
+	# Range: 0.0 ~ 5.0
+	rodGoldHookWindowBonus = 0.25
+	#金竿 · 张力上限倍率 —— 与鱼线按权重合成，决定"线绷到多少会断"
+	# Default: 1.1
+	# Range: 0.0 ~ 10.0
+	rodGoldTensionCeiling = 1.1
+	#金竿 · 张力回复倍率 —— 与鱼线合成，决定放线时张力落多快
+	# Default: 1.15
+	# Range: 0.0 ~ 10.0
+	rodGoldTensionRecover = 1.15
+	#金竿 · 体力削减倍率 —— 与渔轮合成，决定收线时鱼掉体力多快
+	# Default: 1.15
+	# Range: 0.0 ~ 10.0
+	rodGoldStaminaDrain = 1.15
+	#金竿 · 耐久损耗系数 —— 越小越耐用（扣耐久时乘它）
+	# Default: 0.9
+	# Range: 0.0 ~ 5.0
+	rodGoldMaterialFactor = 0.9
+	#金竿 · 品质档位上限（1~6） —— 这根竿最高能出到几档（1白 2绿 3蓝 4紫 5金 6红）。⚠ 调高会让高级鱼变容易出
+	# Default: 6
+	# Range: 1 ~ 6
+	rodGoldTier = 6
+	#钻石竿 · 承重上限（kg） —— 这根竿能钓多重的鱼（0 = 不限）。⚠ 这是硬闸门：超过的鱼**钓不上来**
+	# Default: 50.0
+	# Range: 0.0 ~ 1000.0
+	rodDiamondMaxWeightKg = 50
+	#钻石竿 · 提竿窗口加成（秒） —— 加到基础提竿窗口上的秒数
+	# Default: 0.2
+	# Range: 0.0 ~ 5.0
+	rodDiamondHookWindowBonus = 0.2
+	#钻石竿 · 张力上限倍率 —— 与鱼线按权重合成，决定"线绷到多少会断"
+	# Default: 1.6
+	# Range: 0.0 ~ 10.0
+	rodDiamondTensionCeiling = 1.6
+	#钻石竿 · 张力回复倍率 —— 与鱼线合成，决定放线时张力落多快
+	# Default: 1.7
+	# Range: 0.0 ~ 10.0
+	rodDiamondTensionRecover = 1.7
+	#钻石竿 · 体力削减倍率 —— 与渔轮合成，决定收线时鱼掉体力多快
+	# Default: 1.6
+	# Range: 0.0 ~ 10.0
+	rodDiamondStaminaDrain = 1.6
+	#钻石竿 · 耐久损耗系数 —— 越小越耐用（扣耐久时乘它）
+	# Default: 0.7
+	# Range: 0.0 ~ 5.0
+	rodDiamondMaterialFactor = 0.7
+	#钻石竿 · 品质档位上限（1~6） —— 这根竿最高能出到几档（1白 2绿 3蓝 4紫 5金 6红）。⚠ 调高会让高级鱼变容易出
+	# Default: 4
+	# Range: 1 ~ 6
+	rodDiamondTier = 4
+	#下界合金竿 · 承重上限（kg） —— 这根竿能钓多重的鱼（0 = 不限）。⚠ 这是硬闸门：超过的鱼**钓不上来**
+	# Default: 999.0
+	# Range: 0.0 ~ 1000.0
+	rodNetheriteMaxWeightKg = 999
+	#下界合金竿 · 提竿窗口加成（秒） —— 加到基础提竿窗口上的秒数
+	# Default: 0.3
+	# Range: 0.0 ~ 5.0
+	rodNetheriteHookWindowBonus = 0.3
+	#下界合金竿 · 张力上限倍率 —— 与鱼线按权重合成，决定"线绷到多少会断"
+	# Default: 1.7
+	# Range: 0.0 ~ 10.0
+	rodNetheriteTensionCeiling = 1.7
+	#下界合金竿 · 张力回复倍率 —— 与鱼线合成，决定放线时张力落多快
+	# Default: 1.9
+	# Range: 0.0 ~ 10.0
+	rodNetheriteTensionRecover = 1.9
+	#下界合金竿 · 体力削减倍率 —— 与渔轮合成，决定收线时鱼掉体力多快
+	# Default: 1.8
+	# Range: 0.0 ~ 10.0
+	rodNetheriteStaminaDrain = 1.8
+	#下界合金竿 · 耐久损耗系数 —— 越小越耐用（扣耐久时乘它）
+	# Default: 0.5
+	# Range: 0.0 ~ 5.0
+	rodNetheriteMaterialFactor = 0.5
+	#下界合金竿 · 品质档位上限（1~6） —— 这根竿最高能出到几档（1白 2绿 3蓝 4紫 5金 6红）。⚠ 调高会让高级鱼变容易出
+	# Default: 5
+	# Range: 1 ~ 6
+	rodNetheriteTier = 5
+	#张力上限基准（点） —— 所有张力上限都按它缩放。改大 = 整体变宽容（线更不容易断）
+	# Default: 100.0
+	# Range: 10.0 ~ 1000.0
+	tensionBaseCeiling = 100
+	#冲刺时的拉拽基数 —— 鱼冲刺时用来算张力的基值（不冲刺时用「配件属性合成」里的 pullIdleBase）
+	# Default: 0.95
+	# Range: 0.0 ~ 5.0
+	pullSprint = 0.95
+	#反向控杆奖励 —— A/D 压住鱼挣扎方向时的张力倍率修正。负值 = 张力反而降
+	# Default: -0.5
+	# Range: -2.0 ~ 1.0
+	counterBonus = -0.5
+	#同向控杆惩罚 —— 顺着鱼的方向控杆时的张力倍率修正（正值 = 张力涨更凶）
+	# Default: 0.35
+	# Range: 0.0 ~ 3.0
+	counterPenalty = 0.35
+	#收线涨势保底比例（0~1） —— 收线时鱼拉最多把涨势削到这个比例。0 = 鱼够猛就能把张力压住不涨
+	# Default: 0.25
+	# Range: 0.0 ~ 1.0
+	minReelGainRatio = 0.25
+	#鱼拖慢收线的上限（0~1） —— 鱼最多能把收线速度拖慢多少。1 = 完全拖停
+	# Default: 0.9
+	# Range: 0.0 ~ 1.0
+	maxFishSlowdown = 0.9
+	#阻尼折算上限的比例 —— 渔轮阻尼中"能折算进张力上限"的那部分比例
+	# Default: 0.5
+	# Range: 0.0 ~ 1.0
+	dampingToCapRatio = 0.5
+	#阻尼对上限的加成 —— 上一条折算后乘的系数，直接加到张力上限上
+	# Default: 1.2
+	# Range: 0.0 ~ 5.0
+	capDampingBonus = 1.2
+	#拉干阈值（0~1） —— 累计扣掉鱼多少体力就能"拉干强制上鱼"（1.0 = 扣满一轮体力）
+	# Default: 0.9
+	# Range: 0.1 ~ 3.0
+	totalDrainTarget = 0.9
+	#近岸基础距离（格） —— 中鱼后线至少被拽到这么远（防止一上钩就贴脸）
+	# Default: 6.0
+	# Range: 1.0 ~ 40.0
+	nearShoreBase = 6
+	#体力判定下限 —— "体力是否已耗尽"的绝对容差，避免浮点残值反复触发
+	# Default: 0.05
+	# Range: 0.0 ~ 50.0
+	staminaEpsilonFloor = 0.05
+	#体力判定比例（0~1） —— 同上，按体力上限的比例取容差（取两者较大值）
+	# Default: 0.005
+	# Range: 0.0 ~ 0.5
+	staminaEpsilonRatio = 0.005
+	#输入超时上限（tick） —— 客户端输入包超过这么久没更新就当作"没在操作"
+	# Default: 5
+	# Range: 1 ~ 100
+	inputStaleLimit = 5
+	#档位游速底数 —— 每升一档游速乘它。六档下来是 底数^5 —— 1.12 约 1.76 倍
+	# Default: 1.12
+	# Range: 1.0 ~ 3.0
+	tierSpeedBase = 1.12
+	#档位体力抗性底数 —— 每升一档体力抗性乘它（抗性直接除在扣体力公式里）
+	# Default: 1.18
+	# Range: 1.0 ~ 3.0
+	tierStaminaResistBase = 1.18
+	#金档 · 游速手感倍率 —— 金档(4)鱼游速在底数曲线之上再乘它。0.84 = 降 16%（用户定案）
+	# Default: 0.84
+	# Range: 0.0 ~ 3.0
+	tierGoldSpeedScale = 0.84
+	#金档 · 体力池倍率 —— 金档(4)鱼体力池上限乘它。用户定案是 1.0 —— **金档体力不变**
+	# Default: 1.0
+	# Range: 0.0 ~ 3.0
+	tierGoldStaminaScale = 1
+	#红档 · 游速手感倍率 —— 红档(5)鱼游速在底数曲线之上再乘它。1.05 = 加 5%（用户定案）
+	# Default: 1.05
+	# Range: 0.0 ~ 3.0
+	tierRedSpeedScale = 1.05
+	#红档 · 体力池倍率 —— 红档(5)鱼体力池上限乘它。1.5 = 加 50%（用户定案）⚠ 长体力鱼会更磨
+	# Default: 1.5
+	# Range: 0.0 ~ 5.0
+	tierRedStaminaScale = 1.5
+	#红档 · 体力基准下限 —— 红档鱼的**基准体力**至少这么多（咬钩时先抬到下限，**再**乘上面的红档倍率，所以默认下限 200 的红档鱼实际是 300）。0 = 关掉下限
+	# Default: 200.0
+	# Range: 0.0 ~ 5000.0
+	tierRedStaminaMin = 200
+	#疲劳期拉拽倍率 —— 遛到疲劳后拉拽速度乘它。**每条鱼的疲劳期拉力默认 = 正常拉力 × 本值**（由 tools/fish-source.js 推导，改它要重跑生成链）。⚠ 大于 1 = 疲劳期反而更难拉，别调错方向
+	# Default: 0.5
+	# Range: 0.0 ~ 2.0
+	fatiguePullMultiplier = 0.42
+	#保底体力削减（下限）（点/秒） —— **装了渔轮**的路亚，拉鱼时每秒**至少**削减这么多鱼力（与鱼多高檔无关）。0 = 关掉这条保底（回到"扣力全看单轮上限"）
+	# Default: 5.0
+	# Range: 0.0 ~ 100.0
+	reelFloorDrainBase = 5
+	#保底体力削减 · 每点阻尼转化（点/秒） —— 压制阻尼每高出 1.0 一点，保底削减 +这么多点/秒。默认 **10** 是**为金轮倒推**的：大型纺车轮阻尼 2.50 → 5 + 1.5×10 = **20.0**，正好贴住上限
+	# Default: 10.0
+	# Range: 0.0 ~ 100.0
+	reelFloorDrainPerDamping = 10
+	#保底体力削减（上限）（点/秒） —— 保底削减的硬上限（用户定案 20）。它**不受单轮扣力上限限制** —— 单轮额度用完的那几轮也照扣，所以它是"磨鱼到底"的那条底线
+	# Default: 20.0
+	# Range: 0.0 ~ 200.0
+	reelFloorDrainCap = 20
+	#保底挣扎（白档秒数）（秒） —— 每轮挣扎开头，鱼**至少**有这么多秒是"没力竭"的（白档基准）。1 = 一秒
+	# Default: 1.0
+	# Range: 0.0 ~ 60.0
+	floorStruggleBase = 1
+	#保底挣扎 · 每档增加（秒） —— 每高一档多保底这么多秒 —— 白 1、红 6（用户定案）
+	# Default: 1.0
+	# Range: 0.0 ~ 60.0
+	floorStrugglePerTier = 1
+	#保底挣扎 · 均衡型加成（秒） —— 均衡型的策略浮动（0~1，**只上抬不下压**）
+	# Default: 0.0
+	# Range: 0.0 ~ 1.0
+	floorStruggleBonusSteady = 0
+	#保底挣扎 · 黏液型加成（秒） —— 黏液型的策略浮动（0~1，只上抬不下压）
+	# Default: 0.0
+	# Range: 0.0 ~ 1.0
+	floorStruggleBonusSluggish = 0
+	#保底挣扎 · 爆发型加成（秒） —— 爆发型的策略浮动 —— 默认给满 +1（爆发型是最难缠的那一类）
+	# Default: 1.0
+	# Range: 0.0 ~ 1.0
+	floorStruggleBonusBurst = 1
+	#保底挣扎 · 神经质加成（秒） —— 神经质型的策略浮动（默认 +0.5）
+	# Default: 0.5
+	# Range: 0.0 ~ 1.0
+	floorStruggleBonusErratic = 0.5
+	#收线抵抗 · 起效阈值 —— 双拉属性（渔轮的回拉速度）低于它就不受抵抗 —— 慢配置本来就不占便宜
+	# Default: 1.2
+	# Range: 0.0 ~ 10.0
+	reelResistThreshold = 1.2
+	#收线抵抗 · 白档（比例） —— 白档鱼对高收线速率的抵抗（回拉速率降低这么多）
+	# Default: 0.05
+	# Range: 0.0 ~ 1.0
+	reelResistTierWhite = 0.05
+	#收线抵抗 · 绿档（比例） —— 绿档鱼的抵抗
+	# Default: 0.125
+	# Range: 0.0 ~ 1.0
+	reelResistTierGreen = 0.125
+	#收线抵抗 · 蓝档（比例） —— 蓝档鱼的抵抗
+	# Default: 0.185
+	# Range: 0.0 ~ 1.0
+	reelResistTierBlue = 0.185
+	#收线抵抗 · 紫档（比例） —— 紫档鱼的抵抗
+	# Default: 0.275
+	# Range: 0.0 ~ 1.0
+	reelResistTierPurple = 0.275
+	#收线抵抗 · 金档（比例） —— 金档鱼的抵抗
+	# Default: 0.55
+	# Range: 0.0 ~ 1.0
+	reelResistTierGold = 0.55
+	#收线抵抗 · 红档（比例） —— 红档鱼的抵抗（用户定案 32%）
+	# Default: 0.75
+	# Range: 0.0 ~ 1.0
+	reelResistTierRed = 0.75
+	#收线抵抗 · 均衡型浮动 —— 策略浮动（**上下至多 5%**）：正值 = 更抗拉
+	# Default: 0.0
+	# Range: -0.05 ~ 0.05
+	reelResistStratSteady = 0
+	#收线抵抗 · 黏液型浮动 —— 黏液型游得慢，抵抗也给到下限 −5%
+	# Default: -0.05
+	# Range: -0.05 ~ 0.05
+	reelResistStratSluggish = -0.05
+	#收线抵抗 · 爆发型浮动 —— 爆发型最抗拉，给到上限 +5%
+	# Default: 0.05
+	# Range: -0.05 ~ 0.05
+	reelResistStratBurst = 0.05
+	#收线抵抗 · 神经质浮动 —— 神经质型的策略浮动（默认 0）
+	# Default: 0.0
+	# Range: -0.05 ~ 0.05
+	reelResistStratErratic = 0
+	#收线抵抗 · 每点阻尼抵消（比例） —— 压制阻尼每高出 1.0 一点，抵消这么多抵抗。默认 **0.5** 是**为金轮倒推**的：大型纺车轮阻尼 2.50 → (2.50−1)×0.5 = **0.75**，正好贴住抵消上限
+	# Default: 0.5
+	# Range: 0.0 ~ 2.0
+	reelResistDampingOffset = 0.5
+	#收线抵抗 · 抵消上限（比例） —— 压制阻尼最多抵消掉抵抗的这么多（用户定案 75%）—— 再好的轮子也留 1/4
+	# Default: 0.75
+	# Range: 0.0 ~ 1.0
+	reelResistDampingCap = 0.75
+	#力竭期收线保底（格/tick） —— 鱼力竭时，收线的净回收速度**至少**这么多格/tick（0.05 ≈ 1 格/秒）。0 = 关掉保底（装备差就可能力竭了也拉不动）
+	# Default: 0.05
+	# Range: 0.0 ~ 1.0
+	fatiguedReelMinGain = 0.05
+	#力竭期 · 变红速度倍率 —— 鱼力竭时，收线的张力涨速**再乘**它（在控杆关系 ×0.8 之上）。0.7 = **变红速度降 30%**（越小越难把线拉红）。⚠ 方向：<1 才是"更安全"，填 >1 等于力竭反而更危险
+	# Default: 0.7
+	# Range: 0.0 ~ 3.0
+	fatiguedTensionGainScale = 0.7
+	#力竭期 · 回白速度倍率 —— 鱼力竭时，中立/放线的张力回落**再乘**它。1.35 = **回白速度加 35%**（越大越快退回白区）。⚠ 方向：>1 才是"更安全"
+	# Default: 1.35
+	# Range: 0.0 ~ 5.0
+	fatiguedTensionRecoverScale = 1.35
+	#力竭阈值倍率（全局） —— 所有鱼"进疲劳的体力比例"**再乘**它。1.0 = 原样；1.25 = 鱼还剩 42.5%（burst 0.34 时）就进力竭、更容易拉开差距。⚠ 结果夹在 1.0：>1 不会变成"一咬钩就力竭"
+	# Default: 1.0
+	# Range: 0.1 ~ 2.0
+	fatigueThresholdScale = 1
+	#中立 · 最小净回落（点/tick） —— **中立**（不按任何键）时，张力每 tick 至少回落这么多 —— 鱼再猛也不能把它拖得比这更慢。0.3 ≈ 6 点/秒（0.50 条子约 8 秒从红退回白）。⚠ 放线不受它影响（那一档本来就快）；0 = 关掉，恢复"干站着被慢慢拖进黄区"的压力
+	# Default: 0.3
+	# Range: 0.0 ~ 5.0
+	idleFallFloor = 0.3
+	#挣扎秒数（白档）（秒） —— 白档鱼每轮挣扎持续多久（每高一档再加下面那个增量）
+	# Default: 2.0
+	# Range: 0.0 ~ 60.0
+	struggleSecondsBase = 2
+	#挣扎秒数每档增量（秒） —— 每升一档多挣扎这么久
+	# Default: 1.6
+	# Range: 0.0 ~ 30.0
+	struggleSecondsPerTier = 1.6
+	#休息秒数（白档）（秒） —— 白档鱼每轮休息多久
+	# Default: 5.0
+	# Range: 0.0 ~ 60.0
+	restSecondsBase = 5
+	#休息秒数每档递减（秒） —— 每升一档少休息这么久 —— 高级鱼"忙得多、歇得少"
+	# Default: 0.4
+	# Range: 0.0 ~ 30.0
+	restSecondsPerTier = 0.4
+	#高寒湖 · 最低高度（格） —— 湖泊的**水面高度**达到它就算高寒湖（高山湖的本质是"高度 + 冷"）。120 是雪线附近 —— 单看群系会漏掉"雪线以上的普通山地湖"。⚠ 群系在 #anglertackle:alpine 里的湖**不看高度**，一律算高寒湖
+	# Default: 120
+	# Range: -64 ~ 320
+	alpineLakeMinY = 120
+	#冷水溪流 · 最高温度（温度） —— 河流所在群系的**基础温度**不超过它就算冷水溪流（哲罗鲑、江鳕住那儿）。⚠ 默认 0.3 而不是 0.2：针叶林 taiga 是 0.25、平原 plains 是 0.8 —— 取 0.2 会把**针叶林溪流**排除掉，而那正是哲罗鲑现实里的栖息地。⚠ 群系在 #anglertackle:cold_streams 里的河**不看温度**，一律算冷水溪流
+	# Default: 0.3
+	# Range: -1.0 ~ 2.0
+	coldWaterMaxTemp = 0.3
+	#冰钓 · 碎冰变浮冰（分钟） —— 碎冰闲置这么久之后变成浮冰（原版 packed_ice）。0 = 立刻变
+	# Default: 5
+	# Range: 0 ~ 120
+	brokenIceToPackIceMinutes = 5
+	#冰钓 · 浮冰变回冰（分钟） —— 浮冰闲置这么久之后变回原版冰（用户定案：**会**变回冰，于是还能再凿）
+	# Default: 10
+	# Range: 0 ~ 240
+	packIceToIceMinutes = 10
+	#冰钓 · 凿一次扣耐久（点） —— 凿冰面 / 砸冰洞各扣多少耐久。凿冰镐耐久 250，所以默认能凿 250 次
+	# Default: 1
+	# Range: 0 ~ 100
+	icePickDurabilityCost = 1
+	#冰钓 · 洞内鱼线磨损（倍率） —— 洞内钓鱼时**鱼线**的磨损倍率（2.0 = 寿命减半）。⚠ **只乘鱼线、不乘竿**（用户定案）—— "有条件的玩家可以自己挖开一大片水面来避免这种损耗"
+	# Default: 2.0
+	# Range: 0.1 ~ 10.0
+	iceHoleLineWearMultiplier = 2
+	#冰钓 · 洞内金红爆率（百分数） —— 洞内抛竿对"金+红鱼种目标占比"的**加算**量（0.01 = +1 个百分点）
+	# Default: 0.01
+	# Range: 0.0 ~ 0.2
+	iceHoleHighValueBonus = 0.01
+	#冰钓 · 冰上咬钩时间（倍率） —— **覆冰群系 · 没凿洞**时咬钩等待时间乘它（1.5 = 延长 50%）。⚠ 只对"非高山且常年覆冰"的群系生效，其他群系一律 1.0
+	# Default: 1.5
+	# Range: 0.1 ~ 5.0
+	openIceBiteTimeMultiplier = 1.5
+	#冰钓 · 冰上金红爆率（百分数） —— 覆冰群系**没凿洞**时对金红总占比的**加算**扣减（0.01 = −1 个百分点）
+	# Default: 0.01
+	# Range: 0.0 ~ 0.2
+	openIceHighValuePenalty = 0.01
+	#蓄力满所需 tick（tick） —— 按住右键到蓄力满要多久（20 tick = 1 秒）
+	# Default: 32
+	# Range: 1 ~ 400
+	fullChargeTicks = 32
+	#最短蓄力 tick（tick） —— 低于这个 tick 数不算抛出（防误触）
+	# Default: 3
+	# Range: 1 ~ 100
+	minChargeTicks = 3
+	#窝料最小滞空（tick） —— 窝料出手后至少飞这么久才允许落水（防止贴脸扔）
+	# Default: 10
+	# Range: 0 ~ 200
+	chumMinAirTicks = 10
+	#超重鱼的处理方式（0/1） —— 0 = 个体重量**限幅到竿的承重**（钓得上来，但上限就是承重）；1 = 该个体直接**切线跑掉**（只掉耐久不给鱼）。⚠ 改这一项会明显改变难度
+	# Default: 0
+	# Range: 0 ~ 1
+	oversizeFishAction = 0
+	#追踪罗盘搜索半径（格） —— 罗盘指针往外找多远的渔人小屋（格）。⚠ 这个值**不是**随便给的：小屋的 placement spacing 是 34 区块（=544 格），random_spread 会让每个 34×34 网格里随机落一个候选点，玩家到最近候选点最坏约 spacing×√2/2 ≈ 385 格；再叠加群系校验失败（不是每个候选点都落在河流/沼泽/沙滩上）要跳到更远的网格 —— 所以 400 会**经常找不到**，1200 才覆盖得住两格的最坏情况。⚠ 搜索是**一圈一圈往外扩**的（原版 /locate 也是这套），找到就停，所以平时开销取决于最近的屋子有多远、与这个上限无关；只有"附近真的没有"时才会走满。
+	# Default: 1200
+	# Range: 32 ~ 4000
+	compassSearchRadius = 1200
+	# 大鱼公告价值门槛（鱼币） —— 钓到的鱼**价值 ≥ 这个数**时，向全服公告一条（0 = 每条都公告，会很吵）。价值口径 = `CoinPricing.priceFor(档位, 尺寸系数)`，与**卖价同一个函数** —— 公告里写的钱数必须与玩家卖出去拿到的一样，两处各算一份就会打架 ✗。⚠ 默认 **5050 是用户 2026-10-11 亲口给的数**，不是随手取的：红档基准价 4800、尺寸浮动 ±8% ⇒ 红鱼的价格区间是 [4416, 5184]，5050 正好落在**红档里体型偏大**的那一段（尺寸系数 ≥ 0.65，约红鱼的上游 17%）；而金档最高只有 1380 × 1.08 = 1490 ⇒ **金档及以下永远够不到**。⇒ 这条门的语义就是"**一条特别大的红鱼**"，改小它等于把公告变成"谁都能上电视"。
+	bigCatchAnnounceValue = 5050
+	# 大鱼公告最小间隔（秒） —— 两条大鱼公告之间至少隔这么久（0 = 不节流）。⚠ 防的是"一群人同时上鱼"或"一个人连竿"把聊天栏刷爆 —— 公告是给别人看的调味品，刷屏就变成骚扰 ✗。
+	bigCatchAnnounceMinIntervalSec = 10
+
+#渲染与实体同步 / Rendering
+#注意：实体追踪范围（clientTrackingRange）是**注册期常量**，
+#运行时改配置改不动它，所以这里不提供该项 —— 免得改了没反应。
+#超出视距时的兜底靠"幽灵鱼线"，见 docs/09-原版冲突与渲染优化.md。
+[render]
+	#超过该距离改用简化线型（格）
+	# Default: 64
+	# Range: 8 ~ 256
+	ghostLineBeyondBlocks = 64
+	#上钩后视角跟随鱼钩 / Camera follows the hook
+	#对抗期间把**渲染用**的相机朝向拉向浮漂。只改画面、不改玩家真实朝向
+	#（不碰 setYRot/setXRot），所以瞄准、交互、服务端判定全都不受影响。
+	#第一人称下生效；第三人称不动镜头（那是玩家自己在运镜）。
+	hookCameraFollow = true
+	#跟随强度 0~1：1 = 完全对准鱼钩，0.5 = 只拉一半（还能用鼠标偏一点）
+	#实际强度还会乘以一个约 0.25 秒的渐入，避免刚中鱼时镜头猛甩。
+	# Default: 0.9
+	# Range: 0.0 ~ 1.0
+	hookCameraFollowStrength = 0.9
+	#收线时视野缩到原来的百分之几 / Zoom while reeling
+	#⚠ **相对当前 FOV 相乘**，不是写死一个数值 —— 所以它是叠在其它视野效果
+	#之上的"再来一点"，松手就回到原来的水平（用户口径："松开放线回到上鱼时的放大水平"）。
+	#100 = 不拉近。只在对抗中且左键按住时生效。
+	# Default: 93.0
+	# Range: 70.0 ~ 100.0
+	reelZoomPercent = 93
+
+# ==========================================================================
+#  以下由 tools/sync-config-file.js 追加：代码里新增的配置项。
+#  已存在的键一律没动 —— 你调过的值原样保留。
+# ==========================================================================
+
+# ==========================================================================
+#  以下由 tools/sync-config-file.js 追加：代码里新增的配置项。
+#  已存在的键一律没动 —— 你调过的值原样保留。
+# ==========================================================================
+
+# ==========================================================================
+#  以下由 tools/sync-config-file.js 追加：代码里新增的配置项。
+#  已存在的键一律没动 —— 你调过的值原样保留。
+# ==========================================================================
+
+# ==========================================================================
+#  以下由 tools/reset-release-defaults.js 补入：代码里新增的配置项（取代码默认值）。
+# ==========================================================================
+
+[titles]
+	# 聊天里的称号后缀模式 0 = full_line：玩家[称号]：内容（默认；绕过原版签名聊天，这条消息算系统消息） 1 = message_only：<玩家> [称号]内容（保留原版签名聊天，只是消息内容被改写） 2 = vanilla：聊天里不加任何东西（称号仍可在 /atl title list 看到）
+	chatMode = 0
+	# 「鱼种记录者」门槛：图鉴点亮多少种
+	codexCount5 = 5
+	# 「鱼种编目者」门槛：图鉴点亮多少种
+	codexCount10 = 10
+	# 「鱼类鉴定家」门槛：图鉴点亮多少种
+	codexCount24 = 24
+	# 「鱼类学者」门槛：图鉴点亮多少种
+	codexCount40 = 40
+	# 「金鳞十种」门槛：多少种鱼钓到过金档以上
+	goldCount10 = 10
+	# 「大物钓手」门槛：单尾多重（kg）
+	giantKg5 = 5
+	# 「巨物猎手」门槛：单尾多重（kg）
+	giantKg20 = 20
+	# 「巨物专家」门槛：单尾多重（kg）
+	giantKg50 = 50
+	# 「巨物大师」门槛：单尾多重（kg） 默认 100：能"出金档就必然 ≥100kg"的只有 4 种（格陵兰鲨 380–500 / 巨暹罗鲤 151–200 / 蓝鳍金枪鱼 132–180 / 格陵兰大比目鱼 118–200）。 ⚠ 巨骨舌鱼的上限正好是 100.00kg，数学上够得到但要 1/5 万级别的极限 roll ⇒ 实际按 4 种算（依据见 docs/38 §4.1）。
+	giantKg100 = 100
+	# 「鳄雀鳝猎手」门槛：钓到多少条鳄雀鳝（入侵种）
+	garCount = 5
+	# 「红鳞收藏家」门槛：累计钓到多少条红档鱼
+	redCount = 10
+	# 「夜钓客」门槛：夜晚时段累计上鱼多少尾
+	nightCount = 50
+	# 「月满垂纶」门槛：满月夜累计上鱼多少尾
+	fullMoonCount = 10
+	# 「冰钓人」门槛：冰洞里累计上鱼多少尾
+	iceCount = 10
+	# 「打窝老手」门槛：累计打窝多少次
+	chumCount = 100
+	# 「断线专家」门槛：累计断线多少次（这个「专家」是反着说的）
+	lineBreakCount = 50
+	# 「鱼宴大厨」门槛：做过多少种菜型 默认 10 = DishRecipe.Dish 的全部菜型（红烧/清蒸/香煎/炸块/鱼汤/奶油鱼汤/ 炖/鱼丸/刺身/整鱼下锅）⇒ 做完即"菜谱全通"。填大于菜型数的值等于拿不到。
+	dishMadeCount = 10
+	# 「美食家」门槛：吃过多少种不同的菜型
+	dishEatenCount = 5
+
+# ==========================================================================
+#  以下由 tools/reset-release-defaults.js 补入：代码里新增的配置项（取代码默认值）。
+# ==========================================================================
+
+[mail]
+	# 邮件保管期（现实天） 超过它的邮件：**附件作废**（点了也领不到）、**正文保留**当记录。 界面在过期前 3 天会标红提醒（那 3 天不配置 —— 它是"提醒"不是"规则"）。
+	keepDays = 30
+	# 邮箱条数上限 到顶后**拒绝投递**：写一条 WARN 日志、并给收件人一句提示。 ⚠ 不许改成"挤掉最旧的" —— 那会让玩家在最需要那封信的时候发现它没了 ✗。
+	maxMails = 200
+	# 服主手写正文的长度上限（字符） 发送侧超长直接拒绝；渲染侧**再截断一次**（两道都要有，理由见组注释）。
+	bodyMaxChars = 500
+	# 进世界时给一次「你有未读邮件」的动作栏提示 **只提示一次**（登录那一下）；关掉它仍可在邮箱界面/tooltip 上看到未读数。
+	unreadLoginNotice = true
+
+# ==========================================================================
+#  以下由 tools/reset-release-defaults.js 补入：代码里新增的配置项（取代码默认值）。
+# ==========================================================================
+
+[league]
+	# 邀请资格线（钓鱼等级） 默认 21 = 用户原话"高于 20" = 正好**通过了 Lv.20 评定②**的下一个等级。
+	minLevel = 21
+	# 打开后**未达线者也收邀请** 调研提醒：硬门槛会让新服长期无人参赛（够格的人根本还没练出来）。 打开它等于把联赛当"周常活动"用，谁都能来。
+	allowBelowLevel = false
+	# 小型联赛的**推送间隔**（按所选口径的"天"） ⚠ 它是"多久推一次邀请"，不是"一期多久" —— 一期永远是"推送 + 硬截止"。
+	smallDays = 7
+	# 中型联赛的推送间隔（按所选口径的"天"） 奖励按 scaleMediumCoinsXp 缩放（鱼币与经验）。
+	mediumDays = 30
+	# 大型联赛的推送间隔（按所选口径的"天"） 奖励按 scaleLargeCoinsXp 缩放（鱼币与经验）+ scaleLargeVanillaItems（原版物资）。
+	largeDays = 90
+	# 一期**硬截止**：推送后几个**游戏日**结算（用户定案 5） 1 游戏日 = 24000 刻 = 20 分钟 ⇒ 5 游戏日 ≈ 运行 100 分钟。 ⚠ 到点**不管谁打没打满，一律结算**（用户原话"无论有没有打满，联赛结算时也强行截止"）。 ⚠ 用游戏日而不是现实天：服务器停机期间两边都停，这样"一期"的长度才对得上"玩了多久"。
+	periodGameDays = 5
+	# **每人窗口**：签收后多少**游戏分钟**内计分（用户定案 30） 窗口从**签收那一刻**起算（不是"只在钓鱼时消耗"）；终点还要被硬截止截断 ⇒ 越晚签收，能用的时间越短（第 90 分钟签收只剩 10 分钟）。 窗口走完了**什么都不会发生**：只是本期不再计分，钓鱼照旧（只计分不惩罚）。
+	playerWindowMinutes = 30
+	# 现实口径下每期的起始**服务器本地时刻**（0~23，默认 12 点） 学 LoL 的"各服本地 12:00:00"：期与期的边界落在同一个钟点上， 玩家能自己算出来下一期什么时候开 ✓。游戏口径不用这一项。
+	periodBoundaryHour = 12
+	# 有效成绩下限：本期至少上鱼 N 尾才进榜、才有名次奖（默认 1） 学 WoW 角斗士的"门槛 + 场次下限"双条件：光签收不上鱼 ⇒ 只拿到签收小礼，**没有名次奖**（小号因此没有收益）。
+	minCatchesToRank = 1
+	# 参与奖（参赛但没进前十）的鱼币（小型基准，中型 ×2、大型 ×4）
+	rewardCoinsParticipant = 500
+	# 第 4~10 名的鱼币（小型基准）
+	rewardCoinsTop10 = 2000
+	# 第 1 名的鱼币（小型基准；中型 ×2、大型 ×4） 量级参照：40000 币 ≈ 8.3 条红档鱼的卖价（大型第 1 名）。
+	rewardCoins1st = 10000
+	# 第 2 名的鱼币（小型基准）
+	rewardCoins2nd = 5000
+	# 第 3 名的鱼币（小型基准）
+	rewardCoins3rd = 3000
+	# 第 1 名的垂纶经验（小型基准；中型 ×2、大型 ×4） ⚠ 大型第 1 名 = 4800 经验 ≈ 中后期 4 级 —— 这个量级偏高，用户知道并认可； 要调就改这里与下面两项（经验走**直接入账**，因为邮件只能带鱼币和物品）。
+	rewardXp1st = 1200
+	# 第 2 名的垂纶经验（小型基准）
+	rewardXp2nd = 600
+	# 第 3 名的垂纶经验（小型基准）
+	rewardXp3rd = 300
+	# 中型联赛的**鱼币与经验**倍率（用户定案 ×2）
+	scaleMediumCoinsXp = 2
+	# 大型联赛的**鱼币与经验**倍率（用户定案 ×4）
+	scaleLargeCoinsXp = 4
+	# 大型联赛的**原版物资**倍率（用户定案 ×1.5） ⚠ **只作用于原版物资**（钻石 / 下界合金锭）；模组物品（红金紫线、拟饵、窝料） 不缩放，签收礼也不缩放 —— 否则大型签收礼里的「钻石 ×1」会变成 1.5 个 ✗。 表里所有 ×1.5 都整除（8→12 / 6→9 / 2→3），不会出现半颗钻石。
+	scaleLargeVanillaItems = 1.5
+	# 联赛**奖励类**邮件（邀请、成绩单 —— 里面有奖励）的保管期（现实天，默认 365） ⚠ 据调研改：30 天会惩罚休假玩家（MC 生态有"离线 14 天清数据"的实测坑）。 奖励躺在邮箱里等你回来，而不是"回来发现过期了"。
+	rewardMailKeepDays = 365
+	# 联赛**通知类**邮件（未参赛公示、没上榜说明）的保管期（现实天）
+	noticeMailKeepDays = 30
+	# 登录时**补发**当前这一期的邀请（默认开） ⚠ 文档 §7 写的是"中途加入不补发"（防掐着结算前一天进来捡便宜）， 但**够格名单只存在于玩家附件里**（离线读不到）⇒ 推送那一刻不在线的人 永远收不到邀请，每周只上两天的玩家可能一期都参加不了 ✗。 而"每人窗口 + 硬截止截断"本身就消灭了那个便宜（越晚签收窗口越短）， 所以默认补发；想要严格按文档就关掉这一项。
+	inviteOnLogin = true
+
+# ==========================================================================
+#  以下由 tools/reset-release-defaults.js 补入：代码里新增的配置项（取代码默认值）。
+# ==========================================================================
+
+[league]
+	# 计时口径（用户要的那个旋钮） true（默认）= 推送间隔按**现实天**（7/30/90 天，好理解）； false = 推送间隔按**游戏日**（30/120/360 游戏日；1 游戏日 = 24000 刻 = 20 分钟， 即 10/40/120 小时**服务器真的在跑**的时间 —— 每天只开 2 小时的服，大联赛实际是 60 个现实日）。 ⚠ 每期的**硬截止**与每人的**窗口**永远是游戏时间，不随这个开关变。
+	useRealDays = true
+	# 计分口径（开期时**钉死**，中途改只影响下一期） 0 = 单鱼最重（默认，与排行榜主榜同源）；1 = 总重量； 2 = 金红鱼尾数（金 4 / 红 5）；3 = 图鉴完成度。 ⚠ 顺序与代码里的枚举一一对应，别只改注释。 ⚠ 可刷的两项（2 = 最短上鱼 / 连击）**不在选项里** —— 调研结论： 这两项极易被脚本刷，只作排行榜展示。
+	ruleMode = 0
+
+# ==========================================================================
+#  以下由 tools/reset-release-defaults.js 补入：代码里新增的配置项（取代码默认值）。
+# ==========================================================================
+
+[contest]
+	# 默认时长（分钟，游戏时间） ⚠ 是"服务器真的开着跑了多久"，不是现实时钟 —— 停机期间比赛不推进。
+	defaultMinutes = 30
+	# 默认赛制（开赛时**钉死**，中途改只影响下一场） 0 = 最重一尾（默认，一杆翻盘、戏剧性最强，与排行榜主榜同源）； 1 = 总重量（一直在追，但会变成"钓得多"而不是"钓得大"）； 2 = 金红尾数（红鱼本来就稀 ⇒ 多数场次 0:0 收场）。 ⚠ 顺序与代码里的枚举一一对应，别只改注释。
+	defaultRuleMode = 0
+	# 低于这个**在线人数**就不开赛（默认 1 = 单人也能开，自己跟自己比）
+	minPlayers = 1
+	# 第 1 名奖励（鱼币，默认 300 ≈ 两条金档鱼） 量级是"值得参加"而不是"收入来源"；觉得多就砍半、觉得少就翻倍。
+	rewardFirst = 300
+	# 第 2 名奖励（鱼币）
+	rewardSecond = 150
+	# 第 3 名奖励（鱼币）
+	rewardThird = 80
+	# 自动开赛间隔（分钟；**0 = 只手动开赛**，默认） 填 1440 就是"每天一场"（按服务器运行时间算）。 ⚠ 自动开赛也要满足 minPlayers，且不会打断正在进行的比赛。
+	autoEveryMinutes = 0
+	# 结算时全服公告前几名（1~10，默认 3） ⚠ 只公告**这么多个**：成绩表里再多也不刷屏（中途每上一条大鱼都广播会变成骚扰 ✗）。
+	announceTop = 3
+
+# ==========================================================================
+#  以下由 tools/reset-release-defaults.js 补入：代码里新增的配置项（取代码默认值）。
+# ==========================================================================
+
+[quest]
+	# 委托系统总开关 关掉之后：不再投递委托信、也不再记进度（已接的委托**保留在存档里不动**）。 做这个开关是为了出问题时能一键停掉，不用回滚版本。
+	enable = true
+	# 每游戏日投递的每日委托条数 默认 5（用户 2026-10-14：每天 5 种可做，池子种类更多）。
+	dailyCount = 5
+	# 每游戏周投递的周常委托条数 默认 5（用户口径同上）。
+	weeklyCount = 5
+	# 完成一个每日委托给多少活跃度 用户定案 3；一周最多 5 条 x 3 = 15。
+	activityPerDaily = 3
+	# 完成一个周常委托给多少活跃度 用户定案 8；一周 5 条 = 40。
+	activityPerWeekly = 8
+	# 每周活跃度上限（用户定案 100） 满档不用满勤：5 条周常 40 + 每日 4 天 x 15 = 100，够得到。 四个档位奖励在 25 / 50 / 75 / 100 各发一次。
+	activityCapWeekly = 100

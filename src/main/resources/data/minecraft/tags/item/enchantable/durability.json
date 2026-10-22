@@ -1,0 +1,15 @@
+{
+  "replace": false,
+  "values": [
+    "anglertackle:diamond_float_rod",
+    "anglertackle:diamond_lure_rod",
+    "anglertackle:gold_float_rod",
+    "anglertackle:gold_lure_rod",
+    "anglertackle:iron_float_rod",
+    "anglertackle:iron_lure_rod",
+    "anglertackle:netherite_float_rod",
+    "anglertackle:netherite_lure_rod",
+    "anglertackle:wood_float_rod",
+    "anglertackle:wood_lure_rod"
+  ]
+}

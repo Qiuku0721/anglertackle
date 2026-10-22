@@ -1,0 +1,15 @@
+{
+  "placement": {
+    "type": "minecraft:random_spread",
+    "spacing": 34,
+    "separation": 8,
+    "salt": 1283001,
+    "spread_type": "linear"
+  },
+  "structures": [
+    {
+      "structure": "anglertackle:fisherman_hut",
+      "weight": 1
+    }
+  ]
+}
