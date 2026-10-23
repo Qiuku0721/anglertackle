@@ -7,7 +7,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
-import net.neoforged.neoforge.network.PacketDistributor;
+import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 
 /**
  * 客户端钓鱼状态：只保存一份服务端快照，并在帧间做插值。
@@ -479,7 +479,7 @@ public final class ClientFishingState {
                     primaryHeld, left, right, primaryHeld ? 1 : 0, dir, state, inSession());
         }
 
-        PacketDistributor.sendToServer(
+        ClientPacketDistributor.sendToServer(
                 FishingInputPayload.pack(primaryHeld, hookRequest, retrieveRequest, dir));
         // ⚠ 这里是**每个 tick 都发**，故意不做节流（原先的 inputCooldown 字段已删除）。
         //   曾节流成"每 2 tick 发一次"，而服务端的"输入掉包保护"是 3 tick
@@ -494,7 +494,7 @@ public final class ClientFishingState {
 
     /** 提竿（独立包，避免和每 2 tick 的输入包时序错开）。 */
     public void sendHook() {
-        PacketDistributor.sendToServer(new HookPayload());
+        ClientPacketDistributor.sendToServer(new HookPayload());
     }
 
     /** 会话重置（切换世界/断线）。 */

@@ -14,7 +14,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.neoforged.neoforge.network.PacketDistributor;
+import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 
 import java.util.List;
 
@@ -750,7 +750,7 @@ public class ShopScreen extends Screen {
             int b = confirmButtonAt(x, y);
             if (b == 0) {
                 // 确定卖掉：这时才真的发给服务端
-                PacketDistributor.sendToServer(
+                ClientPacketDistributor.sendToServer(
                         com.whitecobalt.anglertackle.network.ShopActionPayload.sell(pendingSellSlot));
                 pendingSellSlot = -1;
                 pendingSellReason = null;
@@ -760,7 +760,7 @@ public class ShopScreen extends Screen {
             } else if (b == 2) {
                 // 「本局不再提示」= 关掉提示**并且**把当前这条也卖了（玩家点它的意图就是"别烦我，卖"）
                 ClientShopState.suppressSellWarningForever();
-                PacketDistributor.sendToServer(
+                ClientPacketDistributor.sendToServer(
                         com.whitecobalt.anglertackle.network.ShopActionPayload.sell(pendingSellSlot));
                 pendingSellSlot = -1;
                 pendingSellReason = null;
@@ -802,7 +802,7 @@ public class ShopScreen extends Screen {
             }
             int row = hoverExchangeRow(x, y);
             if (row >= 0 && row < all.size()) {
-                PacketDistributor.sendToServer(
+                ClientPacketDistributor.sendToServer(
                         com.whitecobalt.anglertackle.network.ShopActionPayload.exchange(row));
                 return true;
             }
@@ -825,7 +825,7 @@ public class ShopScreen extends Screen {
             }
             int row = hoverLeagueRow(x, y);
             if (row >= 0 && row < all.size()) {
-                PacketDistributor.sendToServer(
+                ClientPacketDistributor.sendToServer(
                         com.whitecobalt.anglertackle.network.ShopActionPayload.league(row));
                 return true;
             }
@@ -836,7 +836,7 @@ public class ShopScreen extends Screen {
         if (tab == TAB_REPAIR) {
             int row = hoverRepairRow(x, y);
             if (row >= 0 && row < repairSlots.size()) {
-                PacketDistributor.sendToServer(
+                ClientPacketDistributor.sendToServer(
                         com.whitecobalt.anglertackle.network.ShopActionPayload.repair(repairSlots.get(row)));
                 return true;
             }
@@ -876,7 +876,7 @@ public class ShopScreen extends Screen {
                     pendingSellReason = why;
                     return true;
                 }
-                PacketDistributor.sendToServer(
+                ClientPacketDistributor.sendToServer(
                         com.whitecobalt.anglertackle.network.ShopActionPayload.sell(slot));
                 return true;
             }
@@ -887,7 +887,7 @@ public class ShopScreen extends Screen {
         if (tab == TAB_RATING) {
             if (com.whitecobalt.anglertackle.player.AnglerLeveling.isGate(ClientShopState.level())
                     && in(x, y, left + panelW / 2 - 60, top + 140, 120, 18)) {
-                PacketDistributor.sendToServer(
+                ClientPacketDistributor.sendToServer(
                         com.whitecobalt.anglertackle.network.ShopActionPayload.rate());
                 return true;
             }
@@ -918,7 +918,7 @@ public class ShopScreen extends Screen {
                 return true;
             }
             // 只发"我想要这件"。价格、够不够钱、限购都归服务端判。
-            PacketDistributor.sendToServer(
+            ClientPacketDistributor.sendToServer(
                     com.whitecobalt.anglertackle.network.ShopActionPayload.of(e.id()));
             return true;
         }

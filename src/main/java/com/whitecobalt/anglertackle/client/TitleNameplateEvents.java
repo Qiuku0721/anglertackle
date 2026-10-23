@@ -40,7 +40,7 @@ public final class TitleNameplateEvents {
     }
 
     @SubscribeEvent
-    public static void onNameTag(RenderNameTagEvent event) {
+    public static void onNameTag(RenderNameTagEvent.CanRender event) {
         try {
             if (!(event.getEntity() instanceof Player player)) {
                 return;                       // 只对玩家生效（其它生物/展示框一律放行）
@@ -54,8 +54,15 @@ public final class TitleNameplateEvents {
             }
             Component title = Component.translatable(Titles.nameKey(id), Titles.nameArgs(id))
                     .withStyle(Quality.of(Titles.qualityOf(id)).color());
+            // 26.1.2：RenderNameTagEvent.CanRender#getContent() 标了 @Nullable（内容来自
+            // getNameTag(entity)，理论上可以没有）。为 null 就干脆不拼 —— 否则 append(null)
+            // 会 NPE，掉进下面的 catch 变成**每帧一条**警告（结果一样，但日志会刷爆）。
+            Component original = event.getContent();
+            if (original == null) {
+                return;
+            }
             event.setContent(Component.empty()
-                    .append(event.getContent())
+                    .append(original)
                     .append(Component.literal("["))
                     .append(title)
                     .append(Component.literal("]")));

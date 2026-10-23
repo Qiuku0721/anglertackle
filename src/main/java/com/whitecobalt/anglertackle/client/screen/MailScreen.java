@@ -15,7 +15,7 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
-import net.neoforged.neoforge.network.PacketDistributor;
+import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -210,7 +210,7 @@ public class MailScreen extends Screen {
     }
 
     private void action(int action, int id) {
-        PacketDistributor.sendToServer(new MailActionPayload(action, id));
+        ClientPacketDistributor.sendToServer(new MailActionPayload(action, id));
     }
 
     // ------------------------------------------------------------------ 数据行
@@ -836,6 +836,6 @@ public class MailScreen extends Screen {
     static {
         // 让 RenderSystem 的静态初始化早一点发生（本界面直接用 fill/drawString，
         // 不引入额外的渲染状态；这里只是保持与其它界面一致的加载顺序）
-        RenderSystem.assertOnRenderThreadOrInit();
+        RenderSystem.assertOnRenderThread();
     }
 }

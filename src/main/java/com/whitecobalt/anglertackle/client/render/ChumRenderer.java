@@ -62,6 +62,20 @@ public class ChumRenderer extends EntityRenderer<ChumEntity, ChumRenderState> {
         this.shadowRadius = 0.0f;
     }
 
+    /**
+     * 不参与视锥剔除 —— 26.1.2 删掉了 {@code Entity.noCulling}，等价开关挪到渲染器层
+     * （{@code EntityRenderer.affectedByCulling}，默认 {@code true}）。
+     *
+     * <p>原语义：<b>实体中心出视锥也不剔除</b>。这里画的不是一个实体大小的东西，而是
+     * 半径 10 格的白色圆环 —— 圆心（实体）在画面外、圆环的一小段仍在画面里是**常态**
+     * （站在岸上打窝时最常见）。按实体包围盒剔除的话，人一转头圈就整片消失 ✗。
+     * 这是**回归修复**，不是新功能。
+     */
+    @Override
+    protected boolean affectedByCulling(ChumEntity entity) {
+        return false;
+    }
+
     @Override
     public ChumRenderState createRenderState() {
         return new ChumRenderState();

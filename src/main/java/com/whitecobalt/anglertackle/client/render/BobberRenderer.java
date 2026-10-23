@@ -88,6 +88,19 @@ public class BobberRenderer extends EntityRenderer<BobberEntity, BobberRenderSta
         return LayerDefinition.create(mesh, 32, 32);
     }
 
+    /**
+     * 不参与视锥剔除 —— 26.1.2 删掉了 {@code Entity.noCulling}，等价开关挪到渲染器层
+     * （{@code EntityRenderer.affectedByCulling}，默认 {@code true}）。
+     *
+     * <p>原语义：<b>实体中心出视锥也不剔除</b>。鱼线是从竿尖连到浮漂的，钩子/浮漂在画面边缘时
+     * 实体中心很容易先跑出视锥 —— 那时整根鱼线会突然消失。原版 {@code FishingHookRenderer}
+     * 在同一个方法里也返回 {@code false}，本方法与之对齐（这是**回归修复**，不是新功能）。
+     */
+    @Override
+    protected boolean affectedByCulling(BobberEntity entity) {
+        return false;
+    }
+
     @Override
     public BobberRenderState createRenderState() {
         return new BobberRenderState();

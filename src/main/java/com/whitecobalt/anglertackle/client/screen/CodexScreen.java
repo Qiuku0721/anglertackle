@@ -290,7 +290,7 @@ public class CodexScreen extends Screen {
         // ⚠ 也不能直接 `setScreen(new LeaderboardScreen(...))`：那个 Screen 要 `RankPayload`，
         //   手上没有包时打开只会是一张空榜（看起来像"排行榜没数据"）。
         Button rank = Button.builder(Component.translatable("gui.anglertackle.codex_rank"), b ->
-                net.neoforged.neoforge.network.PacketDistributor.sendToServer(
+                net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
                         new com.whitecobalt.anglertackle.network.RankRequestPayload("")))
                 .bounds(groupX + 2 * (bw + 4), top + panelH - 22, bw, 18).build();
         addRenderableWidget(rank);
@@ -301,7 +301,7 @@ public class CodexScreen extends Screen {
         // 与排行榜按钮**完全同一条形状**：只发一个请求包（`MailActionPayload(OPEN)`），
         // 由服务端把快照发回来、客户端才开界面 ⇒ 客户端既造不出邮件、也改不了任何状态 ✓。
         Button mail = Button.builder(Component.translatable("gui.anglertackle.codex_mail"), b ->
-                net.neoforged.neoforge.network.PacketDistributor.sendToServer(
+                net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
                         new com.whitecobalt.anglertackle.network.MailActionPayload(
                                 com.whitecobalt.anglertackle.network.MailActionPayload.OPEN, -1)))
                 .bounds(groupX + (bw + 4), top + panelH - 22, bw, 18).build();
@@ -314,7 +314,7 @@ public class CodexScreen extends Screen {
         // 服务端把称号全表快照发回来、客户端才开界面 ⇒ 客户端既改不了"我有哪些称号"，
         // 也改不了"我戴着哪个"（佩戴要再发一次 EQUIP，由 `Titles.equip` 判）✓。
         Button titles = Button.builder(Component.translatable("gui.anglertackle.codex_titles"), b ->
-                net.neoforged.neoforge.network.PacketDistributor.sendToServer(
+                net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
                         new com.whitecobalt.anglertackle.network.TitleActionPayload(
                                 com.whitecobalt.anglertackle.network.TitleActionPayload.OPEN, "")))
                 .bounds(groupX, top + panelH - 22, bw, 18).build();

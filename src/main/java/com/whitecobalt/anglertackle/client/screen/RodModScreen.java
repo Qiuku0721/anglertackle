@@ -6,7 +6,7 @@ import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
-import net.neoforged.neoforge.network.PacketDistributor;
+import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -122,7 +122,7 @@ public class RodModScreen extends Screen {
 
             Button remove = Button.builder(Component.literal("卸"), b -> {
                 expandedSlot = -1;
-                PacketDistributor.sendToServer(new RodModActionPayload(
+                ClientPacketDistributor.sendToServer(new RodModActionPayload(
                         RodModActionPayload.ACTION_UNEQUIP, (byte) slotIndex, ""));
             }).bounds(left + removeX, y - 3, btnW, 18).build();
             addRenderableWidget(remove);
@@ -150,7 +150,7 @@ public class RodModScreen extends Screen {
             for (int c = 0; c < shown; c++) {
                 final String id = candidates[c];
                 Button pick = Button.builder(Component.literal(shortName(id)), b -> {
-                    PacketDistributor.sendToServer(new RodModActionPayload(
+                    ClientPacketDistributor.sendToServer(new RodModActionPayload(
                             RodModActionPayload.ACTION_EQUIP, (byte) targetSlot, id));
                     expandedSlot = -1;
                     rebuildAll();

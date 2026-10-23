@@ -13,7 +13,7 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
-import net.neoforged.neoforge.network.PacketDistributor;
+import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -647,7 +647,7 @@ public class TitleScreen extends Screen {
 
     /** 佩戴 / 摘下（**只发动作包**，能不能戴由服务端判 —— 客户端不自己改状态）。 */
     private void toggleEquip(Row r) {
-        PacketDistributor.sendToServer(new TitleActionPayload(
+        ClientPacketDistributor.sendToServer(new TitleActionPayload(
                 r.equipped ? TitleActionPayload.UNEQUIP : TitleActionPayload.EQUIP, r.id));
     }
 
@@ -819,7 +819,7 @@ public class TitleScreen extends Screen {
                 return false;
             }
             case 85 -> {    // U = 摘下（不管现在选的是哪条）
-                PacketDistributor.sendToServer(
+                ClientPacketDistributor.sendToServer(
                         new TitleActionPayload(TitleActionPayload.UNEQUIP, ""));
                 return true;
             }

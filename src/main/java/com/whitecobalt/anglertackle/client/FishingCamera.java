@@ -176,7 +176,7 @@ public final class FishingCamera {
 
         // 从**相机**位置算，而不是玩家的眼睛：第一人称下两者基本重合，
         // 但第三人称/骑乘时相机位置不同，用相机位置才不会算歪。
-        Vec3 cam = event.getCamera().getPosition();
+        Vec3 cam = event.getCamera().position();
         double dx = smoothTarget.x - cam.x;
         double dy = smoothTarget.y - cam.y;
         double dz = smoothTarget.z - cam.z;
@@ -299,7 +299,7 @@ public final class FishingCamera {
             return;
         }
 
-        double factor = 1.0 + (cfgReelZoomPercent() / 100.0 - 1.0) * zoom;
+        float factor = (float) (1.0 + (cfgReelZoomPercent() / 100.0 - 1.0) * zoom);
         // ★ 乘在**当前** FOV 上：基线是画面上本来就有的视野水平，松手即回到原样。
         event.setFOV(event.getFOV() * factor);
     }

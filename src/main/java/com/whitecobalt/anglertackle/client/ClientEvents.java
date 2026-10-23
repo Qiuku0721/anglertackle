@@ -6,14 +6,17 @@ import com.whitecobalt.anglertackle.item.RodItem;
 import com.whitecobalt.anglertackle.network.CastPayload;
 import com.whitecobalt.anglertackle.network.RodModActionPayload;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.player.ClientInput;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.entity.player.Input;
+import net.minecraft.world.phys.Vec2;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.InputEvent;
-import net.neoforged.neoforge.network.PacketDistributor;
+import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 
 /**
  * 客户端事件：把键盘/鼠标状态翻译成服务端能懂的输入包。
@@ -48,8 +51,53 @@ public final class ClientEvents {
     private static int chargeLogged;
     /** 对抗中是否已锁住移动（只用于"进入对抗"时提示一次）。 */
     private static boolean fishingMoveLocked;
+    /** 移动锁期间顶替 {@code LocalPlayer.input} 的对象；null = 当前没有锁。 */
+    private static LockedInput lockedInput;
 
     private ClientEvents() {
+    }
+
+    /**
+     * 移动锁期间临时顶替 {@code LocalPlayer.input} 的输入对象。
+     *
+     * <h2>为什么需要它（26.1.2 迁移）</h2>
+     * 旧版锁移动是直接写 {@code input.leftImpulse / forwardImpulse / jumping}（三个 float 冲量）。
+     * 26.1.2 里左/前冲量并成了 {@link ClientInput#getMoveVector()} 背后的
+     * {@code Vec2 moveVector}（<b>protected、没有 setter</b>），跳跃并进了记录
+     * {@link Input#jump()}（boolean）—— 从模组代码里<b>改不到</b>这两个值。
+     *
+     * <p>而 {@code LocalPlayer.applyInput()} 每 tick 都会用 {@code input.getMoveVector()}
+     * <b>重新算</b> {@code xxa/zza}、用 {@code input.keyPresses.jump()} 重算 {@code jumping}
+     * ⇒ "tick 之后再清零实体字段"没有用（下一 tick 立刻被覆盖），这正是旧注释里
+     * "只在 tick 里清一次会被原版随后的重新赋值覆盖"那条坑在新版本的另一副样子。
+     *
+     * <p>唯一公开的扩展点是 {@link ClientInput} 本身（原版 {@code KeyboardInput} 就是它的子类）
+     * ⇒ 锁住时换上一个"移动向量恒为 {@code ZERO}、跳跃恒为 false"的子类，解锁时换回原对象。
+     *
+     * <p>⚠ 只换对象、**不动原对象**：{@link #original} 照常每 tick 收键（Shift/疾跑都还在用它），
+     * 换回来时状态本来就是新的，不会"锁一秒之后卡在旧键位上"。
+     * <p>⚠ 只清**跳跃**，Shift/疾跑原样保留 —— 旧实现也只清了跳跃，别顺手扩大行为。
+     */
+    private static final class LockedInput extends ClientInput {
+        private final ClientInput original;
+
+        LockedInput(ClientInput original) {
+            // 别套娃：万一传进来的已经是我们自己的替身（上一轮没还原干净），直接取它的原对象
+            this.original = original instanceof LockedInput nested ? nested.original : original;
+        }
+
+        @Override
+        public void tick() {
+            this.original.tick();
+            Input p = this.original.keyPresses;
+            this.keyPresses = new Input(p.forward(), p.backward(), p.left(), p.right(),
+                    false, p.shift(), p.sprint());
+        }
+
+        @Override
+        public Vec2 getMoveVector() {
+            return Vec2.ZERO;
+        }
     }
 
     /**
@@ -135,7 +183,7 @@ public final class ClientEvents {
                     FishingManager.LOGGER.info("[垂纶/输入] 松手下降沿，但已有会话 → 判定为收回，不抛投");
                 } else {
                     float pitch = mc.player.getXRot();
-                    PacketDistributor.sendToServer(new CastPayload(pitch));
+                    ClientPacketDistributor.sendToServer(new CastPayload(pitch));
                     FishingManager.LOGGER.info("[垂纶/输入] 已上报松手：俯仰 {}°", String.format("%.1f", pitch));
                 }
             }
@@ -164,7 +212,7 @@ public final class ClientEvents {
                 if (usingNow) {
                     mc.player.stopUsingItem();   // 先把蓄力掐掉，否则界面会被立刻关掉
                 }
-                PacketDistributor.sendToServer(
+                ClientPacketDistributor.sendToServer(
                         new RodModActionPayload(RodModActionPayload.ACTION_REFRESH, (byte) 0, ""));
                 modRequestCooldown = 10;
                 // 给玩家一个即时反馈：即使界面因故没打开，也能知道请求发出去了
@@ -177,7 +225,7 @@ public final class ClientEvents {
         // ---------------- 对抗中接管移动键 ----------------
         // 用户要求："钓鱼时移动键应该改成拉杆方向，结束后再改回来"。
         // 这里在对抗状态下把 WASD 的位移意图清空——按键本身不拦截
-        // （不碰 KeyMapping，避免和别的模组打架），只是这一 tick 不产生移动。
+        // （不碰 KeyMapping，避免和别的模组打架），只是在锁住期间不产生移动。
         // 于是玩家的 A/D 就自然变成"控杆方向"（在 sendInput 里读的就是 A/D）。
         //
         // ⚠⚠ 2026-10-16 我**先把它当 bug 改错了**，用户当天纠正：这是**要的功能**，原话
@@ -189,16 +237,17 @@ public final class ClientEvents {
         //   没有它，玩家在收线动作还没结束时就恢复自由移动，按住方向键的手会把角色带走。
         //   要调这个时长就改服务端的 `landingTicks`（25~30 tick），别动这里的判据。
         if (state.movementLocked()) {
-            // ⚠️ 必须在 assign 之后再清：原版这一 tick 刚根据按键算好左/前冲量，
-            // 我们紧接着把它归零，玩家就真的动不了。
-            // 之前只在 tick 里清一次，会被原版随后的重新赋值覆盖，所以看起来"还能走"。
-            mc.player.input.leftImpulse = 0.0f;
-            mc.player.input.forwardImpulse = 0.0f;
-            mc.player.setSprinting(false);
-            // 连跳跃也拦掉，否则玩家能蹦着把鱼拽跑
-            if (mc.player.input.jumping) {
-                mc.player.input.jumping = false;
+            // 26.1.2：{@code leftImpulse / forwardImpulse / jumping} 三个字段都没了
+            // （见 {@link LockedInput} 的说明）—— 锁住时把输入**对象**换成"零移动 + 不跳"的那个。
+            // 这段代码跑在**原版玩家 tick 之后**（ClientTickEvent.Post）：这一 tick 已经用旧输入走完了，
+            // 我们换上的对象从**下一 tick** 的 applyInput() 开始生效，一直持续到解锁那一 tick。
+            if (lockedInput == null || mc.player.input != lockedInput) {
+                // 后者兜底"锁住期间重生/换维度"：ClientPacketListener 会给新玩家装一个新的
+                // KeyboardInput，那就把它重新包一层，别去动旧的。
+                lockedInput = new LockedInput(mc.player.input);
+                mc.player.input = lockedInput;
             }
+            mc.player.setSprinting(false);
             if (!fishingMoveLocked) {
                 fishingMoveLocked = true;
                 mc.player.sendOverlayMessage(
@@ -206,6 +255,15 @@ public final class ClientEvents {
             }
         } else if (fishingMoveLocked) {
             fishingMoveLocked = false;
+        }
+        // 解锁：把原版输入对象换回去。
+        // ⚠ 只在"现在装的还是我们换上的那个"时才换 —— 否则会覆盖
+        //   ClientPacketListener 在登录/重生时刚装上的新 KeyboardInput。
+        if (!state.movementLocked() && lockedInput != null) {
+            if (mc.player != null && mc.player.input == lockedInput) {
+                mc.player.input = lockedInput.original;
+            }
+            lockedInput = null;
         }
 
         boolean attackDown = mc.options.keyAttack.isDown();
@@ -235,6 +293,9 @@ public final class ClientEvents {
         hookSentThisWindow = false;
         prevAttackDown = false;
         wasUsingItem = false;
+        // 移动锁的替身对象随玩家一起作废：下一个 LocalPlayer 会由 ClientPacketListener
+        // 装一个新的 KeyboardInput，这里只要把引用丢掉即可（**不要**往 null 玩家上写 input）。
+        lockedInput = null;
         modRequestCooldown = 0;
     }
 }

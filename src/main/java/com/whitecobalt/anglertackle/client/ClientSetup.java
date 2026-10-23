@@ -7,8 +7,9 @@ import com.whitecobalt.anglertackle.registry.ModEntities;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.client.event.EntityRenderersEvent;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
+import net.neoforged.neoforge.client.event.EntityRenderersEvent;
+import net.neoforged.neoforge.client.event.RegisterRangeSelectItemModelPropertyEvent;
 
 /**
  * 客户端渲染注册。
@@ -49,44 +50,49 @@ public final class ClientSetup {
     }
 
     /**
-     * 客户端启动钩子（目前没有必须在这里做的事）。
+     * 客户端启动钩子（26.1.2 起方法体里没有必须做的事）。
      *
-     * <p>这里原来注册的是追踪罗盘的 {@code minecraft:angle} 物品属性 ——
-     * 2026-10-02 罗盘整个删掉了（改成一次性的「渔夫小屋定位线索」，
-     * 用一次直接报坐标，不需要模型属性），所以这个钩子暂时空着。
+     * <p>这里先后注册过两样东西：① 追踪罗盘的 {@code minecraft:angle} 物品属性
+     * —— 2026-10-02 罗盘整个删掉了（改成一次性的「渔夫小屋定位线索」，用一次直接报坐标，
+     * 不需要模型属性）；② 台钓竿的 {@code anglertackle:cast} —— 26.1.2 的
+     * {@code ItemProperties} 已删除，改到 {@link #onRegisterRangeSelectProperties}（见那里的说明）。
      *
-     * <p>⚠ 留着方法体是这个原因：{@code FMLClientSetupEvent} 是**早于资源加载**的
-     * 官方钩子，以后再有"必须在模型 bake 之前注册"的东西（物品属性、着色器……
-     * 晚了就会永远查不到，表现是"模型永远显示默认帧"）就往这里加，别再新建一个监听器。
+     * <p>⚠ 方法仍然留着：{@code FMLClientSetupEvent} 是**早于资源加载**的官方钩子，
+     * 以后再有"必须在模型 bake 之前注册"的东西（着色器、渲染类型……晚了就会永远查不到，
+     * 表现是"模型永远显示默认帧"）就往这里加，别再新建一个监听器。
      */
     @SubscribeEvent
     public static void onClientSetup(FMLClientSetupEvent event) {
-        // ★ 台钓竿"抛竿换图"的判据 —— 用户 2026-10-11：
-        //   "台钓竿没有跟随状态变化改变的贴图，需要做到**抛竿出去后明显是鱼线的部分消失，收回后还原**"。
-        //   做法与原版鱼竿完全一致：主模型里写 `overrides` + 这里注册判据（见 models/item/*_float_rod.json）。
+        // 目前没有必须在这里做的事。
         //
-        //   ⚠ 原版的 `minecraft:cast` 只注册在**原版鱼竿**那个物品上 —— 我们的竿用不了它，
-        //     必须自己注册一个同名的（本模组命名空间）。
-        //   ⚠ 判据必须按"**手上这根竿**"判断：模型 overrides 是对**每个堆栈**求值的，
-        //     只判断"玩家正在钓鱼"的话，背包里和另一只手上的台钓竿会一起变成无线的图 ✗。
-        //   ⚠ 必须在这里注册（注册早了物品还查不到，表现是"模型永远停在默认帧"）。
-        for (var rod : new net.minecraft.world.item.Item[]{
-                com.whitecobalt.anglertackle.registry.ModItems.WOOD_FLOAT_ROD.get(),
-                com.whitecobalt.anglertackle.registry.ModItems.IRON_FLOAT_ROD.get(),
-                com.whitecobalt.anglertackle.registry.ModItems.GOLD_FLOAT_ROD.get(),
-                com.whitecobalt.anglertackle.registry.ModItems.DIAMOND_FLOAT_ROD.get(),
-                com.whitecobalt.anglertackle.registry.ModItems.NETHERITE_FLOAT_ROD.get()}) {
-            net.minecraft.client.renderer.item.ItemProperties.register(rod,
-                    net.minecraft.resources.Identifier.fromNamespaceAndPath(
-                            com.whitecobalt.anglertackle.AnglersTackle.MOD_ID, "cast"),
-                    (stack, level, entity, seed) -> {
-                        if (entity == null
-                                || !com.whitecobalt.anglertackle.client.ClientFishingState.get().inSession()) {
-                            return 0.0F;   // 没抛竿 ⇒ 显示带鱼线的那张
-                        }
-                        return entity.getMainHandItem().getItem() == stack.getItem() ? 1.0F : 0.0F;
-                    });
-        }
+        // ⚠ 原来这里注册的是台钓竿"抛竿换图"的物品属性（{@code ItemProperties.register}）。
+        //   26.1.2 把 {@code ItemProperties} 整个删了，改成"按 id 注册一个 range-select 属性类型"，
+        //   注册点在 mod 总线事件 {@code RegisterRangeSelectItemModelPropertyEvent}
+        //   ⇒ 见下面的 {@link #onRegisterRangeSelectProperties}。
+        //
+        // ⚠ 方法本身**留着**：{@code FMLClientSetupEvent} 是早于资源加载的官方钩子，
+        //   以后再有"必须在模型 bake 之前注册"的东西（着色器、渲染类型……）就往这里加，
+        //   别再新建一个监听器。
+    }
+
+    /**
+     * 台钓竿"抛竿换图"的判据注册 —— 用户 2026-10-11：
+     * "台钓竿没有跟随状态变化改变的贴图，需要做到**抛竿出去后明显是鱼线的部分消失，收回后还原**"。
+     *
+     * <p>26.1.2：{@code ItemProperties.register(item, id, predicate)} 已删除，换成
+     * "**属性类型**按 id 注册一次 + 模型 JSON 的 {@code range_dispatch} 引用它"。
+     * 这里注册的 id 与旧实现相同（{@code anglertackle:cast}），判据在 {@link CastItemProperty}。
+     *
+     * <p>⚠ 原版的 {@code minecraft:cast} 只属于**原版鱼竿**那个物品，我们的竿用不了它
+     * ⇒ 必须自己注册一个同名的（本模组命名空间）。
+     * <p>⚠ 判据里自带"手上这根竿"那一层，所以**一根属性覆盖五根台钓竿**，
+     * 不再需要按物品循环注册（也就不会漏注册某一根）。
+     */
+    @SubscribeEvent
+    public static void onRegisterRangeSelectProperties(RegisterRangeSelectItemModelPropertyEvent event) {
+        event.register(
+                net.minecraft.resources.Identifier.fromNamespaceAndPath(AnglersTackle.MOD_ID, "cast"),
+                CastItemProperty.MAP_CODEC);
     }
 
     @SubscribeEvent
