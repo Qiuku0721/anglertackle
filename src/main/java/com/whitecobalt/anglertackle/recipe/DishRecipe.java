@@ -8,6 +8,7 @@ import com.whitecobalt.anglertackle.registry.ModDataComponents;
 import com.whitecobalt.anglertackle.registry.ModItems;
 import com.whitecobalt.anglertackle.registry.ModRecipes;
 import com.whitecobalt.anglertackle.registry.ModTags;
+import net.minecraft.core.Holder;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.NonNullList;
 import net.minecraft.core.component.DataComponents;
@@ -109,7 +110,8 @@ public class DishRecipe extends CustomRecipe {
             if (this == WHOLE_FISH) {
                 Item fish = net.minecraft.core.registries.BuiltInRegistries.ITEM.get(
                         net.minecraft.resources.Identifier.fromNamespaceAndPath(
-                                com.whitecobalt.anglertackle.AnglersTackle.MOD_ID, species));
+                                com.whitecobalt.anglertackle.AnglersTackle.MOD_ID, species))
+                        .map(Holder.Reference::value).orElse(null);
                 return fish == null ? List.of() : List.of(new ItemStack(fish));
             }
             List<ItemStack> out = new ArrayList<>();

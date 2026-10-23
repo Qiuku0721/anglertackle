@@ -1,6 +1,9 @@
 package com.whitecobalt.anglertackle.contest;
 
+import com.whitecobalt.anglertackle.util.NbtCompat;
+import net.minecraft.core.Holder;
 import net.minecraft.core.HolderLookup;
+import net.minecraft.core.UUIDUtil;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
@@ -120,7 +123,7 @@ public class ContestData extends SavedData {
     // ---------------------------------------------------------------- 存取
     private static CompoundTag entryTag(Contest.Entry e) {
         CompoundTag t = new CompoundTag();
-        t.putUUID("uuid", e.player());
+        t.putIntArray("uuid", UUIDUtil.uuidToIntArray(e.player()));
         t.putString("name", e.name() == null ? "" : e.name());
         t.putDouble("value", e.value());
         t.putLong("at", e.atTick());
@@ -134,51 +137,55 @@ public class ContestData extends SavedData {
     }
 
     private static Contest.Entry entryFrom(CompoundTag t) {
-        return new Contest.Entry(t.getUUID("uuid"), t.getString("name"), t.getDouble("value"),
-                t.getLong("at"), t.getInt("catches"), t.getString("fish"), t.getDouble("kg"),
-                t.getDouble("len"), t.getString("grade"), t.getInt("tier"));
+        return new Contest.Entry(t.getIntArray("uuid").map(UUIDUtil::uuidFromIntArray).orElseThrow(),
+                t.getStringOr("name", ""), t.getDoubleOr("value", 0.0),
+                t.getLongOr("at", 0L), t.getIntOr("catches", 0), t.getStringOr("fish", ""),
+                t.getDoubleOr("kg", 0.0), t.getDoubleOr("len", 0.0), t.getStringOr("grade", ""),
+                t.getIntOr("tier", 0));
     }
 
     public static ContestData load(CompoundTag tag, HolderLookup.Provider registries) {
         ContestData d = new ContestData();
-        d.running = tag.getBoolean("running");
-        d.ruleMode = tag.getInt("rule");
-        d.startGame = tag.getLong("start");
-        d.endGame = tag.getLong("end");
-        d.minutes = tag.getInt("minutes");
-        d.settled = tag.getBoolean("settled");
-        d.lastRuleMode = tag.getInt("last_rule");
-        d.lastStart = tag.getLong("last_start");
-        d.lastEnd = tag.getLong("last_end");
-        d.lastPlayers = tag.getInt("last_players");
-        d.lastAutoStartGame = tag.getLong("last_auto");
-        ListTag sc = tag.getList("scores", Tag.TAG_COMPOUND);
+        d.running = tag.getBooleanOr("running", false);
+        d.ruleMode = tag.getIntOr("rule", 0);
+        d.startGame = tag.getLongOr("start", 0L);
+        d.endGame = tag.getLongOr("end", 0L);
+        d.minutes = tag.getIntOr("minutes", 0);
+        d.settled = tag.getBooleanOr("settled", false);
+        d.lastRuleMode = tag.getIntOr("last_rule", 0);
+        d.lastStart = tag.getLongOr("last_start", 0L);
+        d.lastEnd = tag.getLongOr("last_end", 0L);
+        d.lastPlayers = tag.getIntOr("last_players", 0);
+        d.lastAutoStartGame = tag.getLongOr("last_auto", 0L);
+        ListTag sc = NbtCompat.listOf(tag, "scores", Tag.TAG_COMPOUND);
         for (int i = 0; i < sc.size(); i++) {
             try {
-                Contest.Entry e = entryFrom(sc.getCompound(i));
+                Contest.Entry e = entryFrom(sc.getCompoundOrEmpty(i));
                 d.scores.put(e.player(), e);
             } catch (Throwable ignored) {
                 // 坏行跳过：一份坏数据不该让整场读不出来
             }
         }
-        ListTag lb = tag.getList("last_board", Tag.TAG_STRING);
+        ListTag lb = NbtCompat.listOf(tag, "last_board", Tag.TAG_STRING);
         for (int i = 0; i < lb.size(); i++) {
-            d.lastBoard.add(lb.getString(i));
+            d.lastBoard.add(lb.getStringOr(i, ""));
         }
-        ListTag pc = tag.getList("pending_coins", Tag.TAG_COMPOUND);
+        ListTag pc = NbtCompat.listOf(tag, "pending_coins", Tag.TAG_COMPOUND);
         for (int i = 0; i < pc.size(); i++) {
-            CompoundTag t = pc.getCompound(i);
+            CompoundTag t = pc.getCompoundOrEmpty(i);
             try {
-                d.pendingCoins.put(t.getUUID("uuid"), t.getLong("coins"));
+                d.pendingCoins.put(t.getIntArray("uuid").map(UUIDUtil::uuidFromIntArray).orElseThrow(),
+                        t.getLongOr("coins", 0L));
             } catch (Throwable ignored) {
                 // 同上
             }
         }
-        ListTag pt = tag.getList("pending_titles", Tag.TAG_COMPOUND);
+        ListTag pt = NbtCompat.listOf(tag, "pending_titles", Tag.TAG_COMPOUND);
         for (int i = 0; i < pt.size(); i++) {
-            CompoundTag t = pt.getCompound(i);
+            CompoundTag t = pt.getCompoundOrEmpty(i);
             try {
-                d.pendingTitles.put(t.getUUID("uuid"), t.getString("title"));
+                d.pendingTitles.put(t.getIntArray("uuid").map(UUIDUtil::uuidFromIntArray).orElseThrow(),
+                        t.getStringOr("title", ""));
             } catch (Throwable ignored) {
                 // 同上
             }
@@ -212,7 +219,7 @@ public class ContestData extends SavedData {
         ListTag pc = new ListTag();
         for (Map.Entry<UUID, Long> e : this.pendingCoins.entrySet()) {
             CompoundTag t = new CompoundTag();
-            t.putUUID("uuid", e.getKey());
+            t.putIntArray("uuid", UUIDUtil.uuidToIntArray(e.getKey()));
             t.putLong("coins", e.getValue());
             pc.add(t);
         }
@@ -220,7 +227,7 @@ public class ContestData extends SavedData {
         ListTag pt = new ListTag();
         for (Map.Entry<UUID, String> e : this.pendingTitles.entrySet()) {
             CompoundTag t = new CompoundTag();
-            t.putUUID("uuid", e.getKey());
+            t.putIntArray("uuid", UUIDUtil.uuidToIntArray(e.getKey()));
             t.putString("title", e.getValue());
             pt.add(t);
         }

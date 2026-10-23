@@ -10,6 +10,7 @@ import com.whitecobalt.anglertackle.player.MailBox;
 import com.whitecobalt.anglertackle.player.MailEntry;
 import com.whitecobalt.anglertackle.player.PlayerData;
 import com.whitecobalt.anglertackle.player.QuestData;
+import net.minecraft.core.Holder;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
@@ -465,7 +466,7 @@ public final class QuestService {
             if (rl == null) {
                 return List.of();
             }
-            Item item = BuiltInRegistries.ITEM.get(rl);
+            Item item = BuiltInRegistries.ITEM.get(rl).map(Holder.Reference::value).orElse(null);
             if (item == null || item == net.minecraft.world.item.Items.AIR) {
                 AnglersTackle.LOGGER.warn("[垂纶] 委托奖励物品 id 认不出来：{}（这一档先不给物品）", itemId);
                 return List.of();

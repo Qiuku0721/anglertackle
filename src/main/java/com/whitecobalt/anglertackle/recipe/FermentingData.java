@@ -3,6 +3,7 @@ package com.whitecobalt.anglertackle.recipe;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.whitecobalt.anglertackle.util.NbtCompat;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.registries.Registries;
@@ -67,15 +68,16 @@ public class FermentingData extends SavedData {
 
     public static FermentingData load(CompoundTag tag, HolderLookup.Provider registries) {
         FermentingData d = new FermentingData();
-        ListTag list = tag.getList("pending", Tag.TAG_COMPOUND);
+        ListTag list = NbtCompat.listOf(tag, "pending", Tag.TAG_COMPOUND);
         for (int i = 0; i < list.size(); i++) {
-            CompoundTag e = list.getCompound(i);
-            Identifier dim = Identifier.tryParse(e.getString("dim"));
+            CompoundTag e = list.getCompoundOrEmpty(i);
+            Identifier dim = Identifier.tryParse(e.getStringOr("dim", ""));
             if (dim == null) {
                 continue;   // 老/坏数据：跳过这一条，读档绝不因为这里崩
             }
-            BlockPos pos = BlockPos.of(e.getLong("pos"));
-            Entry entry = new Entry(ResourceKey.create(Registries.DIMENSION, dim), pos, e.getLong("start"));
+            BlockPos pos = BlockPos.of(e.getLongOr("pos", 0L));
+            Entry entry = new Entry(ResourceKey.create(Registries.DIMENSION, dim), pos,
+                    e.getLongOr("start", 0L));
             d.pending.put(entry.key(), entry);
         }
         return d;

@@ -44,10 +44,10 @@ public class ChumRegistry extends SavedData {
 
     public static ChumRegistry load(CompoundTag tag, HolderLookup.Provider registries) {
         ChumRegistry d = new ChumRegistry();
-        CompoundTag map = tag.getCompound("live");
-        for (String key : map.getAllKeys()) {
+        CompoundTag map = tag.getCompoundOrEmpty("live");
+        for (String key : map.keySet()) {
             try {
-                d.live.put(UUID.fromString(key), map.getLong(key));
+                d.live.put(UUID.fromString(key), map.getLongOr(key, 0L));
             } catch (IllegalArgumentException ignored) {
                 // 坏数据（手改过存档 / 版本迁移）只跳过这一条，绝不让读档失败
             }

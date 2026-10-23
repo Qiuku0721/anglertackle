@@ -6,6 +6,7 @@ import com.whitecobalt.anglertackle.fishing.RodStats;
 import com.whitecobalt.anglertackle.registry.ModDataComponents;
 import com.whitecobalt.anglertackle.fishing.FishingSession;
 import net.minecraft.ChatFormatting;
+import net.minecraft.core.Holder;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
@@ -350,7 +351,8 @@ public class RodItem extends Item implements HasQuality {
     private static Component itemNameOf(String itemId) {
         try {
             var rl = net.minecraft.resources.Identifier.parse(itemId);
-            return new ItemStack(net.minecraft.core.registries.BuiltInRegistries.ITEM.get(rl))
+            return new ItemStack(net.minecraft.core.registries.BuiltInRegistries.ITEM.get(rl)
+                    .map(Holder.Reference::value).orElse(null))
                     .getHoverName();
         } catch (Exception e) {
             return Component.literal(itemId);

@@ -5,6 +5,7 @@ import com.mojang.serialization.codecs.RecordCodecBuilder;
 import com.whitecobalt.anglertackle.AnglersTackle;
 import com.whitecobalt.anglertackle.fishing.FishData;
 import com.whitecobalt.anglertackle.item.PartStats;
+import net.minecraft.core.Holder;
 import net.minecraft.core.component.DataComponentType;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.FriendlyByteBuf;
@@ -187,7 +188,8 @@ public final class ModDataComponents {
                 return ItemStack.EMPTY;
             }
             net.minecraft.world.item.Item item =
-                    net.minecraft.core.registries.BuiltInRegistries.ITEM.get(rl);
+                    net.minecraft.core.registries.BuiltInRegistries.ITEM.get(rl)
+                            .map(Holder.Reference::value).orElse(null);
             return item == null ? ItemStack.EMPTY : new ItemStack(item);
         }
 
@@ -219,7 +221,8 @@ public final class ModDataComponents {
             net.minecraft.resources.Identifier rl = buf.readIdentifier();
             int dmg = buf.readVarInt();
             net.minecraft.world.item.Item item =
-                    net.minecraft.core.registries.BuiltInRegistries.ITEM.get(rl);
+                    net.minecraft.core.registries.BuiltInRegistries.ITEM.get(rl)
+                            .map(Holder.Reference::value).orElse(null);
             if (item == null) {
                 return ItemStack.EMPTY;
             }

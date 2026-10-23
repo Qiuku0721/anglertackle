@@ -9,6 +9,7 @@ import com.whitecobalt.anglertackle.network.ModNetwork;
 import com.whitecobalt.anglertackle.network.RodModActionPayload;
 import com.whitecobalt.anglertackle.network.RodModPayload;
 import com.whitecobalt.anglertackle.registry.ModDataComponents;
+import net.minecraft.core.Holder;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
@@ -383,7 +384,8 @@ public final class RodModManager {
     private static ItemStack findInInventory(ServerPlayer player, RodItem.RodType type,
                                             int slot, String wantedId) {
         Item wantItem = wantedId == null || wantedId.isEmpty() ? null
-                : BuiltInRegistries.ITEM.get(Identifier.tryParse(wantedId));
+                : BuiltInRegistries.ITEM.get(Identifier.tryParse(wantedId))
+                        .map(Holder.Reference::value).orElse(null);
 
         for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
             ItemStack stack = player.getInventory().getItem(i);
@@ -536,7 +538,8 @@ public final class RodModManager {
         if (rl == null) {
             return itemId;
         }
-        return new ItemStack(BuiltInRegistries.ITEM.get(rl)).getHoverName().getString();
+        return new ItemStack(BuiltInRegistries.ITEM.get(rl).map(Holder.Reference::value).orElse(null))
+                .getHoverName().getString();
     }
 
     private static String fmt(double v, int decimals) {

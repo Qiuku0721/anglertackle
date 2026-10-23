@@ -50,7 +50,7 @@ public class FishRackBlockEntity extends BlockEntity {
     protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.loadAdditional(tag, registries);
         this.fish = tag.contains("Fish")
-                ? ItemStack.parseOptional(registries, tag.getCompound("Fish"))
+                ? ItemStack.parseOptional(registries, tag.getCompoundOrEmpty("Fish"))
                 : ItemStack.EMPTY;
     }
 

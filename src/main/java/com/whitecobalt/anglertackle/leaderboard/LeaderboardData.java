@@ -1,12 +1,16 @@
 package com.whitecobalt.anglertackle.leaderboard;
 
+import com.whitecobalt.anglertackle.util.NbtCompat;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import net.minecraft.core.Holder;
 import net.minecraft.core.HolderLookup;
+import net.minecraft.core.UUIDUtil;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
@@ -62,7 +66,7 @@ public class LeaderboardData extends SavedData {
 
         public CompoundTag save() {
             CompoundTag t = new CompoundTag();
-            t.putUUID("player", this.player);
+            t.putIntArray("player", UUIDUtil.uuidToIntArray(this.player));
             t.putString("name", this.playerName);
             t.putDouble("value", this.value);
             t.putString("fish", this.fishId);
@@ -77,17 +81,17 @@ public class LeaderboardData extends SavedData {
         }
 
         public static Record load(CompoundTag t) {
-            Record r = new Record(t.getUUID("player"));
-            r.playerName = t.getString("name");
-            r.value = t.getDouble("value");
-            r.fishId = t.getString("fish");
-            r.weightKg = t.getDouble("kg");
-            r.lengthCm = t.getDouble("len");
-            r.grade = t.getString("grade");
-            r.rounds = t.getInt("rounds");
-            r.ticks = t.getInt("ticks");
-            r.tier = t.getInt("tier");
-            r.epochMs = t.getLong("at");
+            Record r = new Record(t.getIntArray("player").map(UUIDUtil::uuidFromIntArray).orElseThrow());
+            r.playerName = t.getStringOr("name", "");
+            r.value = t.getDoubleOr("value", 0.0);
+            r.fishId = t.getStringOr("fish", "");
+            r.weightKg = t.getDoubleOr("kg", 0.0);
+            r.lengthCm = t.getDoubleOr("len", 0.0);
+            r.grade = t.getStringOr("grade", "");
+            r.rounds = t.getIntOr("rounds", 0);
+            r.ticks = t.getIntOr("ticks", 0);
+            r.tier = t.getIntOr("tier", 0);
+            r.epochMs = t.getLongOr("at", 0L);
             return r;
         }
     }
@@ -200,13 +204,13 @@ public class LeaderboardData extends SavedData {
 
     public static LeaderboardData load(CompoundTag tag, HolderLookup.Provider registries) {
         LeaderboardData d = new LeaderboardData();
-        CompoundTag all = tag.getCompound("boards");
+        CompoundTag all = tag.getCompoundOrEmpty("boards");
         for (Leaderboard.Board b : Leaderboard.Board.values()) {
-            ListTag list = all.getList(b.id(), Tag.TAG_COMPOUND);
+            ListTag list = NbtCompat.listOf(all, b.id(), Tag.TAG_COMPOUND);
             Map<String, Record> table = d.boards.get(b);
             for (int i = 0; i < list.size(); i++) {
-                CompoundTag e = list.getCompound(i);
-                String key = e.getString("key");
+                CompoundTag e = list.getCompoundOrEmpty(i);
+                String key = e.getStringOr("key", "");
                 if (!key.isEmpty()) {
                     table.put(key, Record.load(e));
                 }

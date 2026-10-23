@@ -11,6 +11,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.core.Holder;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
@@ -406,7 +407,8 @@ public class QuestScreen extends Screen {
     private static ItemStack stackOf(String itemId, int count) {
         try {
             Identifier rl = Identifier.tryParse(itemId);
-            Item item = rl == null ? null : BuiltInRegistries.ITEM.get(rl);
+            Item item = rl == null ? null
+                    : BuiltInRegistries.ITEM.get(rl).map(Holder.Reference::value).orElse(null);
             if (item != null && item != Items.AIR) {
                 return new ItemStack(item, Math.max(1, count));
             }

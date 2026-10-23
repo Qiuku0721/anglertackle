@@ -2,6 +2,7 @@ package com.whitecobalt.anglertackle.shop;
 
 import com.whitecobalt.anglertackle.fishing.FishData;
 import com.whitecobalt.anglertackle.registry.ModDataComponents;
+import net.minecraft.core.Holder;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.item.ItemStack;
 
@@ -230,7 +231,7 @@ public final class ShopMaterials {
         if (id == null) {
             return ItemStack.EMPTY;
         }
-        var item = BuiltInRegistries.ITEM.get(id);
+        var item = BuiltInRegistries.ITEM.get(id).map(Holder.Reference::value).orElse(null);
         if (item == null || item == net.minecraft.world.item.Items.AIR) {
             return ItemStack.EMPTY;
         }

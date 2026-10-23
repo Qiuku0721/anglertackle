@@ -8,6 +8,7 @@ import com.whitecobalt.anglertackle.network.MailPayload;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.core.Holder;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
@@ -286,7 +287,8 @@ public class MailScreen extends Screen {
             if (rl == null) {
                 continue;
             }
-            net.minecraft.world.item.Item item = BuiltInRegistries.ITEM.get(rl);
+            net.minecraft.world.item.Item item = BuiltInRegistries.ITEM.get(rl)
+                    .map(Holder.Reference::value).orElse(null);
             if (item == null) {
                 continue;
             }

@@ -7,6 +7,7 @@ import com.whitecobalt.anglertackle.shop.ShopCatalog;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.core.Holder;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
@@ -431,7 +432,8 @@ public class ShopScreen extends Screen {
         if (rl == null) {
             return ItemStack.EMPTY;
         }
-        var item = net.minecraft.core.registries.BuiltInRegistries.ITEM.get(rl);
+        var item = net.minecraft.core.registries.BuiltInRegistries.ITEM.get(rl)
+                .map(Holder.Reference::value).orElse(null);
         if (item == net.minecraft.world.item.Items.AIR) {
             return ItemStack.EMPTY;
         }
@@ -926,7 +928,8 @@ public class ShopScreen extends Screen {
 
     private Item itemOf(ShopCatalog.Entry e) {
         return BuiltInRegistries.ITEM.get(
-                Identifier.fromNamespaceAndPath("anglertackle", e.id()));
+                Identifier.fromNamespaceAndPath("anglertackle", e.id()))
+                .map(Holder.Reference::value).orElse(null);
     }
 
     @Override

@@ -1,6 +1,9 @@
 package com.whitecobalt.anglertackle.league;
 
+import com.whitecobalt.anglertackle.util.NbtCompat;
+import net.minecraft.core.Holder;
 import net.minecraft.core.HolderLookup;
+import net.minecraft.core.UUIDUtil;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
@@ -302,12 +305,12 @@ public class LeagueData extends SavedData {
     }
 
     private static ItemStack tagToItem(CompoundTag t) {
-        Identifier rl = Identifier.tryParse(t.getString("id"));
+        Identifier rl = Identifier.tryParse(t.getStringOr("id", ""));
         if (rl == null) {
             return ItemStack.EMPTY;
         }
-        Item item = BuiltInRegistries.ITEM.get(rl);
-        return item == null ? ItemStack.EMPTY : new ItemStack(item, Math.max(1, t.getInt("n")));
+        Item item = BuiltInRegistries.ITEM.get(rl).map(Holder.Reference::value).orElse(null);
+        return item == null ? ItemStack.EMPTY : new ItemStack(item, Math.max(1, t.getIntOr("n", 0)));
     }
 
     private static ListTag itemsToTag(List<ItemStack> items) {
@@ -323,7 +326,7 @@ public class LeagueData extends SavedData {
     private static List<ItemStack> tagToItems(ListTag list) {
         List<ItemStack> out = new ArrayList<>();
         for (int i = 0; i < list.size(); i++) {
-            ItemStack s = tagToItem(list.getCompound(i));
+            ItemStack s = tagToItem(list.getCompoundOrEmpty(i));
             if (!s.isEmpty()) {
                 out.add(s);
             }
@@ -333,41 +336,41 @@ public class LeagueData extends SavedData {
 
     public static LeagueData load(CompoundTag tag, HolderLookup.Provider registries) {
         LeagueData d = new LeagueData();
-        d.seasonId = tag.getInt("season");
-        d.seasonNo = tag.getInt("season_no");
-        ListTag lb = tag.getList("league_bought", Tag.TAG_COMPOUND);
+        d.seasonId = tag.getIntOr("season", 0);
+        d.seasonNo = tag.getIntOr("season_no", 0);
+        ListTag lb = NbtCompat.listOf(tag, "league_bought", Tag.TAG_COMPOUND);
         for (int i = 0; i < lb.size(); i++) {
-            CompoundTag t = lb.getCompound(i);
-            d.leagueBought.put(t.getString("k"), t.getInt("v"));
+            CompoundTag t = lb.getCompoundOrEmpty(i);
+            d.leagueBought.put(t.getStringOr("k", ""), t.getIntOr("v", 0));
         }
-        d.tierId = tag.getString("tier");
-        d.ruleMode = tag.getInt("rule");
-        d.periodGameDays = tag.getInt("period_days");
-        d.windowTicks = tag.getLong("window");
-        d.openedAtGame = tag.getLong("opened");
-        d.hardDeadlineGame = tag.getLong("deadline");
-        d.settled = tag.getBoolean("settled");
-        d.pushAnchorGame = tag.getLong("anchor_game");
-        d.pushAnchorWall = tag.getLong("anchor_wall");
-        d.lastSeenGame = tag.getLong("last_seen");
-        d.nextTierIndex = tag.getInt("next_tier");
-        d.lastSeasonId = tag.getInt("last_season");
-        d.lastTierId = tag.getString("last_tier");
-        d.lastJoined = tag.getInt("last_joined");
-        d.lastRanked = tag.getInt("last_ranked");
+        d.tierId = tag.getStringOr("tier", "");
+        d.ruleMode = tag.getIntOr("rule", 0);
+        d.periodGameDays = tag.getIntOr("period_days", 0);
+        d.windowTicks = tag.getLongOr("window", 0L);
+        d.openedAtGame = tag.getLongOr("opened", 0L);
+        d.hardDeadlineGame = tag.getLongOr("deadline", 0L);
+        d.settled = tag.getBooleanOr("settled", false);
+        d.pushAnchorGame = tag.getLongOr("anchor_game", 0L);
+        d.pushAnchorWall = tag.getLongOr("anchor_wall", 0L);
+        d.lastSeenGame = tag.getLongOr("last_seen", 0L);
+        d.nextTierIndex = tag.getIntOr("next_tier", 0);
+        d.lastSeasonId = tag.getIntOr("last_season", 0);
+        d.lastTierId = tag.getStringOr("last_tier", "");
+        d.lastJoined = tag.getIntOr("last_joined", 0);
+        d.lastRanked = tag.getIntOr("last_ranked", 0);
         // 历届档案（`docs/39` §6.1）—— 老存档没有这一段，读不到就是空的 ✓
-        ListTag arch = tag.getList("archive", Tag.TAG_COMPOUND);
+        ListTag arch = NbtCompat.listOf(tag, "archive", Tag.TAG_COMPOUND);
         for (int i = 0; i < arch.size(); i++) {
-            CompoundTag sn = arch.getCompound(i);
-            Season season = new Season(sn.getInt("season_no"), sn.getString("tier"));
-            ListTag rows = sn.getList("rows", Tag.TAG_COMPOUND);
+            CompoundTag sn = arch.getCompoundOrEmpty(i);
+            Season season = new Season(sn.getIntOr("season_no", 0), sn.getStringOr("tier", ""));
+            ListTag rows = NbtCompat.listOf(sn, "rows", Tag.TAG_COMPOUND);
             for (int j = 0; j < rows.size(); j++) {
-                CompoundTag e = rows.getCompound(j);
+                CompoundTag e = rows.getCompoundOrEmpty(j);
                 Rank r = new Rank();
-                r.player = e.getUUID("player");
-                r.name = e.getString("name");
-                r.value = e.getDouble("value");
-                r.catches = e.getInt("catches");
+                r.player = e.getIntArray("player").map(UUIDUtil::uuidFromIntArray).orElseThrow();
+                r.name = e.getStringOr("name", "");
+                r.value = e.getDoubleOr("value", 0.0);
+                r.catches = e.getIntOr("catches", 0);
                 season.rows.add(r);
             }
             if (season.seasonNo > 0) {
@@ -375,56 +378,58 @@ public class LeagueData extends SavedData {
             }
         }
 
-        ListTag mem = tag.getList("members", Tag.TAG_COMPOUND);
+        ListTag mem = NbtCompat.listOf(tag, "members", Tag.TAG_COMPOUND);
         for (int i = 0; i < mem.size(); i++) {
-            CompoundTag t = mem.getCompound(i);
+            CompoundTag t = mem.getCompoundOrEmpty(i);
             try {
-                UUID id = t.getUUID("uuid");
-                Member m = new Member(t.getString("name"), t.getLong("sign"), t.getLong("window_end"));
-                m.value = t.getDouble("value");
-                m.atTick = t.getLong("at");
-                m.catches = t.getInt("catches");
+                UUID id = t.getIntArray("uuid").map(UUIDUtil::uuidFromIntArray).orElseThrow();
+                Member m = new Member(t.getStringOr("name", ""), t.getLongOr("sign", 0L),
+                        t.getLongOr("window_end", 0L));
+                m.value = t.getDoubleOr("value", 0.0);
+                m.atTick = t.getLongOr("at", 0L);
+                m.catches = t.getIntOr("catches", 0);
                 d.members.put(id, m);
             } catch (Throwable ignored) {
                 // 坏行跳过：一元帅的坏数据不该让整个联赛读不出来
             }
         }
-        ListTag inv = tag.getList("invited", Tag.TAG_COMPOUND);
+        ListTag inv = NbtCompat.listOf(tag, "invited", Tag.TAG_COMPOUND);
         for (int i = 0; i < inv.size(); i++) {
             try {
-                d.invited.add(inv.getCompound(i).getUUID("uuid"));
+                CompoundTag invTag = inv.getCompoundOrEmpty(i);
+                d.invited.add(invTag.getIntArray("uuid").map(UUIDUtil::uuidFromIntArray).orElseThrow());
             } catch (Throwable ignored) {
                 // 同上
             }
         }
-        ListTag led = tag.getList("ledger", Tag.TAG_STRING);
+        ListTag led = NbtCompat.listOf(tag, "ledger", Tag.TAG_STRING);
         for (int i = 0; i < led.size(); i++) {
-            d.ledger.add(led.getString(i));
+            d.ledger.add(led.getStringOr(i, ""));
         }
-        ListTag pend = tag.getList("pending", Tag.TAG_COMPOUND);
+        ListTag pend = NbtCompat.listOf(tag, "pending", Tag.TAG_COMPOUND);
         for (int i = 0; i < pend.size(); i++) {
-            CompoundTag t = pend.getCompound(i);
+            CompoundTag t = pend.getCompoundOrEmpty(i);
             try {
-                Pending p = new Pending(t.getUUID("uuid"));
-                p.template = t.getString("template");
-                ListTag args = t.getList("args", Tag.TAG_STRING);
+                Pending p = new Pending(t.getIntArray("uuid").map(UUIDUtil::uuidFromIntArray).orElseThrow());
+                p.template = t.getStringOr("template", "");
+                ListTag args = NbtCompat.listOf(t, "args", Tag.TAG_STRING);
                 for (int k = 0; k < args.size(); k++) {
-                    p.args.add(args.getString(k));
+                    p.args.add(args.getStringOr(k, ""));
                 }
-                p.coins = t.getLong("coins");
-                p.items = tagToItems(t.getList("items", Tag.TAG_COMPOUND));
-                p.action = t.getString("action");
-                p.xp = t.getInt("xp");
-                p.points = t.getInt("points");
-                p.title = t.getString("title");
+                p.coins = t.getLongOr("coins", 0L);
+                p.items = tagToItems(NbtCompat.listOf(t, "items", Tag.TAG_COMPOUND));
+                p.action = t.getStringOr("action", "");
+                p.xp = t.getIntOr("xp", 0);
+                p.points = t.getIntOr("points", 0);
+                p.title = t.getStringOr("title", "");
                 d.pending.add(p);
             } catch (Throwable ignored) {
                 // 同上
             }
         }
-        ListTag board = tag.getList("last_board", Tag.TAG_STRING);
+        ListTag board = NbtCompat.listOf(tag, "last_board", Tag.TAG_STRING);
         for (int i = 0; i < board.size(); i++) {
-            d.lastBoard.add(board.getString(i));
+            d.lastBoard.add(board.getStringOr(i, ""));
         }
         return d;
     }
@@ -465,7 +470,7 @@ public class LeagueData extends SavedData {
             ListTag rows = new ListTag();
             for (Rank r : season.rows) {
                 CompoundTag e = new CompoundTag();
-                e.putUUID("player", r.player);
+                e.putIntArray("player", UUIDUtil.uuidToIntArray(r.player));
                 e.putString("name", r.name);
                 e.putDouble("value", r.value);
                 e.putInt("catches", r.catches);
@@ -479,7 +484,7 @@ public class LeagueData extends SavedData {
         ListTag mem = new ListTag();
         for (Map.Entry<UUID, Member> e : this.members.entrySet()) {
             CompoundTag t = new CompoundTag();
-            t.putUUID("uuid", e.getKey());
+            t.putIntArray("uuid", UUIDUtil.uuidToIntArray(e.getKey()));
             t.putString("name", e.getValue().name);
             t.putLong("sign", e.getValue().signTick);
             t.putLong("window_end", e.getValue().windowEnd);
@@ -493,7 +498,7 @@ public class LeagueData extends SavedData {
         ListTag inv = new ListTag();
         for (UUID id : this.invited) {
             CompoundTag t = new CompoundTag();
-            t.putUUID("uuid", id);
+            t.putIntArray("uuid", UUIDUtil.uuidToIntArray(id));
             inv.add(t);
         }
         tag.put("invited", inv);
@@ -507,7 +512,7 @@ public class LeagueData extends SavedData {
         ListTag pend = new ListTag();
         for (Pending p : this.pending) {
             CompoundTag t = new CompoundTag();
-            t.putUUID("uuid", p.player);
+            t.putIntArray("uuid", UUIDUtil.uuidToIntArray(p.player));
             t.putString("template", p.template);
             ListTag args = new ListTag();
             for (String a : p.args) {

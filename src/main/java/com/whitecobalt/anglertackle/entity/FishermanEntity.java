@@ -486,7 +486,7 @@ public class FishermanEntity extends AbstractVillager {
     public void readAdditionalSaveData(CompoundTag tag) {
         super.readAdditionalSaveData(tag);
         if (tag.contains("AtlHome")) {
-            home = BlockPos.of(tag.getLong("AtlHome"));
+            home = BlockPos.of(tag.getLongOr("AtlHome", 0L));
         }
     }
 

@@ -3,6 +3,7 @@ package com.whitecobalt.anglertackle.entity;
 import com.whitecobalt.anglertackle.fishing.ChumManager;
 import com.whitecobalt.anglertackle.fishing.Tuning;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.UUIDUtil;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.syncher.EntityDataAccessor;
@@ -461,18 +462,18 @@ public class ChumEntity extends Entity {
 
     @Override
     protected void readAdditionalSaveData(CompoundTag tag) {
-        setTier(tag.getInt("ChumTier"));
-        setSinking(tag.getBoolean("ChumSinking"));
-        setLanded(tag.getBoolean("ChumLanded"));
-        setLifeTicks(tag.getInt("ChumLife"));
-        this.totalLifeTicks = Math.max(1, tag.getInt("ChumTotalLife"));
-        this.timeMultiplier = tag.contains("ChumMult") ? tag.getDouble("ChumMult") : 1.0;
+        setTier(tag.getIntOr("ChumTier", 0));
+        setSinking(tag.getBooleanOr("ChumSinking", false));
+        setLanded(tag.getBooleanOr("ChumLanded", false));
+        setLifeTicks(tag.getIntOr("ChumLife", 0));
+        this.totalLifeTicks = Math.max(1, tag.getIntOr("ChumTotalLife", 0));
+        this.timeMultiplier = tag.contains("ChumMult") ? tag.getDoubleOr("ChumMult", 0.0) : 1.0;
         // 老存档没有这个键 → 取 1.0（不加成）。**不能**拿 timeMultiplier 顶替：
         // 那正是"越好的窝越不出好鱼"那个 bug 的来源。
-        this.rarityMultiplier = tag.contains("ChumRarity") ? tag.getDouble("ChumRarity") : 1.0;
-        this.waterY = tag.getDouble("ChumWaterY");
-        if (tag.hasUUID("ChumOwner")) {
-            this.ownerUuid = tag.getUUID("ChumOwner");
+        this.rarityMultiplier = tag.contains("ChumRarity") ? tag.getDoubleOr("ChumRarity", 0.0) : 1.0;
+        this.waterY = tag.getDoubleOr("ChumWaterY", 0.0);
+        if (tag.getIntArray("ChumOwner").map(a -> a.length == 4).orElse(false)) {
+            this.ownerUuid = tag.getIntArray("ChumOwner").map(UUIDUtil::uuidFromIntArray).orElseThrow();
         }
     }
 
@@ -487,7 +488,7 @@ public class ChumEntity extends Entity {
         tag.putDouble("ChumRarity", this.rarityMultiplier);
         tag.putDouble("ChumWaterY", this.waterY);
         if (this.ownerUuid != null) {
-            tag.putUUID("ChumOwner", this.ownerUuid);
+            tag.putIntArray("ChumOwner", UUIDUtil.uuidToIntArray(this.ownerUuid));
         }
     }
 }

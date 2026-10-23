@@ -9,6 +9,7 @@ import com.whitecobalt.anglertackle.player.PlayerData;
 import com.whitecobalt.anglertackle.registry.ModDataComponents;
 import com.whitecobalt.anglertackle.registry.ModItems;
 import net.minecraft.ChatFormatting;
+import net.minecraft.core.Holder;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
@@ -403,7 +404,8 @@ public final class ShopManager {
 
     private static void give(ServerPlayer player, ShopCatalog.Entry e) {
         Item item = BuiltInRegistries.ITEM.get(
-                Identifier.fromNamespaceAndPath("anglertackle", e.id()));
+                Identifier.fromNamespaceAndPath("anglertackle", e.id()))
+                .map(Holder.Reference::value).orElse(null);
         if (item == null || item == net.minecraft.world.item.Items.AIR) {
             msg(player, "§c商品注册表里找不到 " + e.id() + "（这是 bug，请反馈）", false);
             return;

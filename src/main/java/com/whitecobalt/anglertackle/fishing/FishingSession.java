@@ -7,6 +7,7 @@ import com.whitecobalt.anglertackle.item.RodItem;
 import com.whitecobalt.anglertackle.network.SessionSyncPayload;
 import com.whitecobalt.anglertackle.registry.ModDataComponents;
 import net.minecraft.ChatFormatting;
+import net.minecraft.core.Holder;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
@@ -761,7 +762,8 @@ public final class FishingSession {
         if (rl == null) {
             return 0;
         }
-        var item = net.minecraft.core.registries.BuiltInRegistries.ITEM.get(rl);
+        var item = net.minecraft.core.registries.BuiltInRegistries.ITEM.get(rl)
+                .map(Holder.Reference::value).orElse(null);
         // 鱼饵：档位在物品自己的字段上
         if (item instanceof com.whitecobalt.anglertackle.item.BaitItem bait) {
             return bait.tier();

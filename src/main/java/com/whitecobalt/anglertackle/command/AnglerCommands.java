@@ -1342,7 +1342,8 @@ public final class AnglerCommands {
         if (rl == null) {
             return 0;
         }
-        var item = net.minecraft.core.registries.BuiltInRegistries.ITEM.get(rl);
+        var item = net.minecraft.core.registries.BuiltInRegistries.ITEM.get(rl)
+                .map(Holder.Reference::value).orElse(null);
         if (item instanceof com.whitecobalt.anglertackle.item.BaitItem bait) {
             return bait.tier();
         }

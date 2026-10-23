@@ -4,7 +4,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
+import com.whitecobalt.anglertackle.util.NbtCompat;
 import net.minecraft.core.HolderLookup;
+import net.minecraft.core.UUIDUtil;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
@@ -48,22 +50,22 @@ public class PalatabilityLedger extends SavedData {
 
     public static PalatabilityLedger load(CompoundTag tag, HolderLookup.Provider registries) {
         PalatabilityLedger d = new PalatabilityLedger();
-        ListTag players = tag.getList("players", Tag.TAG_COMPOUND);
+        ListTag players = NbtCompat.listOf(tag, "players", Tag.TAG_COMPOUND);
         for (int i = 0; i < players.size(); i++) {
-            CompoundTag p = players.getCompound(i);
-            if (!p.hasUUID("uuid")) {
+            CompoundTag p = players.getCompoundOrEmpty(i);
+            if (!p.getIntArray("uuid").map(a -> a.length == 4).orElse(false)) {
                 continue;   // 老/坏数据：跳过这一条，不整个失败（读档绝不能因为这里崩）
             }
-            CompoundTag risks = p.getCompound("risks");
+            CompoundTag risks = p.getCompoundOrEmpty("risks");
             Map<String, Integer> m = new HashMap<>();
-            for (String k : risks.getAllKeys()) {
-                int v = risks.getInt(k);
+            for (String k : risks.keySet()) {
+                int v = risks.getIntOr(k, 0);
                 if (v > 0) {
                     m.put(k, v);
                 }
             }
             if (!m.isEmpty()) {
-                d.counts.put(p.getUUID("uuid"), m);
+                d.counts.put(p.getIntArray("uuid").map(UUIDUtil::uuidFromIntArray).orElseThrow(), m);
             }
         }
         return d;
@@ -77,7 +79,7 @@ public class PalatabilityLedger extends SavedData {
                 continue;   // 清零的玩家不往存档里写垃圾
             }
             CompoundTag p = new CompoundTag();
-            p.putUUID("uuid", e.getKey());
+            p.putIntArray("uuid", UUIDUtil.uuidToIntArray(e.getKey()));
             CompoundTag risks = new CompoundTag();
             for (Map.Entry<String, Integer> r : e.getValue().entrySet()) {
                 risks.putInt(r.getKey(), r.getValue());

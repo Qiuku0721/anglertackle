@@ -9,6 +9,7 @@ import com.whitecobalt.anglertackle.network.RankPayload;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.core.Holder;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
@@ -331,7 +332,8 @@ public class LeaderboardScreen extends Screen {
         }
         try {
             var item = BuiltInRegistries.ITEM.get(
-                    Identifier.fromNamespaceAndPath(AnglersTackle.MOD_ID, id));
+                    Identifier.fromNamespaceAndPath(AnglersTackle.MOD_ID, id))
+                    .map(Holder.Reference::value).orElse(null);
             if (item != null && item != Items.AIR) {
                 return new ItemStack(item).getHoverName().getString();
             }

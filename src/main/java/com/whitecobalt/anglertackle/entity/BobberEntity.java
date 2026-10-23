@@ -4,6 +4,7 @@ import com.whitecobalt.anglertackle.fishing.FishingManager;
 import com.whitecobalt.anglertackle.fishing.FishingSession;
 import com.whitecobalt.anglertackle.registry.ModEntities;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.UUIDUtil;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
@@ -510,11 +511,11 @@ public class BobberEntity extends Entity {
     // ------------------------------------------------------------------ 存盘
     @Override
     protected void readAdditionalSaveData(CompoundTag tag) {
-        this.landed = tag.getBoolean("Landed");
-        this.waterDepth = tag.getInt("WaterDepth");
-        this.flowingWater = tag.getBoolean("Flowing");
-        if (tag.hasUUID("Owner")) {
-            this.ownerUuid = tag.getUUID("Owner");
+        this.landed = tag.getBooleanOr("Landed", false);
+        this.waterDepth = tag.getIntOr("WaterDepth", 0);
+        this.flowingWater = tag.getBooleanOr("Flowing", false);
+        if (tag.getIntArray("Owner").map(a -> a.length == 4).orElse(false)) {
+            this.ownerUuid = tag.getIntArray("Owner").map(UUIDUtil::uuidFromIntArray).orElseThrow();
             this.entityData.set(DATA_OWNER, this.ownerUuid.toString());
         }
     }
@@ -525,7 +526,7 @@ public class BobberEntity extends Entity {
         tag.putInt("WaterDepth", this.waterDepth);
         tag.putBoolean("Flowing", this.flowingWater);
         if (this.ownerUuid != null) {
-            tag.putUUID("Owner", this.ownerUuid);
+            tag.putIntArray("Owner", UUIDUtil.uuidToIntArray(this.ownerUuid));
         }
     }
 

@@ -160,7 +160,7 @@ public class ModFish extends AbstractFish {
     @Override
     public void readAdditionalSaveData(CompoundTag tag) {
         super.readAdditionalSaveData(tag);
-        inTank = tag.getBoolean("AnglerTackleInTank");
+        inTank = tag.getBooleanOr("AnglerTackleInTank", false);
         if (tag.contains("AnglerTackleFish")) {
             fishData = FishData.CODEC.parse(NbtOps.INSTANCE, tag.get("AnglerTackleFish"))
                     .result()
