@@ -70,7 +70,7 @@ public final class ReelSounds {
         tick++;
         if (tick % CRANK_INTERVAL == 0) {
             // 张力越高：音高越高（1.05→1.55）、略响一点（1.0→1.25 倍）
-            float pitch = 1.05F + smoothDanger * 0.50F + (float) (mc.level.random.nextFloat() * 0.06 - 0.03);
+            float pitch = 1.05F + smoothDanger * 0.50F + (float) (mc.level.getRandom().nextFloat() * 0.06 - 0.03);
             float volume = CRANK_VOLUME * (1.0F + smoothDanger * 0.25F);
             mc.player.playSound(crank, volume, pitch);
         }

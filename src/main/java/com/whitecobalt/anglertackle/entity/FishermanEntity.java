@@ -168,7 +168,7 @@ public class FishermanEntity extends AbstractVillager {
      */
     @Override
     public boolean hurt(DamageSource source, float amount) {
-        if (source.getEntity() instanceof Player && !level().isClientSide) {
+        if (source.getEntity() instanceof Player && !level().isClientSide()) {
             this.hurtTime = 10;
             this.hurtDuration = 10;
             teleportHome();
@@ -241,7 +241,7 @@ public class FishermanEntity extends AbstractVillager {
      * 至少别让 home 一直是 null。
      */
     private void adoptSpawnAsHome() {
-        if (home != null || level().isClientSide) {
+        if (home != null || level().isClientSide()) {
             return;
         }
         if (this.onGround() || this.tickCount > 60) {
@@ -377,7 +377,7 @@ public class FishermanEntity extends AbstractVillager {
         if (hand == InteractionHand.MAIN_HAND) {
             player.awardStat(Stats.TALKED_TO_VILLAGER);
         }
-        if (!this.level().isClientSide) {
+        if (!this.level().isClientSide()) {
             // ---- 潜行右键 = 打开**委托面板**（2026-10-14，策划 `docs/40` §9）----
             // ⚠ 故意**不动普通右键**：那一路是用户定案过的"说过话之后右键开商店"，
             //   改它等于改玩法；潜行这一路是纯新增的命令，摘掉也不影响任何既有行为 ✓
@@ -431,7 +431,7 @@ public class FishermanEntity extends AbstractVillager {
             this.setTradingPlayer(player);
             this.openTradingScreen(player, this.getDisplayName(), 1);
         }
-        return InteractionResult.sidedSuccess(this.level().isClientSide);
+        return InteractionResult.sidedSuccess(this.level().isClientSide());
     }
 
     /**

@@ -82,12 +82,12 @@ public class HutClueItem extends Item {
     @Override
     public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
         ItemStack stack = player.getItemInHand(hand);
-        if (level.isClientSide || !(player instanceof ServerPlayer sp)) {
+        if (level.isClientSide() || !(player instanceof ServerPlayer sp)) {
             // 客户端只回一个"用过了"的手势，真正的判定全在服务端
-            return InteractionResultHolder.sidedSuccess(stack, level.isClientSide);
+            return InteractionResultHolder.sidedSuccess(stack, level.isClientSide());
         }
 
-        ServerLevel serverLevel = sp.serverLevel();
+        ServerLevel serverLevel = sp.level();
         // ⚠ 配置只能在运行时读（注册期读会抛 "Cannot get config value before config is loaded."）。
         //   radius 的单位是**区块**，配置里写的是玩家看得懂的"格"，所以除以 16。
         int radiusChunks = Math.max(1, Tuning.compassSearchRadius() / 16);

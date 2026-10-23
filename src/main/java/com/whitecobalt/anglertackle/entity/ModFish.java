@@ -128,7 +128,7 @@ public class ModFish extends AbstractFish {
     @Override
     public void tick() {
         super.tick();
-        if (inTank && !level().isClientSide && tickCount % TANK_CHECK_INTERVAL == 0) {
+        if (inTank && !level().isClientSide() && tickCount % TANK_CHECK_INTERVAL == 0) {
             if (!(level().getBlockState(blockPosition()).getBlock() instanceof AquariumBlock)) {
                 BlockPos back = AquariumTank.nearestTankBlock(level(), blockPosition(), TANK_SEARCH_RADIUS);
                 if (back != null) {

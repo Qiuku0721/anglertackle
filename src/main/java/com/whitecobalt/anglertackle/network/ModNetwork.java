@@ -164,7 +164,7 @@ public final class ModNetwork {
         try {
             com.whitecobalt.anglertackle.player.QuestData q =
                     com.whitecobalt.anglertackle.player.PlayerData.getQuests(player);
-            long day = com.whitecobalt.anglertackle.quest.QuestService.dayOf(player.serverLevel());
+            long day = com.whitecobalt.anglertackle.quest.QuestService.dayOf(player.level());
             java.util.List<String> rows = new java.util.ArrayList<>(q.active().size());
             for (java.util.Map.Entry<String, com.whitecobalt.anglertackle.player.QuestData.Row> e
                     : q.active().entrySet()) {
@@ -183,7 +183,7 @@ public final class ModNetwork {
                     com.whitecobalt.anglertackle.fishing.Tuning.questActivityCapWeekly(),
                     q.claimedTiers(),
                     tiers,
-                    com.whitecobalt.anglertackle.quest.QuestService.dailyLeftMinutes(player.serverLevel()),
+                    com.whitecobalt.anglertackle.quest.QuestService.dailyLeftMinutes(player.level()),
                     com.whitecobalt.anglertackle.quest.QuestService.weeklyLeftDays(day),
                     lastError == null ? "" : lastError));
         } catch (Throwable t) {

@@ -225,7 +225,7 @@ public final class LeagueService {
             return false;
         }
         League.Tier tier = d.tier();
-        League.Invite gift = League.inviteGift(tier, p.serverLevel().getRandom());
+        League.Invite gift = League.inviteGift(tier, p.level().getRandom());
         MailService.Result r = MailService.send(p, "league_invite",
                 List.of(String.valueOf(d.seasonId), tier.id(),
                         String.valueOf(Tuning.leaguePlayerWindowMinutes()),
@@ -279,7 +279,7 @@ public final class LeagueService {
             if (!Tuning.leagueInviteOnLogin()) {
                 return;
             }
-            LeagueData d = LeagueData.get(player.serverLevel());
+            LeagueData d = LeagueData.get(player.level());
             if (d.seasonId == 0 || d.settled) {
                 return;
             }
@@ -300,8 +300,8 @@ public final class LeagueService {
         if (player == null) {
             return JoinResult.NO_PERIOD;
         }
-        LeagueData d = LeagueData.get(player.serverLevel());
-        long game = player.serverLevel().getGameTime();
+        LeagueData d = LeagueData.get(player.level());
+        long game = player.level().getGameTime();
         if (d.seasonId == 0) {
             return JoinResult.NO_PERIOD;
         }
@@ -361,7 +361,7 @@ public final class LeagueService {
             if (m == null) {
                 return null;
             }
-            long game = player.serverLevel().getGameTime();
+            long game = player.level().getGameTime();
             if (game > m.windowEnd || game >= d.hardDeadlineGame) {
                 return null;
             }
@@ -375,12 +375,12 @@ public final class LeagueService {
         if (player == null || c == null) {
             return;
         }
-        LeagueData d = LeagueData.get(player.serverLevel());
+        LeagueData d = LeagueData.get(player.level());
         LeagueData.Member m = d.member(player.getUUID());
         if (m == null) {
             return;
         }
-        long game = player.serverLevel().getGameTime();
+        long game = player.level().getGameTime();
         if (game > m.windowEnd || game >= d.hardDeadlineGame) {
             return;
         }
@@ -638,7 +638,7 @@ public final class LeagueService {
      * @return 兑付了几件
      */
     public static int flushPending(ServerPlayer player) {
-        LeagueData d = LeagueData.get(player.serverLevel());
+        LeagueData d = LeagueData.get(player.level());
         if (d.pending.isEmpty()) {
             return 0;
         }

@@ -64,7 +64,7 @@ public class DishItem extends Item {
     public ItemStack finishUsingItem(ItemStack stack, net.minecraft.world.level.Level level,
                                      net.minecraft.world.entity.LivingEntity entity) {
         ItemStack result = super.finishUsingItem(stack, level, entity);
-        if (!level.isClientSide && entity instanceof net.minecraft.world.entity.player.Player player) {
+        if (!level.isClientSide() && entity instanceof net.minecraft.world.entity.player.Player player) {
             com.whitecobalt.anglertackle.effect.DishEffects.apply(player, stack);
             // 食用适宜度（L0~L5，依据见 docs/料理适配策划案.md）——
             // **只对非零等级生效**：L0/L1 的鱼走的是"一条效果都不发"那条老路，行为与改动前逐字一致。
@@ -110,7 +110,7 @@ public class DishItem extends Item {
     public void onCraftedBy(ItemStack stack, net.minecraft.world.level.Level level,
                             net.minecraft.world.entity.player.Player player) {
         super.onCraftedBy(stack, level, player);
-        if (level.isClientSide || !(player instanceof net.minecraft.server.level.ServerPlayer sp)) {
+        if (level.isClientSide() || !(player instanceof net.minecraft.server.level.ServerPlayer sp)) {
             return;
         }
         try {

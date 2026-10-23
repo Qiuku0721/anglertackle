@@ -78,11 +78,11 @@ public class StoolBlock extends Block {
         if (state.getValue(CushionedStoolBlock.COLOR) == dye) {
             return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;   // 已是该色，不浪费 ✓
         }
-        if (!level.isClientSide) {
+        if (!level.isClientSide()) {
             level.setBlock(pos, state.setValue(CushionedStoolBlock.COLOR, dye), Block.UPDATE_ALL);
             if (!player.hasInfiniteMaterials()) stack.shrink(1);
         }
-        return ItemInteractionResult.sidedSuccess(level.isClientSide);
+        return ItemInteractionResult.sidedSuccess(level.isClientSide());
     }
 
     @Override
@@ -98,7 +98,7 @@ public class StoolBlock extends Block {
     protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos,
                                                Player player, BlockHitResult hit) {
         if (player.isShiftKeyDown()) return InteractionResult.PASS;   // 潜行右击 = 不放座位
-        if (SeatEntity.sit(level, pos, player)) return InteractionResult.sidedSuccess(level.isClientSide);
+        if (SeatEntity.sit(level, pos, player)) return InteractionResult.sidedSuccess(level.isClientSide());
         return InteractionResult.PASS;
     }
     /**

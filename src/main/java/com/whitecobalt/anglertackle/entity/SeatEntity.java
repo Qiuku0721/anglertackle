@@ -37,7 +37,7 @@ public class SeatEntity extends Entity {
 
     /** 在某个方块上放一个座位、并让玩家坐上去。返回是否成功。 */
     public static boolean sit(Level level, BlockPos pos, Player player) {
-        if (level.isClientSide) return false;
+        if (level.isClientSide()) return false;
         if (player.isPassenger()) return false;                 // 已经坐着了，别叠罗汉
         // ⚠ 类型必须**惰性取**：在 ModEntities.register() 紧后面取会撞上"unbound value"、直接崩游戏 ✗
         net.minecraft.world.entity.EntityType<SeatEntity> type = com.whitecobalt.anglertackle.registry.ModEntities.STOOL_SEAT.get();
@@ -68,7 +68,7 @@ public class SeatEntity extends Entity {
     @Override
     public void tick() {
         super.tick();
-        if (this.level().isClientSide) return;
+        if (this.level().isClientSide()) return;
         if (this.getPassengers().isEmpty()) { this.discard(); return; }
 
         // ⚠ 座位必须**每 tick 同步乘客的朝向** ✓

@@ -93,7 +93,7 @@ public final class ShopManager {
         String leagueTag = "";
         try {
             com.whitecobalt.anglertackle.league.LeagueData ld =
-                    com.whitecobalt.anglertackle.league.LeagueData.get(player.serverLevel());
+                    com.whitecobalt.anglertackle.league.LeagueData.get(player.level());
             if (ld.seasonNo > 0 && ld.tierId != null && !ld.tierId.isEmpty()) {
                 leagueTag = ld.seasonNo + "|" + ld.tierId;
             }
@@ -182,7 +182,7 @@ public final class ShopManager {
         }
         ShopCatalog.LeagueOffer o = list.get(index);
         com.whitecobalt.anglertackle.league.LeagueData d =
-                com.whitecobalt.anglertackle.league.LeagueData.get(player.serverLevel());
+                com.whitecobalt.anglertackle.league.LeagueData.get(player.level());
         int season = Math.max(1, d.seasonNo);
 
         // ① 每届限购（世界侧；届号写在计数键里 ⇒ 新一届天然刷新，**不需要任何"重置"代码** ✓）

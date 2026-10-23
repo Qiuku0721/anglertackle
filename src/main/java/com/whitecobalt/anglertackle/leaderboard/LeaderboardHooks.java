@@ -45,7 +45,7 @@ public final class LeaderboardHooks {
             return false;
         }
         try {
-            ServerLevel level = player.serverLevel();
+            ServerLevel level = player.level();
             LeaderboardData data = LeaderboardData.get(level);
             Leaderboard.Catch c = new Leaderboard.Catch(
                     player.getUUID(),
@@ -67,7 +67,7 @@ public final class LeaderboardHooks {
             String leagueTier = null;
             try {
                 leagueTier = com.whitecobalt.anglertackle.league.LeagueService
-                        .activeTierFor(player.serverLevel().getServer(), player);
+                        .activeTierFor(player.level().getServer(), player);
             } catch (Throwable ignored) {
                 // 同上
             }
@@ -149,7 +149,7 @@ public final class LeaderboardHooks {
             return;
         }
         try {
-            LeaderboardData.get(player.serverLevel()).breakStreak(player.getUUID());
+            LeaderboardData.get(player.level()).breakStreak(player.getUUID());
         } catch (Throwable t) {
             // 同上：绝不影响玩法 ✓
         }

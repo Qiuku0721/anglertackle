@@ -484,7 +484,7 @@ public final class DishEffectHooks {
             }
             return;
         }
-        ServerLevel level = player.serverLevel();
+        ServerLevel level = player.level();
         OreScan scan = ORE_SCANS.computeIfAbsent(id, (k) -> new OreScan());
         // 以**眼睛所在的方块**为原点：玩家长按 F5 看的是眼前，脚下方块会差一格多
         BlockPos origin = BlockPos.containing(player.getEyePosition());

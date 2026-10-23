@@ -86,12 +86,12 @@ public class FishRackBlock extends BaseEntityBlock {
             return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
         }
         if (level.getBlockEntity(pos) instanceof FishRackBlockEntity rack && rack.fish().isEmpty()) {
-            if (!level.isClientSide) {
+            if (!level.isClientSide()) {
                 rack.setFish(stack.copyWithCount(1));
                 stack.shrink(1);
                 level.setBlock(pos, state.setValue(HAS_FISH, true), 3);
             }
-            return ItemInteractionResult.sidedSuccess(level.isClientSide);
+            return ItemInteractionResult.sidedSuccess(level.isClientSide());
         }
         return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
     }
@@ -100,7 +100,7 @@ public class FishRackBlock extends BaseEntityBlock {
     protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos,
                                                Player player, BlockHitResult hit) {
         if (level.getBlockEntity(pos) instanceof FishRackBlockEntity rack && !rack.fish().isEmpty()) {
-            if (!level.isClientSide) {
+            if (!level.isClientSide()) {
                 ItemStack out = rack.fish();
                 rack.setFish(ItemStack.EMPTY);
                 // ⚠ 这一句是"拿下来之后模型还留着"的修复：方块状态一定会同步到客户端，
@@ -110,7 +110,7 @@ public class FishRackBlock extends BaseEntityBlock {
                     player.drop(out, false);
                 }
             }
-            return InteractionResult.sidedSuccess(level.isClientSide);
+            return InteractionResult.sidedSuccess(level.isClientSide());
         }
         return InteractionResult.PASS;
     }

@@ -98,16 +98,16 @@ public final class FishingManager {
         if (player == null || ticks <= 0) {
             return;
         }
-        long until = player.serverLevel().getGameTime() + ticks;
+        long until = player.level().getGameTime() + ticks;
         moveLockUntil.merge(player.getUUID(), until, Math::max);
         LOGGER.info("[垂纶/诊断·锁] 拿锁：{} → 锁到 gameTime {}（现在 {}，共 {} tick）",
-                player.getName().getString(), until, player.serverLevel().getGameTime(), ticks);
+                player.getName().getString(), until, player.level().getGameTime(), ticks);
     }
 
     /** 这一 tick 该不该因为"上鱼后那一秒"压住移动速度。 */
     private boolean catchLockActive(ServerPlayer player) {
         Long until = moveLockUntil.get(player.getUUID());
-        return until != null && player.serverLevel().getGameTime() < until;
+        return until != null && player.level().getGameTime() < until;
     }
 
     /** 锁到点了就清掉（连带还原速度属性）。 */
@@ -115,7 +115,7 @@ public final class FishingManager {
         if (!moveLockUntil.containsKey(player.getUUID()) || catchLockActive(player)) {
             return;
         }
-        long now = player.serverLevel().getGameTime();
+        long now = player.level().getGameTime();
         Long until = moveLockUntil.remove(player.getUUID());
         restoreMoveSpeed(player);
         LOGGER.info("[垂纶/诊断·锁] 解锁：{}（到期 {}，现在 {}）",
@@ -260,7 +260,7 @@ public final class FishingManager {
             return FALLBACK_DROP;                          // 垂直看天/看地：水平方向没有意义
         }
         flat = flat.normalize();
-        ServerLevel level = player.serverLevel();
+        ServerLevel level = player.level();
         int limit = (int) Math.min(48.0, Math.ceil(target) + 16.0);
         for (int d = 1; d <= limit; d++) {
             double cx = eye.x + flat.x * d;

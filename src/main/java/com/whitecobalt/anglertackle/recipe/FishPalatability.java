@@ -265,7 +265,7 @@ public final class FishPalatability {
         if (!(player instanceof net.minecraft.server.level.ServerPlayer serverPlayer)) {
             return;
         }
-        if (!PalatabilityLedger.get(serverPlayer.serverLevel()).bump(serverPlayer.getUUID(), risk)) {
+        if (!PalatabilityLedger.get(serverPlayer.level()).bump(serverPlayer.getUUID(), risk)) {
             return;   // 还没吃够 —— 大多数时候走这条，"不每次必中"
         }
         switch (risk) {

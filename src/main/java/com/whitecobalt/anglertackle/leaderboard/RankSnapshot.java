@@ -89,7 +89,7 @@ public final class RankSnapshot {
         int total = 0;
         try {
             total = com.whitecobalt.anglertackle.fishing.FishSpecies.ALL.size();
-            for (ServerPlayer p : me.server.getPlayerList().getPlayers()) {
+            for (ServerPlayer p : me.level().getServer().getPlayerList().getPlayers()) {
                 // 口径与 /atl codex 完全一致 ✓（PlayerData.get(...).codexCount() ✓），不另算一份 ✗
                 int n = com.whitecobalt.anglertackle.player.PlayerData.get(p).codexCount();
                 rows.add(new Row(display(p.getName().getString()), n));
@@ -176,12 +176,12 @@ public final class RankSnapshot {
      * 折中办法：空的时候不画空列表，而是**画一块带说明的空板块**（页脚写清为什么是空的）✓
      */
     private static List<RankPayload.Board> leagueBoards(LeaderboardData data, ServerPlayer me) {
-        if (me == null || me.server == null) {
+        if (me == null || me.level().getServer() == null) {
             return List.of();
         }
         List<LeagueData.Season> arch = null;
         try {
-            arch = LeagueData.get(me.server).archive;
+            arch = LeagueData.get(me.level().getServer()).archive;
         } catch (Throwable t) {
             arch = null;        // 档案读不出来绝不影响其它榜（同 LeaderboardHooks 的纪律）
         }
@@ -218,7 +218,7 @@ public final class RankSnapshot {
     private static RankPayload.Board latestLeagueBoard(ServerPlayer me, List<LeagueData.Season> byNew) {
         com.whitecobalt.anglertackle.league.LeagueData d = null;
         try {
-            d = com.whitecobalt.anglertackle.league.LeagueData.get(me.server);
+            d = com.whitecobalt.anglertackle.league.LeagueData.get(me.level().getServer());
         } catch (Throwable ignored) {
             d = null;       // 读不到就走最后的空板块，绝不影响别的榜
         }
@@ -382,13 +382,13 @@ public final class RankSnapshot {
      * 那是 `/atl contest last` 的事（界面里"本场"就该只有本场 ✓，免得看的人以为还在比）。
      */
     private static RankPayload.Board contestBoard(ServerPlayer me) {
-        if (me == null || me.server == null) {
+        if (me == null || me.level().getServer() == null) {
             return null;
         }
         List<com.whitecobalt.anglertackle.contest.Contest.Entry> entries =
-                com.whitecobalt.anglertackle.contest.ContestService.boardEntries(me.server);
+                com.whitecobalt.anglertackle.contest.ContestService.boardEntries(me.level().getServer());
         if (entries.isEmpty() && com.whitecobalt.anglertackle.contest.ContestService
-                .remainingTicks(me.server) < 0L) {
+                .remainingTicks(me.level().getServer()) < 0L) {
             return null;
         }
         List<String> lines = new ArrayList<>();
@@ -407,7 +407,7 @@ public final class RankSnapshot {
             }
             rank++;
         }
-        long left = com.whitecobalt.anglertackle.contest.ContestService.remainingTicks(me.server);
+        long left = com.whitecobalt.anglertackle.contest.ContestService.remainingTicks(me.level().getServer());
         String minutes = String.valueOf(Math.max(0L, left) / com.whitecobalt.anglertackle.contest
                 .Contest.TICKS_PER_MINUTE);
         String footer;
@@ -423,7 +423,7 @@ public final class RankSnapshot {
 
     /** 服务端直接把这名玩家的全榜发过去 ✓（{@code prefer} = 打开时先看哪个榜 ✓）。 */
     public static void sendAll(ServerPlayer player, String prefer) {
-        RankPayload all = buildAll(LeaderboardData.get(player.serverLevel()), player);
+        RankPayload all = buildAll(LeaderboardData.get(player.level()), player);
         net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(player,
                 new RankPayload(all.blob(), prefer == null ? "" : prefer));
     }

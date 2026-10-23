@@ -143,7 +143,7 @@ public final class Titles {
         com.whitecobalt.anglertackle.player.PlayerData.updateTitles(player, x -> x.withEquipped(id));
         // 名牌那张表要跟着变（`docs/38` §2.1）—— 这里是**唯一**改佩戴的入口，
         // 所以同步挂在这里就天然全覆盖（指令与界面两条入口都走它 ✓）。
-        com.whitecobalt.anglertackle.network.ModNetwork.broadcastNameplates(player.server);
+        com.whitecobalt.anglertackle.network.ModNetwork.broadcastNameplates(player.level().getServer());
         return EquipResult.OK;
     }
 
@@ -154,7 +154,7 @@ public final class Titles {
         }
         com.whitecobalt.anglertackle.player.PlayerData.updateTitles(player, x -> x.withEquipped(""));
         // 同上：摘掉也要让**别人的**名牌立刻恢复成"只有名字"
-        com.whitecobalt.anglertackle.network.ModNetwork.broadcastNameplates(player.server);
+        com.whitecobalt.anglertackle.network.ModNetwork.broadcastNameplates(player.level().getServer());
         return EquipResult.OK;
     }
 
@@ -167,10 +167,10 @@ public final class Titles {
      */
     public static List<String> holders(ServerPlayer viewer, String id) {
         List<String> out = new java.util.ArrayList<>();
-        if (viewer == null || viewer.server == null || id == null) {
+        if (viewer == null || viewer.level().getServer() == null || id == null) {
             return out;
         }
-        for (ServerPlayer p : viewer.server.getPlayerList().getPlayers()) {
+        for (ServerPlayer p : viewer.level().getServer().getPlayerList().getPlayers()) {
             if (get(p).has(id)) {
                 out.add(p.getName().getString());
             }
@@ -370,7 +370,7 @@ public final class Titles {
 
     /** 三冠王：本服三项榜**各拿过一次第一**（不要求同时 —— 那做不到，见 docs/38 §4.1）。 */
     private static void syncAnglersRecord(ServerPlayer player) {
-        LeaderboardData data = LeaderboardData.get(player.serverLevel());
+        LeaderboardData data = LeaderboardData.get(player.level());
         boolean all = true;
         for (Leaderboard.Board b : List.of(Leaderboard.Board.HEAVIEST,
                 Leaderboard.Board.LONGEST_FIGHT, Leaderboard.Board.FASTEST_CATCH)) {

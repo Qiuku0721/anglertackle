@@ -1198,7 +1198,7 @@ public final class AnglerCommands {
         if (s != null && s.bobber() != null) {
             return s.bobber().blockPosition();
         }
-        ServerLevel level = player.serverLevel();
+        ServerLevel level = player.level();
         var from = player.getEyePosition();
         var to = from.add(player.getViewVector(1.0F).scale(24.0));
         var hit = level.clip(new ClipContext(from, to, ClipContext.Block.OUTLINE,
@@ -1218,7 +1218,7 @@ public final class AnglerCommands {
      */
     public static java.util.List<Component> waterReport(ServerPlayer player) {
         java.util.List<Component> out = new java.util.ArrayList<>();
-        ServerLevel level = player.serverLevel();
+        ServerLevel level = player.level();
         BlockPos pos = waterProbe(player);
         WaterBody body = WaterBody.detect(level, pos);
         int mods = WaterBody.modifiers(level, pos, body);
@@ -1295,7 +1295,7 @@ public final class AnglerCommands {
         // ⚠ 这里以前传的是 null —— 也就是**不按水体筛**，于是 /atl pool 打出来的池子
         //   比实际能钓到的大一圈（湖泊里会列出海水鱼）。现在按"玩家正在钓的那片水"筛，
         //   取样点和 /atl water 用的是同一个函数，两处不会各说一套。
-        WaterBody water = WaterBody.detect(player.serverLevel(), waterProbe(player));
+        WaterBody water = WaterBody.detect(player.level(), waterProbe(player));
         java.util.List<FishSpecies.PoolEntry> pool = FishSpecies.buildPool(
                 kind, maxTier, minTier, maxWeight, FishSpecies.CastRange.LEVEL,
                 null, hv, 0, water, habitMask);

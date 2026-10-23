@@ -89,7 +89,7 @@ public class FishChunkItem extends Item {
     public ItemStack finishUsingItem(ItemStack stack, net.minecraft.world.level.Level level,
                                      net.minecraft.world.entity.LivingEntity entity) {
         ItemStack result = super.finishUsingItem(stack, level, entity);
-        if (!level.isClientSide && entity instanceof net.minecraft.world.entity.player.Player player) {
+        if (!level.isClientSide() && entity instanceof net.minecraft.world.entity.player.Player player) {
             com.whitecobalt.anglertackle.recipe.FishPalatability.apply(player, stack, !cooked);
         }
         return result;

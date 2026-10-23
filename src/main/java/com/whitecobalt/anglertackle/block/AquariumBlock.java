@@ -166,7 +166,7 @@ public class AquariumBlock extends Block implements SimpleWaterloggedBlock {
         }
         // 客户端先乐观地当作成功（和 FishRackBlock 同一套路）：
         // 容量判定要用鱼的个体数据，那是服务端才有的，客户端算出来会和服务器不一致。
-        if (level.isClientSide) {
+        if (level.isClientSide()) {
             return ItemInteractionResult.sidedSuccess(true);
         }
         ServerLevel server = (ServerLevel) level;
@@ -215,7 +215,7 @@ public class AquariumBlock extends Block implements SimpleWaterloggedBlock {
         if (fish.isEmpty()) {
             return InteractionResult.PASS;
         }
-        if (level.isClientSide) {
+        if (level.isClientSide()) {
             return InteractionResult.sidedSuccess(true);
         }
         com.whitecobalt.anglertackle.entity.ModFish pick = fish.get(0);

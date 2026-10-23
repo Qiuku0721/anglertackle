@@ -135,7 +135,7 @@ public final class QuestService {
         if (player == null || !Tuning.questEnabled()) {
             return;
         }
-        long day = dayOf(player.serverLevel());
+        long day = dayOf(player.level());
         ensureDaily(player, day);
         ensureWeekly(player, weekOf(day));
         // 顺带补发"上次达标时邮箱满、奖励没寄出去"的那些（否则永久丢失，见 flushPending）✓
@@ -254,7 +254,7 @@ public final class QuestService {
         if (!Tuning.questEnabled()) {
             return Accept.DISABLED;
         }
-        long day = dayOf(player.serverLevel());
+        long day = dayOf(player.level());
         long week = weekOf(day);
         QuestData q = PlayerData.getQuests(player);
         boolean hasDaily = q.lastDailyDay() == day;
@@ -381,7 +381,7 @@ public final class QuestService {
      */
     private static QuestData settleReached(ServerPlayer player, QuestData q) {
         // 活跃度按"当前这一周"对齐（跨周自动清零 + 清档位位掩码）✓
-        q = q.withActivityWeek(weekOf(dayOf(player.serverLevel())));
+        q = q.withActivityWeek(weekOf(dayOf(player.level())));
 
         for (String id : List.copyOf(q.active().keySet())) {
             QuestData.Row row = q.rowOf(id);

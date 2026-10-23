@@ -135,11 +135,11 @@ public final class ContestService {
         if (player == null || c == null) {
             return;
         }
-        ContestData d = ContestData.get(player.serverLevel());
+        ContestData d = ContestData.get(player.level());
         if (!d.running) {
             return;
         }
-        long game = player.serverLevel().getGameTime();
+        long game = player.level().getGameTime();
         if (game >= d.endGame) {
             return;                       // 结了就不再收（跨期那一尾算下一场，与联赛同一口径）
         }
@@ -280,7 +280,7 @@ public final class ContestService {
     /** 登录时把离线期间攒下的比赛奖励兑付（幂等：兑付完就删）。 */
     public static void onLogin(ServerPlayer player) {
         try {
-            ContestData d = ContestData.get(player.serverLevel());
+            ContestData d = ContestData.get(player.level());
             boolean any = false;
             Long coins = d.pendingCoins.remove(player.getUUID());
             if (coins != null && coins > 0L) {

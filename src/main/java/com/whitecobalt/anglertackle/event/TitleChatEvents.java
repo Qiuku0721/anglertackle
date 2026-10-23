@@ -74,7 +74,7 @@ public final class TitleChatEvents {
             Component line = Component.literal(player.getName().getString() + "[")
                     .append(titleName)
                     .append(Component.literal("]：" + raw));
-            player.server.getPlayerList().broadcastSystemMessage(line, false);
+            player.level().getServer().getPlayerList().broadcastSystemMessage(line, false);
         } catch (Throwable t) {
             // 称号只是附加信息：绝不让它把聊天带崩（异常时原版那条照样发出去）
             AnglersTackle.LOGGER.warn("[垂纶] 聊天称号后缀失败（已放行原版聊天）：{}", t.toString());

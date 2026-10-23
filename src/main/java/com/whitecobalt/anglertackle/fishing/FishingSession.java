@@ -1162,7 +1162,7 @@ public final class FishingSession {
         this.iceHoleCast = true;
 
         level.playSound(null, this.player.blockPosition(), SoundEvents.FISHING_BOBBER_THROW,
-                SoundSource.NEUTRAL, 0.5f, 0.4f / (level.random.nextFloat() * 0.4f + 0.8f));
+                SoundSource.NEUTRAL, 0.5f, 0.4f / (level.getRandom().nextFloat() * 0.4f + 0.8f));
 
         FishingManager.LOGGER.info("[垂纶] 精准入洞：浮漂直接放在洞心 ({}, {}, {})",
                 hole.getX(), hole.getY() - 1, hole.getZ());
@@ -1201,7 +1201,7 @@ public final class FishingSession {
         this.iceHoleCast = false;      // 普通抛投：距离按浮漂真实落点算（beginWaiting 会重算）
 
         level.playSound(null, this.player.blockPosition(), SoundEvents.FISHING_BOBBER_THROW,
-                SoundSource.NEUTRAL, 0.5f, 0.4f / (level.random.nextFloat() * 0.4f + 0.8f));
+                SoundSource.NEUTRAL, 0.5f, 0.4f / (level.getRandom().nextFloat() * 0.4f + 0.8f));
 
         FishingManager.LOGGER.info("[垂纶] 浮漂已生成：初速 {} 仰角 {}° → vH={} vV={}",
                 String.format("%.3f", speed), String.format("%.1f", launchDeg),
@@ -1249,7 +1249,7 @@ public final class FishingSession {
         this.iceHoleCast = false;      // 同 castProjectile：普通抛投不吃上一竿的"冰洞"状态
 
         level.playSound(null, this.player.blockPosition(), SoundEvents.FISHING_BOBBER_THROW,
-                SoundSource.NEUTRAL, 0.5f, 0.4f / (level.random.nextFloat() * 0.4f + 0.8f));
+                SoundSource.NEUTRAL, 0.5f, 0.4f / (level.getRandom().nextFloat() * 0.4f + 0.8f));
 
         FishingManager.LOGGER.debug("[垂纶] 抛投 power={} v0={} vH={} vV={}",
                 String.format("%.2f", this.castPower), String.format("%.2f", v0),

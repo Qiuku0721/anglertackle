@@ -176,7 +176,7 @@ public final class MailService {
         // 动作栏那行**节流**：完成一条委托+到档会一次寄好几封，
         // 每封都弹一次动作栏等于刷屏（实测一次上鱼最多连发 3 封）。
         try {
-            long now = to.serverLevel().getGameTime();
+            long now = to.level().getGameTime();
             long prev = mailArrivedAt.getOrDefault(to.getUUID(), Long.MIN_VALUE);
             if (now - prev >= MAIL_TOAST_GAP_TICKS) {
                 mailArrivedAt.put(to.getUUID(), now);

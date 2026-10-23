@@ -204,7 +204,7 @@ public final class AquariumTank {
             return false;
         }
         fish.moveTo(spot.getX() + 0.5D, spot.getY() + 0.5D, spot.getZ() + 0.5D,
-                level.random.nextFloat() * 360.0F, 0.0F);
+                level.getRandom().nextFloat() * 360.0F, 0.0F);
         fish.setFishData(data);
         fish.setInTank(true);
         return level.addFreshEntity(fish);
@@ -310,7 +310,7 @@ public final class AquariumTank {
         if (!(stack.getItem() instanceof com.whitecobalt.anglertackle.item.FishItem)) {
             return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
         }
-        if (level.isClientSide) {
+        if (level.isClientSide()) {
             return ItemInteractionResult.sidedSuccess(true);
         }
         FishData data = stack.get(ModDataComponents.FISH_DATA.get());
@@ -379,7 +379,7 @@ public final class AquariumTank {
         }
         // 2×2×2 的中心是 (x+1, y+1, z+1)；再往下压 0.1 保证判定框整体在水里
         fish.moveTo(pocket.getX() + 1.0D, pocket.getY() + 0.9D, pocket.getZ() + 1.0D,
-                level.random.nextFloat() * 360.0F, 0.0F);
+                level.getRandom().nextFloat() * 360.0F, 0.0F);
         fish.setFishData(data);
         fish.setInTank(false);   // 放生的是野鱼，不再受缸约束
         return level.addFreshEntity(fish);

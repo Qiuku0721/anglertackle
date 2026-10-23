@@ -29,14 +29,14 @@ public final class TitleNameplateSync {
     @SubscribeEvent
     public static void onLogin(PlayerEvent.PlayerLoggedInEvent event) {
         if (event.getEntity() instanceof ServerPlayer sp) {
-            ModNetwork.broadcastNameplates(sp.server);
+            ModNetwork.broadcastNameplates(sp.level().getServer());
         }
     }
 
     @SubscribeEvent
     public static void onLogout(PlayerEvent.PlayerLoggedOutEvent event) {
         if (event.getEntity() instanceof ServerPlayer sp) {
-            ModNetwork.broadcastNameplates(sp.server, sp.getUUID());
+            ModNetwork.broadcastNameplates(sp.level().getServer(), sp.getUUID());
         }
     }
 }
