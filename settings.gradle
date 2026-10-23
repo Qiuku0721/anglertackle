@@ -1,14 +1,19 @@
 pluginManagement {
     repositories {
+        // ForgeCDN 镜像。maven.neoforged.net 在本机连接超时，
+        // 所以 MDG 插件也从这里解析（镜像同步了 net/neoforged/* 的全部制品）。
+        maven {
+            name = 'NeoForged (ForgeCDN mirror)'
+            url = 'https://neoforged.forgecdn.net/releases'
+            content {
+                includeGroupByRegex 'net\\.neoforged.*'
+            }
+        }
+        // Gradle Plugin Portal：MDG 的运行期依赖 gradle-idea-ext 只在这里发布
+        // （forgecdn / mavenCentral 都没有）。本机实测可达，保留。
         gradlePluginPortal()
         mavenCentral()
     }
-}
-
-plugins {
-    // 让 Gradle 自动下载所需版本的 JDK（我们在 gradle.properties 里已经指定了本地 JDK 21，
-    // 这个插件是兜底：万一本地 JDK 路径失效，Gradle 会自动拉一个 Temurin 21）
-    id 'org.gradle.toolchains.foojay-resolver-convention' version '0.8.0'
 }
 
 rootProject.name = 'AnglersTackle'

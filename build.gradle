@@ -1,16 +1,16 @@
 // ============================================================
 //  《垂纶》Angler's Tackle
-//  Minecraft 1.21.1 + NeoForge 21.1.x + Java 21
+//  Minecraft 26.1.2 + NeoForge 26.1.2.x + Java 25
 //  构建方式：ModDevGradle 2.x（https://docs.neoforged.net/toolchain/docs/plugins/mdg/）
 //
-//  ⚠ 重要：maven.neoforged.net 在本机网络下被阻断（TCP ECONNRESET），
+//  ⚠ 重要：maven.neoforged.net 在本机网络下连接超时（getsockopt timed out），
 //     因此所有仓库都把镜像 https://neoforged.forgecdn.net 放在前面。
 //     若将来镜像失效，把官方地址放回第一位即可。
 // ============================================================
 
 plugins {
     id 'java-library'
-    id 'net.neoforged.moddev' version '2.0.131'
+    id 'net.neoforged.moddev' version '2.0.147'
 }
 
 group = mod_group_id
@@ -19,7 +19,7 @@ base.archivesName = mod_id
 
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(21)
+        languageVersion = JavaLanguageVersion.of(25)
     }
     withSourcesJar()
 }
@@ -82,6 +82,22 @@ repositories {
     }
 }
 
+// ------------------------------------------------------------
+//  MDG 会自己往 project repositories 里追加两个 maven.neoforged.net 仓库
+//  （见 RepositoriesPlugin：releases 与 mojang-meta），且排在用户仓库之前。
+//  本机 maven.neoforged.net 连接超时，因此把它们整体改写成可达的 forgecdn 镜像。
+// ------------------------------------------------------------
+repositories.all { repo ->
+    if (repo instanceof MavenArtifactRepository) {
+        def repoUrl = repo.url.toString()
+        if (repoUrl.startsWith('https://maven.neoforged.net/releases')) {
+            repo.url = 'https://neoforged.forgecdn.net/releases'
+        } else if (repoUrl.startsWith('https://maven.neoforged.net/mojang-meta')) {
+            repo.url = 'https://neoforged.forgecdn.net/mojang-meta'
+        }
+    }
+}
+
 dependencies {
     // 暂无第三方依赖。将来若需要，用 jarJar 内嵌以免玩家额外装模组。
 }
@@ -137,7 +153,7 @@ tasks.named('jar', Jar).configure {
 
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
-    options.release = 21
+    options.release = 25
 }
 
 // ------------------------------------------------------------
