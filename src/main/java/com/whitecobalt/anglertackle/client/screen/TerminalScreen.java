@@ -1,7 +1,9 @@
 package com.whitecobalt.anglertackle.client.screen;
 
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 
 import java.util.List;
@@ -27,10 +29,10 @@ import java.util.List;
  * **左键只选中**（不跳转）；**右侧的按钮**才是"真的去做"。↑↓ 选择，回车 = 点右侧按钮
  * （老柯项的回车不发指令 —— 只把步骤留在屏幕上）。
  *
- * <h2>渲染顺序（照既有 6 个界面）</h2>
- * 自己调一次 {@code renderBackground()}，**绝不调** {@code super.render()} —— 后者会再调一次
- * {@code renderBackground}（还会渲染 widgets），那层全屏暗化会盖在面板与文字上 ⇒ 界面糊。
- * ⚠ 因此**不用原版 Button**（它靠 {@code super.render} 的 widgets 循环渲染），自己画矩形 + 命中测试 ✓。
+ * <h2>渲染顺序</h2>
+ * 背景由 {@code extractBackground} 在 {@code extractRenderState} 之前抽取，这里只画内容，
+ * **绝不调** {@code super.extractRenderState()}（本界面没有 widget）。
+ * ⚠ 因此**不用原版 Button**，自己画矩形 + 命中测试 ✓。
  */
 public class TerminalScreen extends Screen {
 
@@ -117,14 +119,13 @@ public class TerminalScreen extends Screen {
     }
 
     @Override
-    public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
-        this.renderBackground(g, mouseX, mouseY, partialTick);   // ① 只调这一次
+    public void extractRenderState(GuiGraphicsExtractor g, int mouseX, int mouseY, float partialTick) {
         g.fill(panelX, panelY, panelX + panelW, panelY + panelH, COLOR_BG);
         g.fill(panelX, panelY, panelX + panelW, panelY + 1, COLOR_FRAME);
         g.fill(panelX, panelY + panelH - 1, panelX + panelW, panelY + panelH, COLOR_FRAME);
         g.fill(panelX, panelY, panelX + 1, panelY + panelH, COLOR_FRAME);
         g.fill(panelX + panelW - 1, panelY, panelX + panelW, panelY + panelH, COLOR_FRAME);
-        g.drawString(this.font, this.title, panelX + 8, panelY + 6, COLOR_TITLE, false);
+        g.text(this.font, this.title, panelX + 8, panelY + 6, COLOR_TITLE, false);
 
         // ── 左栏：模块列表。**点击只选中**，不跳转 ──
         for (int i = 0; i < MODULES.size(); i++) {
@@ -134,7 +135,7 @@ public class TerminalScreen extends Screen {
             if (i == selected || in) {
                 g.fill(leftX() - 3, y - 1, leftX() + 150, y + ROW_H - 1, COLOR_SELECT);
             }
-            g.drawString(this.font, Component.translatable(MODULES.get(i).nameKey()).getString(),
+            g.text(this.font, Component.translatable(MODULES.get(i).nameKey()).getString(),
                     leftX(), y, i == selected ? COLOR_TITLE : COLOR_TEXT, false);
         }
 
@@ -143,12 +144,12 @@ public class TerminalScreen extends Screen {
         int rx = rightX();
         int rw = rightW();
         btnX = -1;
-        g.drawString(this.font, UiLayout.fitText(Component.translatable(sel.nameKey()).getString(), rw),
+        g.text(this.font, UiLayout.fitText(Component.translatable(sel.nameKey()).getString(), rw),
                 rx, top(), COLOR_TITLE, false);
         int y = top() + ROW_H + 4;
 
         if (sel.npc()) {
-            g.drawString(this.font, Component.translatable("gui.anglertackle.term.npc_header").getString(),
+            g.text(this.font, Component.translatable("gui.anglertackle.term.npc_header").getString(),
                     rx, y, COLOR_TITLE, false);
             y += 12;
             for (String line : UiLayout.wrapCjk(
@@ -156,7 +157,7 @@ public class TerminalScreen extends Screen {
                 if (y > bottom() - 12) {
                     break;
                 }
-                g.drawString(this.font, line, rx, y, COLOR_TEXT, false);
+                g.text(this.font, line, rx, y, COLOR_TEXT, false);
                 y += 11;
             }
         } else {
@@ -165,7 +166,7 @@ public class TerminalScreen extends Screen {
                 if (y > bottom() - 36) {
                     break;
                 }
-                g.drawString(this.font, line, rx, y, COLOR_TEXT, false);
+                g.text(this.font, line, rx, y, COLOR_TEXT, false);
                 y += 11;
             }
             String label = Component.translatable("gui.anglertackle.term.open").getString();
@@ -177,10 +178,10 @@ public class TerminalScreen extends Screen {
             g.fill(btnX, btnY, btnX + btnW, btnY + btnH, hover ? COLOR_BTN_HOVER : COLOR_BTN);
             g.fill(btnX, btnY, btnX + btnW, btnY + 1, COLOR_FRAME);
             g.fill(btnX, btnY + btnH - 1, btnX + btnW, btnY + btnH, COLOR_FRAME);
-            g.drawString(this.font, label, btnX + 9, btnY + 4, COLOR_BTN_TEXT, false);
+            g.text(this.font, label, btnX + 9, btnY + 4, COLOR_BTN_TEXT, false);
         }
 
-        g.drawString(this.font, UiLayout.fitText(
+        g.text(this.font, UiLayout.fitText(
                         Component.translatable("gui.anglertackle.term.hint").getString(), panelW - 16),
                 panelX + 8, panelY + panelH - 12, COLOR_DIM, false);
     }
@@ -195,7 +196,10 @@ public class TerminalScreen extends Screen {
     }
 
     @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+    public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
+        double mouseX = event.x();
+        double mouseY = event.y();
+        int button = event.button();
         // 左栏：只选中（不跳转）
         for (int i = 0; i < MODULES.size(); i++) {
             int y = top() + i * ROW_H;
@@ -211,11 +215,12 @@ public class TerminalScreen extends Screen {
             activateCurrent();
             return true;
         }
-        return super.mouseClicked(mouseX, mouseY, button);
+        return super.mouseClicked(event, doubleClick);
     }
 
     @Override
-    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+    public boolean keyPressed(KeyEvent event) {
+        int keyCode = event.key();
         if (keyCode == 265 && selected > 0) {                     // ↑
             selected--;
             return true;
@@ -228,7 +233,7 @@ public class TerminalScreen extends Screen {
             activateCurrent();
             return true;
         }
-        return super.keyPressed(keyCode, scanCode, modifiers);
+        return super.keyPressed(event);
     }
 
     @Override

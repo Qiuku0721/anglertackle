@@ -2,7 +2,7 @@ package com.whitecobalt.anglertackle.client.screen;
 
 import com.whitecobalt.anglertackle.network.RodModActionPayload;
 import com.whitecobalt.anglertackle.network.RodModPayload;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
@@ -202,20 +202,18 @@ public class RodModScreen extends Screen {
     }
 
     @Override
-    public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
-        this.renderBackground(g, mouseX, mouseY, partialTick);
+    public void extractRenderState(GuiGraphicsExtractor g, int mouseX, int mouseY, float partialTick) {
+        // 背景由 extractBackground 提前抽取，这里只画内容。
 
         g.fill(left - 6, top - 6, left + panelW + 6, top + panelH + 6, 0xF0000000);
         g.fill(left - 4, top - 4, left + panelW + 4, top + panelH + 4, 0xFF1A2025);
         g.fill(left + splitX, top - 4, left + splitX + 1, top + panelH + 4, 0xFF4A5A60);
 
-        // ⚠ 这里**不能**调 super.render()：Screen.render() 内部会再调一次
-        // renderBackground()，那层全屏暗化会盖在刚刚画好的面板和文字上 ——
-        // 表现就是"整个界面朦胧、白字发灰"，而 tooltip 清晰
-        // （它在 renderWithTooltip 里最后画，盖不到）。
-        // 4 个界面全中过这个坑，见 tools/check-screen-render.js。
+        // ⚠ 这里**不能**调 super.extractRenderState()：背景已由 extractBackground 提前抽取，
+        // 再调一次会让全屏暗化盖在刚刚画好的面板和文字上 ——
+        // 表现就是"整个界面朦胧、白字发灰"（守着这条的是 tools/check-screen-render.js）。
         for (net.minecraft.client.gui.components.Renderable r : this.renderables) {
-            r.render(g, mouseX, mouseY, partialTick);
+            r.extractRenderState(g, mouseX, mouseY, partialTick);
         }
     }
 

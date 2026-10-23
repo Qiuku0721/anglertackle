@@ -8,9 +8,10 @@ import com.whitecobalt.anglertackle.quest.QuestGoal;
 import com.whitecobalt.anglertackle.quest.QuestPool;
 import com.whitecobalt.anglertackle.quest.QuestTiers;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.core.Holder;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
@@ -43,8 +44,8 @@ import java.util.Locale;
  * <ol>
  *   <li><b>文字全走 {@link TextWidget}</b>（不能 {@code graphics.drawString}）——
  *       用户环境里同时装了 TACZ / 森罗等模组，自绘文字会糊，只有走 widget 渲染路径才清晰；</li>
- *   <li><b>不调 {@code super.render()}</b>（它内部会再调一次 {@code renderBackground}，
- *       那层全屏暗化会盖在面板上 ⇒ 界面发灰）—— 手动遍历 {@code renderables} 渲染 ✓
+ *   <li><b>不调 {@code super.extractRenderState()}</b>（背景已由 {@code extractBackground} 提前抽取，
+ *       再画一次会让全屏暗化盖在面板上 ⇒ 界面发灰）—— 手动遍历 {@code renderables} 渲染 ✓
  *       （守着这条的是 {@code tools/check-screen-render.js}）；</li>
  *   <li><b>只读</b>：这个界面一个写操作都没有（接取走邮件按钮、领取走邮箱）——
  *       客户端只负责"把服务端推来的快照画出来" ✓。</li>
@@ -464,7 +465,7 @@ public class QuestScreen extends Screen {
      *   <li><b>详情栏奖励行</b>：物品奖励弹**原版物品说明**，鱼币说明"奖励信发到邮箱"。</li>
      * </ol>
      */
-    private void renderHoverTips(GuiGraphics g, int mouseX, int mouseY) {
+    private void renderHoverTips(GuiGraphicsExtractor g, int mouseX, int mouseY) {
         // ① 活跃度行：档位标记（HEADER_H+2）与进度条（+13~+17）罩一整行。
         //
         // ⚠ 2026-10-16 用户复验："任务界面的活跃奖励节点没有悬浮文本提示完成后有什么奖励"。
@@ -492,7 +493,7 @@ public class QuestScreen extends Screen {
             }
             tip.add(Component.translatable("gui.anglertackle.quest_tip_activity_hint")
                     .withStyle(net.minecraft.ChatFormatting.DARK_GRAY));
-            g.renderComponentTooltip(this.font, tip, mouseX, mouseY);
+            g.setComponentTooltipForNextFrame(this.font, tip, mouseX, mouseY);
             return;
         }
         // ② 列表行：奖励 / 状态 / 期限（命中框与 mouseClicked 逐字一致）
@@ -513,7 +514,7 @@ public class QuestScreen extends Screen {
                     tr(r.daily ? "gui.anglertackle.quest_deadline_daily"
                             : "gui.anglertackle.quest_deadline_weekly"))
                     .withStyle(net.minecraft.ChatFormatting.GRAY));
-            g.renderComponentTooltip(this.font, tip, mouseX, mouseY);
+            g.setComponentTooltipForNextFrame(this.font, tip, mouseX, mouseY);
             return;
         }
         // ③ 详情栏奖励行（dy 与 rebuild() 里那一行逐字一致）：物品弹原版说明，鱼币讲发奖方式
@@ -525,11 +526,11 @@ public class QuestScreen extends Screen {
                 if (sel.def.givesItem()) {
                     ItemStack st = stackOf(sel.def.itemId(), sel.def.itemCount());
                     if (st != null) {
-                        g.renderTooltip(this.font, st, mouseX, mouseY);
+                        g.setTooltipForNextFrame(this.font, st, mouseX, mouseY);
                         return;
                     }
                 }
-                g.renderComponentTooltip(this.font, List.of(
+                g.setComponentTooltipForNextFrame(this.font, List.of(
                         Component.translatable("gui.anglertackle.quest_tip_reward_mail")
                                 .withStyle(net.minecraft.ChatFormatting.GRAY)), mouseX, mouseY);
             }
@@ -538,8 +539,8 @@ public class QuestScreen extends Screen {
 
     // ------------------------------------------------------------------ 渲染
     @Override
-    public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
-        this.renderBackground(g, mouseX, mouseY, partialTick);
+    public void extractRenderState(GuiGraphicsExtractor g, int mouseX, int mouseY, float partialTick) {
+        // 背景由 extractBackground 提前抽取，这里只画内容。
         // 面板 + 边框（外深内亮，与既有五个界面一致）
         g.fill(left - 1, top - 1, left + panelW + 1, top + panelH + 1, C_SHADOW);
         g.fill(left, top, left + panelW, top + panelH, C_PANEL);
@@ -610,10 +611,10 @@ public class QuestScreen extends Screen {
             }
         }
 
-        // ⚠ **不要调 super.render(...)**：它内部会再调一次 renderBackground ⇒ 那层全屏暗化
-        //   盖在面板与文字上，表现是"界面朦胧、白字发灰"（守着这条的是 tools/check-screen-render.js）。
+        // ⚠ **不要调 super.extractRenderState(...)**：背景已由 extractBackground 提前抽取，
+        //   再调一次会让全屏暗化盖在面板与文字上（守着这条的是 tools/check-screen-render.js）。
         for (net.minecraft.client.gui.components.Renderable r : this.renderables) {
-            r.render(g, mouseX, mouseY, partialTick);
+            r.extractRenderState(g, mouseX, mouseY, partialTick);
         }
         // 悬浮提示放在**最后**画（盖在所有东西上面）—— 照 MailScreen 的范式
         renderHoverTips(g, mouseX, mouseY);
@@ -622,7 +623,10 @@ public class QuestScreen extends Screen {
     // ------------------------------------------------------------------ 输入
     /** 点列表行 = 选中（这个界面**没有任何写操作**：接取在邮件里，领取在邮箱里）。 */
     @Override
-    public boolean mouseClicked(double mx, double my, int button) {
+    public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
+        double mx = event.x();
+        double my = event.y();
+        int button = event.button();
         int listX = listX();
         List<Row> list = rows();
         int y = listTop();
@@ -644,6 +648,6 @@ public class QuestScreen extends Screen {
             }
             y += LIST_ROW_H;
         }
-        return super.mouseClicked(mx, my, button);
+        return super.mouseClicked(event, doubleClick);
     }
 }

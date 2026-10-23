@@ -7,9 +7,11 @@ import com.whitecobalt.anglertackle.network.TitlePayload;
 import com.whitecobalt.anglertackle.title.TitleDefs;
 import com.whitecobalt.anglertackle.title.Titles;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 import net.neoforged.neoforge.network.PacketDistributor;
 
@@ -656,8 +658,8 @@ public class TitleScreen extends Screen {
 
     // ------------------------------------------------------------------ 渲染
     @Override
-    public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
-        this.renderBackground(g, mouseX, mouseY, partialTick);
+    public void extractRenderState(GuiGraphicsExtractor g, int mouseX, int mouseY, float partialTick) {
+        // 背景由 extractBackground 提前抽取，这里只画内容。
         // 面板 + 边框（外深内亮，与既有界面一致）
         g.fill(left - 1, top - 1, left + panelW + 1, top + panelH + 1, C_SHADOW);
         g.fill(left, top, left + panelW, top + panelH, C_PANEL);
@@ -690,10 +692,10 @@ public class TitleScreen extends Screen {
                     r.owned ? Quality.of(r.quality).argb() : C_TRACK);
         }
 
-        // ⚠ **不要调 super.render(...)**：它内部会再调一次 renderBackground ⇒ 那层全屏暗化
-        //   盖在面板与文字上，表现是"界面朦胧、白字发灰"（守着这条的是 tools/check-screen-render.js）。
+        // ⚠ **不要调 super.extractRenderState(...)**：背景已由 extractBackground 提前抽取，
+        //   再调一次会让全屏暗化盖在面板与文字上（守着这条的是 tools/check-screen-render.js）。
         for (net.minecraft.client.gui.components.Renderable r : this.renderables) {
-            r.render(g, mouseX, mouseY, partialTick);
+            r.extractRenderState(g, mouseX, mouseY, partialTick);
         }
         renderHoverTips(g, mouseX, mouseY);
     }
@@ -701,7 +703,7 @@ public class TitleScreen extends Screen {
     /**
      * 悬浮提示（划过**只显示提示**，绝不改状态 —— 点行才选中，佩戴要按按钮/回车）。
      */
-    private void renderHoverTips(GuiGraphics g, int mouseX, int mouseY) {
+    private void renderHoverTips(GuiGraphicsExtractor g, int mouseX, int mouseY) {
         int listX = listX();
         List<Row> page = pageRows();
         for (int i = 0; i < page.size(); i++) {
@@ -731,7 +733,7 @@ public class TitleScreen extends Screen {
                 }
                 tip.add(Component.translatable("gui.anglertackle.title_tip_pick")
                         .withStyle(net.minecraft.ChatFormatting.DARK_GRAY));
-                g.renderComponentTooltip(this.font, tip, mouseX, mouseY);
+                g.setComponentTooltipForNextFrame(this.font, tip, mouseX, mouseY);
                 return;
             }
         }
@@ -740,7 +742,10 @@ public class TitleScreen extends Screen {
     // ------------------------------------------------------------------ 输入
     /** 点列表行 = 只选中（**不自动佩戴** —— 误触就换掉身份比误领附件更烦人）。 */
     @Override
-    public boolean mouseClicked(double mx, double my, int button) {
+    public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
+        double mx = event.x();
+        double my = event.y();
+        int button = event.button();
         int listX = listX();
         List<Row> rows = pageRows();
         for (int i = 0; i < rows.size(); i++) {
@@ -768,7 +773,7 @@ public class TitleScreen extends Screen {
                 return true;
             }
         }
-        return super.mouseClicked(mx, my, button);
+        return super.mouseClicked(event, doubleClick);
     }
 
     /** 滚轮翻页（与那对小按钮共用同一个 page 变量 —— 两条路不会各翻各的）。 */
@@ -793,7 +798,8 @@ public class TitleScreen extends Screen {
      * （那样两条路的判定迟早分叉）。
      */
     @Override
-    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+    public boolean keyPressed(KeyEvent event) {
+        int keyCode = event.key();
         int sel = indexOfSelected();
         switch (keyCode) {
             case 265 -> {   // ↑
@@ -824,7 +830,7 @@ public class TitleScreen extends Screen {
                 return true;
             }
             default -> {
-                return super.keyPressed(keyCode, scanCode, modifiers);
+                return super.keyPressed(event);
             }
         }
     }

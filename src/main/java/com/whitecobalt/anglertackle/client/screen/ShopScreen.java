@@ -5,8 +5,9 @@ import com.whitecobalt.anglertackle.client.ClientLeaguePoints;
 import com.whitecobalt.anglertackle.client.ClientShopState;
 import com.whitecobalt.anglertackle.shop.ShopCatalog;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.core.Holder;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
@@ -160,14 +161,14 @@ public class ShopScreen extends Screen {
 
     // ================================================================ 绘制
     @Override
-    public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
-        renderBackground(g, mouseX, mouseY, partialTick);
+    public void extractRenderState(GuiGraphicsExtractor g, int mouseX, int mouseY, float partialTick) {
+        // 背景由 extractBackground 提前抽取，这里只画内容。
         g.fill(left, top, left + panelW, top + panelH, 0xC0101010);
         g.fill(left, top, left + panelW, top + 1, 0xFF808080);
         g.fill(left, top + panelH - 1, left + panelW, top + panelH, 0xFF808080);
 
         // ---- 标题：等级 + 经验 + 余额 ----
-        g.drawString(font, "§6钓鱼商店 §8· §f老柯", left + 8, top + 7, 0xFFFFFF);
+        g.text(font, "§6钓鱼商店 §8· §f老柯", left + 8, top + 7, 0xFFFFFF);
         int lvNow = ClientShopState.level();
         boolean capped = com.whitecobalt.anglertackle.player.AnglerLeveling.isGate(lvNow);
         String st = "§7Lv.§f" + lvNow
@@ -176,10 +177,10 @@ public class ShopScreen extends Screen {
                     : capped ? " §c待评定"
                     : " §7经验 §f" + ClientShopState.xp() + "§8/"
                       + com.whitecobalt.anglertackle.player.AnglerLeveling.xpToNext(lvNow));
-        g.drawString(font, st, left + 130, top + 7, 0xFFFFFF);
+        g.text(font, st, left + 130, top + 7, 0xFFFFFF);
         String coins = "§7鱼币 §6" + ClientCoins.coins();
         int coinsX = left + panelW - 8 - font.width(coins);
-        g.drawString(font, coins, coinsX, top + 7, 0xFFFFFF);
+        g.text(font, coins, coinsX, top + 7, 0xFFFFFF);
         // 联赛积分（`docs/39`，2026-10-13）：紧挨在鱼币左边。
         // 用户在「联赛」页花钱时余额必须看得见 —— 否则不知道买完还剩多少、
         // 也不知道"为什么这一条买不了"（那多半就是积分不够）。
@@ -188,7 +189,7 @@ public class ShopScreen extends Screen {
             String pts = "§7积分 §b" + ClientLeaguePoints.points();
             int px = coinsX - 10 - font.width(pts);
             if (px > left + 130 + font.width(st) + 6) {
-                g.drawString(font, pts, px, top + 7, 0xFFFFFF);
+                g.text(font, pts, px, top + 7, 0xFFFFFF);
             }
         }
 
@@ -200,11 +201,11 @@ public class ShopScreen extends Screen {
             boolean hot = in(mouseX, mouseY, x, top + 20, tabW - 2, 14);
             g.fill(x, top + 20, x + tabW - 2, top + 34, sel ? 0xFF3A3A6A : (hot ? 0xFF2A2A3A : 0xFF1A1A22));
             int color = sel ? 0xFFD080 : 0xA0A0A0;
-            g.drawString(font, TABS[i], x + (tabW - 2 - font.width(TABS[i])) / 2, top + 23, color);
+            g.text(font, TABS[i], x + (tabW - 2 - font.width(TABS[i])) / 2, top + 23, color);
         }
 
         if (!ClientShopState.talked()) {
-            g.drawString(font, "§c先跟老柯聊聊，他才会做生意。", left + 12, top + 46, 0xFFFFFF);
+            g.text(font, "§c先跟老柯聊聊，他才会做生意。", left + 12, top + 46, 0xFFFFFF);
         renderWidgetsOnly(g, mouseX, mouseY, partialTick);
             return;
         }
@@ -253,30 +254,29 @@ public class ShopScreen extends Screen {
         // ---- 分页 ----
         if (pageCount() > 1) {
             String p = (page + 1) + " / " + pageCount();
-            g.drawString(font, "§7" + p, left + panelW / 2 - font.width(p) / 2, top + panelH - 16, 0xFFFFFF);
-            g.drawString(font, "§7◀", left + panelW / 2 - 50, top + panelH - 16, 0xFFFFFF);
-            g.drawString(font, "§7▶", left + panelW / 2 + 40, top + panelH - 16, 0xFFFFFF);
+            g.text(font, "§7" + p, left + panelW / 2 - font.width(p) / 2, top + panelH - 16, 0xFFFFFF);
+            g.text(font, "§7◀", left + panelW / 2 - 50, top + panelH - 16, 0xFFFFFF);
+            g.text(font, "§7▶", left + panelW / 2 + 40, top + panelH - 16, 0xFFFFFF);
         }
-        g.drawString(font, "§8点击购买 · ESC 关闭", left + 8, top + panelH - 16, 0xFFFFFF);
+        g.text(font, "§8点击购买 · ESC 关闭", left + 8, top + panelH - 16, 0xFFFFFF);
 
         // 悬停行的物品 tooltip（鼠标悬浮查看，和物品栏里的表现一致）
         if (hoverRow >= 0 && hoverRow < list.size()) {
-            g.renderTooltip(font, new ItemStack(itemOf(list.get(hoverRow))), mouseX, mouseY);
+            g.setTooltipForNextFrame(font, new ItemStack(itemOf(list.get(hoverRow))), mouseX, mouseY);
         }
         renderWidgetsOnly(g, mouseX, mouseY, partialTick);
     }
 
     /**
-     * 只渲染 widgets —— **不要调 super.render()**。
+     * 只渲染 widgets —— **不要调 super.extractRenderState()**。
      *
-     * <p>Screen.render() 内部会再调一次 renderBackground()，那层**全屏**暗化
-     * 会盖在刚刚画好的面板和文字上 —— 表现就是"整个界面朦胧、白字发灰"，
-     * 而 tooltip 清晰（它在 renderWithTooltip 里最后画，盖不到）。
-     * 4 个界面全中过这个坑，见 tools/check-screen-render.js。
+     * <p>背景已由 extractBackground 提前抽取；再调一次会让那层**全屏**暗化
+     * 盖在刚刚画好的面板和文字上 —— 表现就是"整个界面朦胧、白字发灰"
+     * （守着这条的是 tools/check-screen-render.js）。
      */
-    private void renderWidgetsOnly(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
+    private void renderWidgetsOnly(GuiGraphicsExtractor g, int mouseX, int mouseY, float partialTick) {
         for (net.minecraft.client.gui.components.Renderable r : this.renderables) {
-            r.render(g, mouseX, mouseY, partialTick);
+            r.extractRenderState(g, mouseX, mouseY, partialTick);
         }
     }
 
@@ -296,7 +296,7 @@ public class ShopScreen extends Screen {
      * <p>价格只是**显示**用的，服务端在修的那一刻会用同一套规则重算一遍
      * （见 ShopManager.repairCost）—— 改包改不动价格。
      */
-    private void renderRepair(GuiGraphics g, int mouseX, int mouseY) {
+    private void renderRepair(GuiGraphicsExtractor g, int mouseX, int mouseY) {
         repairSlots.clear();
         var player = net.minecraft.client.Minecraft.getInstance().player;
         if (player == null) {
@@ -310,8 +310,8 @@ public class ShopScreen extends Screen {
         }
 
         if (repairSlots.isEmpty()) {
-            g.drawString(font, "§7背包里没有需要修的鱼竿。", left + 12, top + 46, 0xFFFFFF);
-            g.drawString(font, "§8修一次 = 目录价的一半；兑换来的竿固定 "
+            g.text(font, "§7背包里没有需要修的鱼竿。", left + 12, top + 46, 0xFFFFFF);
+            g.text(font, "§8修一次 = 目录价的一半；兑换来的竿固定 "
                     + com.whitecobalt.anglertackle.shop.ShopManager.REPAIR_EXCHANGE_COST + " 币",
                     left + 12, top + 62, 0xFFFFFF);
             return;
@@ -328,20 +328,20 @@ public class ShopScreen extends Screen {
             if (in(mouseX, mouseY, left + 8, y, panelW - 16, ROW_H - 1)) {
                 g.fill(left + 8, y, left + panelW - 8, y + ROW_H - 1, 0x40FFFFFF);
             }
-            g.renderItem(s, left + 10, y + 1);
-            g.drawString(font, s.getHoverName().getString(), left + 30, y + 5, 0xFFFFFF);
+            g.item(s, left + 10, y + 1);
+            g.text(font, s.getHoverName().getString(), left + 30, y + 5, 0xFFFFFF);
             int cost = com.whitecobalt.anglertackle.shop.ShopManager.repairCost(s);
             String right = "§6" + String.format("%,d", cost) + " §7币";
-            g.drawString(font, right, left + panelW - 16 - font.width(right), y + 5, 0xFFFFFF);
+            g.text(font, right, left + panelW - 16 - font.width(right), y + 5, 0xFFFFFF);
         }
-        g.drawString(font, "§8点一根修一根 · ESC 关闭", left + 8, top + panelH - 16, 0xFFFFFF);
+        g.text(font, "§8点一根修一根 · ESC 关闭", left + 8, top + panelH - 16, 0xFFFFFF);
         if (pages > 1) {
             String p = (page + 1) + " / " + pages;
-            g.drawString(font, "§7" + p, left + panelW / 2 - font.width(p) / 2, top + panelH - 16, 0xFFFFFF);
+            g.text(font, "§7" + p, left + panelW / 2 - font.width(p) / 2, top + panelH - 16, 0xFFFFFF);
         }
         int hov = hoverRepairRow(mouseX, mouseY);
         if (hov >= 0 && hov < repairSlots.size()) {
-            g.renderTooltip(font, player.getInventory().getItem(repairSlots.get(hov)), mouseX, mouseY);
+            g.setTooltipForNextFrame(font, player.getInventory().getItem(repairSlots.get(hov)), mouseX, mouseY);
         }
     }
 
@@ -382,7 +382,7 @@ public class ShopScreen extends Screen {
      * <p>与兑换页同一个骨架（图标 + 左文右价 + 底部翻页），只是"材料"那一栏换成积分价。
      * ⚠ 客户端**只画价、不发送价** —— 价格与限购一律由服务端从目录现查（`check-shop-ui.js` 明令）✓
      */
-    private void renderLeague(GuiGraphics g, int mouseX, int mouseY) {
+    private void renderLeague(GuiGraphicsExtractor g, int mouseX, int mouseY) {
         var all = com.whitecobalt.anglertackle.shop.ShopCatalog.LEAGUE_OFFERS;
         int pages = Math.max(1, (all.size() + rowsPerPage - 1) / rowsPerPage);
         if (page > pages - 1) {
@@ -398,17 +398,17 @@ public class ShopScreen extends Screen {
             }
             ItemStack icon = leagueOfferIcon(o);
             if (!icon.isEmpty()) {
-                g.renderItem(icon, left + 10, y + 1);
+                g.item(icon, left + 10, y + 1);
             }
-            g.drawString(font, leagueOfferName(o), left + 30, y + 5, 0xFFFFFF);
+            g.text(font, leagueOfferName(o), left + 30, y + 5, 0xFFFFFF);
             String price = "§e" + o.points() + " 积分";
-            g.drawString(font, price, left + panelW - 12 - font.width(price), y + 5, 0xFFFFFF);
+            g.text(font, price, left + panelW - 12 - font.width(price), y + 5, 0xFFFFFF);
         }
-        g.drawString(font, "§8点一行用联赛积分兑换 · 每届联赛刷新限购 · ESC 关闭",
+        g.text(font, "§8点一行用联赛积分兑换 · 每届联赛刷新限购 · ESC 关闭",
                 left + 8, top + panelH - 16, 0xFFFFFF);
         if (pages > 1) {
             String p = "§7◀ §f" + (page + 1) + " / " + pages + " §7▶";
-            g.drawString(font, p, left + panelW / 2 - font.width(p) / 2, top + panelH - 16, 0xFFFFFF);
+            g.text(font, p, left + panelW / 2 - font.width(p) / 2, top + panelH - 16, 0xFFFFFF);
         }
     }
 
@@ -466,7 +466,7 @@ public class ShopScreen extends Screen {
         return st.isEmpty() ? o.id() : st.getHoverName().getString();
     }
 
-    private void renderExchange(GuiGraphics g, int mouseX, int mouseY) {
+    private void renderExchange(GuiGraphicsExtractor g, int mouseX, int mouseY) {
         var player = net.minecraft.client.Minecraft.getInstance().player;
         var all = com.whitecobalt.anglertackle.shop.ShopCatalog.EXCHANGES;
         int pages = Math.max(1, (all.size() + rowsPerPage - 1) / rowsPerPage);
@@ -484,38 +484,38 @@ public class ShopScreen extends Screen {
             }
             // 左：材料（灰 = 现在凑不齐，用 describe 的 dim 版）；右：产出
             String need = com.whitecobalt.anglertackle.shop.ShopMaterials.describe(x, !ok);
-            g.drawString(font, need, left + 10, y + 5, 0xFFFFFF);
+            g.text(font, need, left + 10, y + 5, 0xFFFFFF);
             var out = com.whitecobalt.anglertackle.shop.ShopMaterials.resultStack(player, x);
             if (!out.isEmpty()) {
-                g.renderItem(out, left + panelW - 116, y + 1);
+                g.item(out, left + panelW - 116, y + 1);
             }
             String res = (ok ? "§a" : "§8") + "→ " + out.getCount() + "× "
                     + com.whitecobalt.anglertackle.shop.ShopMaterials.resultName(player, x);
-            g.drawString(font, res, left + panelW - 94, y + 5, 0xFFFFFF);
+            g.text(font, res, left + panelW - 94, y + 5, 0xFFFFFF);
         }
-        g.drawString(font, "§8点一行兑换 · 品质不够的鱼不算 · ESC 关闭", left + 8, top + panelH - 16, 0xFFFFFF);
+        g.text(font, "§8点一行兑换 · 品质不够的鱼不算 · ESC 关闭", left + 8, top + panelH - 16, 0xFFFFFF);
         if (pages > 1) {
             // ⚠ 翻页提示要**画得像能点**：原来只画了一行"1 / 2"，
             //   用户 2026-10-02："我知道兑换页码能翻，但没有像是按钮那样的提示，
             //   第一眼过去让人以为没有翻页功能。" 所以照商品列表那样画金色的 ◀ ▶。
             String p = (page + 1) + " / " + pages;
-            g.drawString(font, "§f" + p, left + panelW / 2 - font.width(p) / 2, top + panelH - 16, 0xFFFFFF);
-            g.drawString(font, "§e◀", left + panelW / 2 - 46, top + panelH - 16, 0xFFFFFF);
-            g.drawString(font, "§e▶", left + panelW / 2 + 38, top + panelH - 16, 0xFFFFFF);
+            g.text(font, "§f" + p, left + panelW / 2 - font.width(p) / 2, top + panelH - 16, 0xFFFFFF);
+            g.text(font, "§e◀", left + panelW / 2 - 46, top + panelH - 16, 0xFFFFFF);
+            g.text(font, "§e▶", left + panelW / 2 + 38, top + panelH - 16, 0xFFFFFF);
         } else {
-            g.drawString(font, "§8共 " + all.size() + " 条（一页放得下）",
+            g.text(font, "§8共 " + all.size() + " 条（一页放得下）",
                     left + panelW / 2 - 30, top + panelH - 16, 0xFFFFFF);
         }
         int hov = hoverExchangeRow(mouseX, mouseY);
         if (hov >= 0 && hov < all.size()) {
             var out = com.whitecobalt.anglertackle.shop.ShopMaterials.resultStack(player, all.get(hov));
             if (!out.isEmpty()) {
-                g.renderTooltip(font, out, mouseX, mouseY);
+                g.setTooltipForNextFrame(font, out, mouseX, mouseY);
             }
         }
     }
 
-    private void renderSell(GuiGraphics g, int mouseX, int mouseY) {
+    private void renderSell(GuiGraphicsExtractor g, int mouseX, int mouseY) {
         sellSlots.clear();
         var player = net.minecraft.client.Minecraft.getInstance().player;
         if (player == null) {
@@ -529,7 +529,7 @@ public class ShopScreen extends Screen {
         }
 
         if (sellSlots.isEmpty()) {
-            g.drawString(font, "§7背包里没有鱼。去钓几条再来。", left + 12, top + 46, 0xFFFFFF);
+            g.text(font, "§7背包里没有鱼。去钓几条再来。", left + 12, top + 46, 0xFFFFFF);
             return;
         }
 
@@ -546,26 +546,26 @@ public class ShopScreen extends Screen {
             if (in(mouseX, mouseY, left + 8, y, panelW - 16, ROW_H - 1)) {
                 g.fill(left + 8, y, left + panelW - 8, y + ROW_H - 1, 0x40FFFFFF);
             }
-            g.renderItem(s, left + 10, y + 1);
-            g.drawString(font, s.getHoverName().getString(), left + 30, y + 5, 0xFFFFFF);
+            g.item(s, left + 10, y + 1);
+            g.text(font, s.getHoverName().getString(), left + 30, y + 5, 0xFFFFFF);
 
             long price = ((com.whitecobalt.anglertackle.item.FishItem) s.getItem()).sellValue(s);
             String right = "§6" + String.format("%,d", price) + " §7×" + s.getCount();
-            g.drawString(font, right, left + panelW - 16 - font.width(right), y + 5, 0xFFFFFF);
+            g.text(font, right, left + panelW - 16 - font.width(right), y + 5, 0xFFFFFF);
             total += price * s.getCount();
         }
 
-        g.drawString(font, "§7这些鱼一共值 §6" + String.format("%,d", total) + " §7鱼币",
+        g.text(font, "§7这些鱼一共值 §6" + String.format("%,d", total) + " §7鱼币",
                 left + 12, top + panelH - 32, 0xFFFFFF);
-        g.drawString(font, "§8点一条卖一条（不会一次全卖掉） · ESC 关闭",
+        g.text(font, "§8点一条卖一条（不会一次全卖掉） · ESC 关闭",
                 left + 8, top + panelH - 16, 0xFFFFFF);
         if (pages > 1) {
             String p = (page + 1) + " / " + pages;
-            g.drawString(font, "§7" + p, left + panelW / 2 - font.width(p) / 2, top + panelH - 16, 0xFFFFFF);
+            g.text(font, "§7" + p, left + panelW / 2 - font.width(p) / 2, top + panelH - 16, 0xFFFFFF);
         }
         int hov = hoverSellRow(mouseX, mouseY);
         if (hov >= 0 && hov < sellSlots.size()) {
-            g.renderTooltip(font, player.getInventory().getItem(sellSlots.get(hov)), mouseX, mouseY);
+            g.setTooltipForNextFrame(font, player.getInventory().getItem(sellSlots.get(hov)), mouseX, mouseY);
         }
 
         // 确认框画在最后 —— 它要盖住列表和 tooltip
@@ -584,16 +584,16 @@ public class ShopScreen extends Screen {
      * <p>普通鱼不弹 —— 每条都问一遍会把"卖鱼"变成一种折磨，玩家最后会去勾
      * "本局不再提示"，那时连材料鱼也不弹了，反而更糟。
      */
-    private void renderConfirm(GuiGraphics g, int mouseX, int mouseY) {
+    private void renderConfirm(GuiGraphicsExtractor g, int mouseX, int mouseY) {
         g.fill(left, top, left + panelW, top + panelH, 0xC0000000);
         int bx = left + (panelW - cfmW) / 2;
         int by = top + (panelH - cfmH) / 2;
         g.fill(bx, by, bx + cfmW, by + cfmH, 0xFF202028);
         g.fill(bx, by, bx + cfmW, by + 1, 0xFFA0A0A0);
 
-        g.drawString(font, "§e确定要卖掉吗？", bx + 10, by + 8, 0xFFFFFF);
-        g.drawString(font, "§7" + pendingSellReason, bx + 10, by + 26, 0xFFFFFF);
-        g.drawString(font, "§7卖掉之后就拿不回来了。", bx + 10, by + 42, 0xFFFFFF);
+        g.text(font, "§e确定要卖掉吗？", bx + 10, by + 8, 0xFFFFFF);
+        g.text(font, "§7" + pendingSellReason, bx + 10, by + 26, 0xFFFFFF);
+        g.text(font, "§7卖掉之后就拿不回来了。", bx + 10, by + 42, 0xFFFFFF);
 
         String[] labels = {"§a确定卖掉", "§f取消", "§8本局不再提示"};
         int bw = cfmBtnW();
@@ -602,7 +602,7 @@ public class ShopScreen extends Screen {
             int y = by + cfmBtnY;
             boolean hot = in(mouseX, mouseY, x, y, bw, CFM_BTN_H);
             g.fill(x, y, x + bw, y + CFM_BTN_H, hot ? 0xFF3A3A5A : 0xFF2A2A38);
-            g.drawString(font, UiLayout.fitText(labels[i], bw - 4),
+            g.text(font, UiLayout.fitText(labels[i], bw - 4),
                     x + (bw - font.width(UiLayout.fitText(labels[i], bw - 4))) / 2, y + 5, 0xFFFFFF);
         }
     }
@@ -634,13 +634,13 @@ public class ShopScreen extends Screen {
     }
 
     /** 一行商品：图标 + 名字 + 价格/状态。 */
-    private void drawEntry(GuiGraphics g, ShopCatalog.Entry e, int x, int y) {
+    private void drawEntry(GuiGraphicsExtractor g, ShopCatalog.Entry e, int x, int y) {
         ItemStack stack = new ItemStack(itemOf(e));
-        g.renderItem(stack, x, y + 1);
+        g.item(stack, x, y + 1);
 
         boolean unlocked = ClientShopState.unlocked(e.unlockStage());
         int nameColor = unlocked ? 0xFFFFFF : 0x707070;
-        g.drawString(font, stack.getHoverName().getString(), x + 20, y + 5, nameColor);
+        g.text(font, stack.getHoverName().getString(), x + 20, y + 5, nameColor);
 
         // 价格那一栏：买价 / 免费 / 兑换
         String price;
@@ -664,18 +664,18 @@ public class ShopScreen extends Screen {
             price = "售罄 " + waitMinutes + " 分钟";
             priceColor = 0xFF5555;
         }
-        g.drawString(font, price, left + panelW - 16 - font.width(price), y + 5, priceColor);
+        g.text(font, price, left + panelW - 16 - font.width(price), y + 5, priceColor);
     }
 
     /** 「等级评定」那一页：告诉玩家现在几级、还差多少经验、要交什么。 */
-    private void renderRating(GuiGraphics g) {
+    private void renderRating(GuiGraphicsExtractor g) {
         int lv = ClientShopState.level();
         int xp = ClientShopState.xp();
         boolean max = lv >= com.whitecobalt.anglertackle.player.AnglerLeveling.MAX_LEVEL;
         int gate = com.whitecobalt.anglertackle.player.AnglerLeveling.nextGate(lv);
         boolean atGate = com.whitecobalt.anglertackle.player.AnglerLeveling.isGate(lv);
 
-        g.drawString(font, "§6等级评定", left + 12, top + 46, 0xFFFFFF);
+        g.text(font, "§6等级评定", left + 12, top + 46, 0xFFFFFF);
         // 等级与经验条（卡在评定时不显示进度，因为那时候经验不积攒）
         String lvLine = max
                 ? "§fLv.50 §a（已满级）"
@@ -683,31 +683,31 @@ public class ShopScreen extends Screen {
                     ? "§fLv." + lv + " §c（卡在评定点，经验暂不积攒）"
                     : "§fLv." + lv + " §7经验 " + xp + "/"
                       + com.whitecobalt.anglertackle.player.AnglerLeveling.xpToNext(lv);
-        g.drawString(font, lvLine, left + 12, top + 62, 0xFFFFFF);
+        g.text(font, lvLine, left + 12, top + 62, 0xFFFFFF);
 
         if (max || gate == 0) {
             // 41 级以上：用户口径"到 40 级突破完后不会出现评定任务"
-            g.drawString(font, "§a老柯说：评定都做完了，剩下的路你自己走。", left + 12, top + 84, 0xFFFFFF);
-            g.drawString(font, "§7（Lv.41 之后每级只要经验，一直钓到 Lv.50）", left + 12, top + 98, 0xFFFFFF);
+            g.text(font, "§a老柯说：评定都做完了，剩下的路你自己走。", left + 12, top + 84, 0xFFFFFF);
+            g.text(font, "§7（Lv.41 之后每级只要经验，一直钓到 Lv.50）", left + 12, top + 98, 0xFFFFFF);
             return;
         }
 
-        g.drawString(font, "§7下一次评定在 §fLv." + gate + "§7，交付后突破到 §fLv." + (gate + 1) + "§7。",
+        g.text(font, "§7下一次评定在 §fLv." + gate + "§7，交付后突破到 §fLv." + (gate + 1) + "§7。",
                 left + 12, top + 84, 0xFFFFFF);
-        g.drawString(font, "§7评定 §c不能重复交 §7，交出去的鱼会被收走。", left + 12, top + 98, 0xFFFFFF);
+        g.text(font, "§7评定 §c不能重复交 §7，交出去的鱼会被收走。", left + 12, top + 98, 0xFFFFFF);
         // 需求文案由**共享的那张表**生成（AnglerLeveling.GATES），界面不再自己抄一份
-        g.drawString(font, "§e要求：" + requirementText(gate), left + 12, top + 116, 0xFFFFFF);
+        g.text(font, "§e要求：" + requirementText(gate), left + 12, top + 116, 0xFFFFFF);
 
         int btnY = top + 140;
         if (!atGate) {
-            g.drawString(font, "§8（等级到了 " + gate + " 才能交付）", left + 12, btnY + 5, 0xFFFFFF);
+            g.text(font, "§8（等级到了 " + gate + " 才能交付）", left + 12, btnY + 5, 0xFFFFFF);
             return;
         }
         boolean hot = in(lastMouseX, lastMouseY, left + panelW / 2 - 60, btnY, 120, 18);
         g.fill(left + panelW / 2 - 60, btnY, left + panelW / 2 + 60, btnY + 18,
                 hot ? 0xFF3A6A3A : 0xFF2A3A2A);
         String btn = "交付并评定";
-        g.drawString(font, btn, left + panelW / 2 - font.width(btn) / 2, btnY + 5, 0xFFFFFF);
+        g.text(font, btn, left + panelW / 2 - font.width(btn) / 2, btnY + 5, 0xFFFFFF);
     }
 
     /**
@@ -735,9 +735,12 @@ public class ShopScreen extends Screen {
     }
 
     @Override
-    public boolean mouseClicked(double mx, double my, int button) {
+    public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
+        double mx = event.x();
+        double my = event.y();
+        int button = event.button();
         if (button != 0) {
-            return super.mouseClicked(mx, my, button);
+            return super.mouseClicked(event, doubleClick);
         }
         int x = (int) mx;
         int y = (int) my;
@@ -779,7 +782,7 @@ public class ShopScreen extends Screen {
         }
 
         if (!ClientShopState.talked()) {
-            return super.mouseClicked(mx, my, button);
+            return super.mouseClicked(event, doubleClick);
         }
 
         // 兑换页：点一行换一次（和红鱼线/金渔轮那两条老兑换一致：单击即换，
@@ -803,7 +806,7 @@ public class ShopScreen extends Screen {
                         com.whitecobalt.anglertackle.network.ShopActionPayload.exchange(row));
                 return true;
             }
-            return super.mouseClicked(mx, my, button);
+            return super.mouseClicked(event, doubleClick);
         }
 
         // 联赛页：点一行 = 花积分买（**只发下标**；价格、余额、每届限购全由服务端现判 ✓）
@@ -826,7 +829,7 @@ public class ShopScreen extends Screen {
                         com.whitecobalt.anglertackle.network.ShopActionPayload.league(row));
                 return true;
             }
-            return super.mouseClicked(mx, my, button);
+            return super.mouseClicked(event, doubleClick);
         }
 
         // 修杆页：点一根修一根
@@ -837,7 +840,7 @@ public class ShopScreen extends Screen {
                         com.whitecobalt.anglertackle.network.ShopActionPayload.repair(repairSlots.get(row)));
                 return true;
             }
-            return super.mouseClicked(mx, my, button);
+            return super.mouseClicked(event, doubleClick);
         }
 
         // 卖鱼页：点一条卖一条
@@ -877,7 +880,7 @@ public class ShopScreen extends Screen {
                         com.whitecobalt.anglertackle.network.ShopActionPayload.sell(slot));
                 return true;
             }
-            return super.mouseClicked(mx, my, button);
+            return super.mouseClicked(event, doubleClick);
         }
 
         // 等级评定的按钮（只有**正好卡在评定点**时才可点，和 service 端判定一致）
@@ -888,7 +891,7 @@ public class ShopScreen extends Screen {
                         com.whitecobalt.anglertackle.network.ShopActionPayload.rate());
                 return true;
             }
-            return super.mouseClicked(mx, my, button);
+            return super.mouseClicked(event, doubleClick);
         }
 
         // 翻页
@@ -919,7 +922,7 @@ public class ShopScreen extends Screen {
                     com.whitecobalt.anglertackle.network.ShopActionPayload.of(e.id()));
             return true;
         }
-        return super.mouseClicked(mx, my, button);
+        return super.mouseClicked(event, doubleClick);
     }
 
     private static boolean in(int mx, int my, int x, int y, int w, int h) {

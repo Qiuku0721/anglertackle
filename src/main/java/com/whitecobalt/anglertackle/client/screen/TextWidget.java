@@ -1,7 +1,8 @@
 package com.whitecobalt.anglertackle.client.screen;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.network.chat.Component;
@@ -53,7 +54,7 @@ public class TextWidget extends AbstractWidget {
     }
 
     @Override
-    protected void renderWidget(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
+    protected void extractWidgetRenderState(GuiGraphicsExtractor g, int mouseX, int mouseY, float partialTick) {
         var font = Minecraft.getInstance().font;
         String text = getMessage().getString();
         if (text.isEmpty()) {
@@ -61,12 +62,12 @@ public class TextWidget extends AbstractWidget {
         }
         // 垂直居中，水平按偏移
         int ty = getY() + offsetY + Math.max(0, (height - 8) / 2);
-        g.drawString(font, text, getX() + offsetX, ty, color, shadow);
+        g.text(font, text, getX() + offsetX, ty, color, shadow);
     }
 
     /** 纯展示控件：不吞点击事件。 */
     @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+    public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
         return false;
     }
 

@@ -5,7 +5,7 @@ import com.whitecobalt.anglertackle.fishing.FishSpecies;
 import com.whitecobalt.anglertackle.item.Quality;
 import com.whitecobalt.anglertackle.network.CodexPayload;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
@@ -570,8 +570,8 @@ public class CodexScreen extends Screen {
 
     // ------------------------------------------------------------------ 绘制
     @Override
-    public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
-        this.renderBackground(g, mouseX, mouseY, partialTick);
+    public void extractRenderState(GuiGraphicsExtractor g, int mouseX, int mouseY, float partialTick) {
+        // 背景由 extractBackground 提前抽取，这里只画内容。
 
         // 面板：投影 + 底色。只有底色用 fill，文字全走 Widget（见类注释）。
         g.fill(left - 6, top - 6, left + panelW + 6, top + panelH + 6, C_SHADOW);
@@ -594,13 +594,11 @@ public class CodexScreen extends Screen {
             g.fill(bx0, by0, bx0 + w, by1, C_TITLE);
         }
 
-        // ⚠ 这里**不能**调 super.render()：Screen.render() 内部会再调一次
-        // renderBackground()，那层全屏暗化会盖在刚刚画好的面板和文字上 ——
-        // 表现就是"整个界面朦胧、白字发灰"，而 tooltip 清晰
-        // （它在 renderWithTooltip 里最后画，盖不到）。
-        // 4 个界面全中过这个坑，见 tools/check-screen-render.js。
+        // ⚠ 这里**不能**调 super.extractRenderState()：背景已由 extractBackground 提前抽取，
+        // 再调一次会让全屏暗化盖在刚刚画好的面板和文字上 ——
+        // 表现就是"整个界面朦胧、白字发灰"（守着这条的是 tools/check-screen-render.js）。
         for (net.minecraft.client.gui.components.Renderable r : this.renderables) {
-            r.render(g, mouseX, mouseY, partialTick);
+            r.extractRenderState(g, mouseX, mouseY, partialTick);
         }
     }
 

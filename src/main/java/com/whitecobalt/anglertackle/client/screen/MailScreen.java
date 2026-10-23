@@ -5,9 +5,11 @@ import com.whitecobalt.anglertackle.client.ClientMails;
 import com.whitecobalt.anglertackle.item.Quality;
 import com.whitecobalt.anglertackle.network.MailActionPayload;
 import com.whitecobalt.anglertackle.network.MailPayload;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.core.Holder;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
@@ -421,8 +423,8 @@ public class MailScreen extends Screen {
 
     // ------------------------------------------------------------------ 渲染
     @Override
-    public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
-        this.renderBackground(g, mouseX, mouseY, partialTick);
+    public void extractRenderState(GuiGraphicsExtractor g, int mouseX, int mouseY, float partialTick) {
+        // 背景由 extractBackground 提前抽取，这里只画内容。
         // 面板 + 斜面边框（外深内亮，与既有界面一致）
         g.fill(left - 1, top - 1, left + panelW + 1, top + panelH + 1, C_SHADOW);
         g.fill(left, top, left + panelW, top + panelH, C_PANEL);
@@ -433,12 +435,12 @@ public class MailScreen extends Screen {
 
         MailPayload snap = snap();
         // 标题栏：邮箱 + 未读
-        g.drawString(this.font, Component.translatable("gui.anglertackle.mailbox").getString(),
+        g.text(this.font, Component.translatable("gui.anglertackle.mailbox").getString(),
                 left + 6, top + 5, C_TITLE, false);
         if (snap != null) {
             String right = Component.translatable("gui.anglertackle.mail_counter",
                     snap.unread(), snap.claimable(), snap.maxMails()).getString();
-            g.drawString(this.font, right, left + panelW - 6 - this.font.width(right), top + 5,
+            g.text(this.font, right, left + panelW - 6 - this.font.width(right), top + 5,
                     snap.unread() > 0 ? C_UNREAD : C_DIM, false);
         }
         int listX = left + 6;
@@ -453,11 +455,11 @@ public class MailScreen extends Screen {
         List<Row> rows = parse();
         if (rows.isEmpty()) {
             // 空状态：**两行字**，不画空列表（空列表与"加载失败"长得一样）
-            g.drawString(this.font,
+            g.text(this.font,
                     Component.translatable(ClientMails.synced()
                             ? "gui.anglertackle.mail_empty" : "gui.anglertackle.mail_loading").getString(),
                     listX + 6, listTop + 8, C_DIM, false);
-            g.drawString(this.font,
+            g.text(this.font,
                     Component.translatable("gui.anglertackle.mail_empty_hint").getString(),
                     detX + 4, listTop + 8, C_HINT, false);
         } else {
@@ -475,22 +477,22 @@ public class MailScreen extends Screen {
                     g.fill(listX, y - 1, listX + 2, y + LIST_ROW_H - 2, C_UNREAD);   // 未读窄条
                 }
                 int color = r.claimed ? C_HINT : (r.read ? C_DIM : C_TEXT);
-                g.drawString(this.font, UiLayout.fitText(r.title, LIST_W - 14), listX + 5, y + 2,
+                g.text(this.font, UiLayout.fitText(r.title, LIST_W - 14), listX + 5, y + 2,
                         color, false);
-                g.drawString(this.font, UiLayout.fitText(r.sender, LIST_W - 44), listX + 5, y + 12,
+                g.text(this.font, UiLayout.fitText(r.sender, LIST_W - 44), listX + 5, y + 12,
                         C_HINT, false);
                 if (r.canClaim()) {
-                    g.drawString(this.font,
+                    g.text(this.font,
                             Component.translatable("gui.anglertackle.mail_todo").getString(),
                             listX + LIST_W - 26, y + 12, C_CLAIM, false);
                 } else if (!r.claimed && r.expired) {
-                    g.drawString(this.font,
+                    g.text(this.font,
                             Component.translatable("gui.anglertackle.mail_expired").getString(),
                             listX + LIST_W - 34, y + 12, C_EXPIRE, false);
                 } else if (r.canClaim() || (!r.claimed && !r.expired)) {
                     String left1 = Component.translatable("gui.anglertackle.mail_days",
                             Math.max(0, r.daysLeft)).getString();
-                    g.drawString(this.font, left1, listX + LIST_W - 6 - this.font.width(left1),
+                    g.text(this.font, left1, listX + LIST_W - 6 - this.font.width(left1),
                             y + 12, r.daysLeft <= 1 ? C_EXPIRE : C_HINT, false);
                 }
             }
@@ -498,17 +500,16 @@ public class MailScreen extends Screen {
             if (sel != null) {
                 renderDetail(g, sel, detX, listTop, detW);
             } else {
-                g.drawString(this.font,
+                g.text(this.font,
                         Component.translatable("gui.anglertackle.mail_pick").getString(),
                         detX + 4, listTop + 8, C_HINT, false);
             }
         }
-        // ⚠ **不要调 super.render(...)**：它内部会再调一次 renderBackground ⇒ 那层全屏暗化
-        //   盖在面板与文字上，表现是"界面朦胧、白字发灰"（用户为了这个问题说过"严查"好多次）。
-        //   所以这里自己把 widgets（按钮）画一遍 ⇒ 暗化只发生一次 ✓
-        //   （守着这条的是 tools/check-screen-render.js）
+        // ⚠ **不要调 super.extractRenderState(...)**：背景已由 extractBackground 提前抽取，
+        //   再调一次会让全屏暗化盖在面板与文字上（用户为了这个问题说过"严查"好多次）。
+        //   所以这里自己把 widgets（按钮）画一遍 ✓（守着这条的是 tools/check-screen-render.js）
         for (net.minecraft.client.gui.components.Renderable r : this.renderables) {
-            r.render(g, mouseX, mouseY, partialTick);
+            r.extractRenderState(g, mouseX, mouseY, partialTick);
         }
         // 悬浮提示放在**最后**画（盖在所有东西上面）—— 列表行与附件格都要有
         renderHoverTips(g, mouseX, mouseY);
@@ -520,7 +521,7 @@ public class MailScreen extends Screen {
      * <p>⚠ 划过**只显示提示**，绝不改已读状态（那条是《死亡搁浅》的反例）；
      * 而"点"才标已读 —— 两者分得很清楚 ✓。
      */
-    private void renderHoverTips(GuiGraphics g, int mouseX, int mouseY) {
+    private void renderHoverTips(GuiGraphicsExtractor g, int mouseX, int mouseY) {
         int listX = left + 6;
         // ① 列表行
         List<Row> page = pageRows();
@@ -541,7 +542,7 @@ public class MailScreen extends Screen {
                     tip.add(Component.translatable("gui.anglertackle.mail_tip_expiring", r.daysLeft)
                             .withStyle(net.minecraft.ChatFormatting.RED));
                 }
-                g.renderComponentTooltip(this.font, tip, mouseX, mouseY);
+                g.setComponentTooltipForNextFrame(this.font, tip, mouseX, mouseY);
                 return;
             }
         }
@@ -556,7 +557,7 @@ public class MailScreen extends Screen {
         int sx = detX + 4;
         if (sel.coins > 0) {
             if (inRect(mouseX, mouseY, sx, sy)) {
-                g.renderComponentTooltip(this.font, List.of(
+                g.setComponentTooltipForNextFrame(this.font, List.of(
                         Component.translatable("gui.anglertackle.mail_coins", sel.coins)
                                 .withStyle(net.minecraft.ChatFormatting.GOLD)), mouseX, mouseY);
                 return;
@@ -565,14 +566,14 @@ public class MailScreen extends Screen {
         }
         for (ItemStack st : sel.items) {
             if (inRect(mouseX, mouseY, sx, sy)) {
-                g.renderTooltip(this.font, st, mouseX, mouseY);
+                g.setTooltipForNextFrame(this.font, st, mouseX, mouseY);
                 return;
             }
             sx += SLOT + 2;
         }
         // ③ 详情面板空白处：把"这封信怎么来的"讲清楚（标题栏与时间不重复）
         if (mouseX >= detX && mouseX <= detX + detW && mouseY >= rowY(0) && mouseY <= sy - 12) {
-            g.renderComponentTooltip(this.font, List.of(
+            g.setComponentTooltipForNextFrame(this.font, List.of(
                     Component.translatable("gui.anglertackle.mail_tip_hint")
                             .withStyle(net.minecraft.ChatFormatting.GRAY)), mouseX, mouseY);
         }
@@ -647,7 +648,8 @@ public class MailScreen extends Screen {
      * <p>⚠ 与点击完全等价 —— 不是"另一套逻辑"（那样两条路的已读/领取行为迟早分叉）。
      */
     @Override
-    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+    public boolean keyPressed(KeyEvent event) {
+        int keyCode = event.key();
         int sel = indexOfSelected();
         switch (keyCode) {
             case 265 -> {   // ↑
@@ -673,7 +675,7 @@ public class MailScreen extends Screen {
             case 266, 267 -> {   // PageUp / PageDown = 翻正文（长信不用鼠标也能读完）
                 Row r = selected();
                 if (r == null) {
-                    return super.keyPressed(keyCode, scanCode, modifiers);
+                    return super.keyPressed(event);
                 }
                 int maxScroll = Math.max(0, bodyLineCount(r) - bodyLinesMax());
                 int step = keyCode == 266 ? -bodyLinesMax() : bodyLinesMax();
@@ -685,16 +687,16 @@ public class MailScreen extends Screen {
                 return true;
             }
             default -> {
-                return super.keyPressed(keyCode, scanCode, modifiers);
+                return super.keyPressed(event);
             }
         }
     }
 
-    private void renderDetail(GuiGraphics g, Row r, int x, int y, int w) {
-        g.drawString(this.font, UiLayout.fitText(r.title, w - 8), x + 4, y + 3, C_TITLE, false);
-        g.drawString(this.font, UiLayout.fitText(r.sender, w / 2 - 6), x + 4, y + 14, C_LABEL, false);
+    private void renderDetail(GuiGraphicsExtractor g, Row r, int x, int y, int w) {
+        g.text(this.font, UiLayout.fitText(r.title, w - 8), x + 4, y + 3, C_TITLE, false);
+        g.text(this.font, UiLayout.fitText(r.sender, w / 2 - 6), x + 4, y + 14, C_LABEL, false);
         String when = timeAgo(r.sentAt);
-        g.drawString(this.font, when, x + w - 4 - this.font.width(when), y + 14, C_HINT, false);
+        g.text(this.font, when, x + w - 4 - this.font.width(when), y + 14, C_HINT, false);
         g.fill(x + 4, y + 24, x + w - 4, y + 25, C_LINE);
         // 正文：自动折行 + **可滚动**（服务端只给 template+args，这里按语言文件展开）
         Component body;
@@ -716,7 +718,7 @@ public class MailScreen extends Screen {
         int maxScroll = Math.max(0, lines.size() - maxLines);
         bodyScroll = Math.max(0, Math.min(bodyScroll, maxScroll));
         for (int i = 0; i < maxLines && i + bodyScroll < lines.size(); i++) {
-            g.drawString(this.font, lines.get(i + bodyScroll), x + 4, ty, C_TEXT, false);
+            g.text(this.font, lines.get(i + bodyScroll), x + 4, ty, C_TEXT, false);
             ty += LINE_STEP;
         }
         // 滚动指示：**细滚动条**（用户 2026-10-12 第二次实测："文字重叠了，
@@ -737,12 +739,12 @@ public class MailScreen extends Screen {
         }
         // 附件区：鱼币一格 + 物品格（最多 4 格，18×18 —— 与背包格一致）
         int sy = attachY();
-        g.drawString(this.font, Component.translatable("gui.anglertackle.mail_attach").getString(),
+        g.text(this.font, Component.translatable("gui.anglertackle.mail_attach").getString(),
                 x + 4, sy - 10, C_LABEL, false);
         int sx = x + 4;
         if (r.coins > 0) {
             g.fill(sx, sy, sx + SLOT, sy + SLOT, C_TRACK);
-            g.drawString(this.font, "◎" + r.coins, sx + 1, sy + 5, C_CLAIM, false);
+            g.text(this.font, "◎" + r.coins, sx + 1, sy + 5, C_CLAIM, false);
             sx += SLOT + 2;
         }
         int slotIdx = 0;
@@ -751,7 +753,7 @@ public class MailScreen extends Screen {
                 break;
             }
             g.fill(sx, sy, sx + SLOT, sy + SLOT, C_TRACK);
-            g.renderItem(st, sx + 1, sy + 1);
+            g.item(st, sx + 1, sy + 1);
             sx += SLOT + 2;
             slotIdx++;
         }
@@ -760,7 +762,7 @@ public class MailScreen extends Screen {
             sx += SLOT + 2;
         }
         if (r.expired) {
-            g.drawString(this.font,
+            g.text(this.font,
                     Component.translatable("gui.anglertackle.mail_expire_hint").getString(),
                     x + 4, sy + SLOT + 3, C_EXPIRE, false);
         }
@@ -797,7 +799,10 @@ public class MailScreen extends Screen {
      * 划过就消感叹号 ⇒ 未读数莫名归零（`docs/36` §5.3 交互细则第一条）。
      */
     @Override
-    public boolean mouseClicked(double mx, double my, int button) {
+    public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
+        double mx = event.x();
+        double my = event.y();
+        int button = event.button();
         int listX = left + 6;
         List<Row> rows = pageRows();
         for (int i = 0; i < rows.size(); i++) {
@@ -807,7 +812,7 @@ public class MailScreen extends Screen {
                 return true;
             }
         }
-        return super.mouseClicked(mx, my, button);
+        return super.mouseClicked(event, doubleClick);
     }
 
     /** 服务端推来新快照时由 handler 调用（保持选中与页码，刷新内容）。 */

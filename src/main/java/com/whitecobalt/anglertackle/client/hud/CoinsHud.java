@@ -4,7 +4,7 @@ import com.whitecobalt.anglertackle.AnglersTackle;
 import com.whitecobalt.anglertackle.client.ClientCoins;
 import com.whitecobalt.anglertackle.client.ClientLeaguePoints;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Component;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -68,13 +68,13 @@ public final class CoinsHud {
     public static void register(RegisterGuiLayersEvent event) {
         // 挂在经验条之上：这样它和原版 HUD 的层级关系是明确的，
         // 不会出现"被血量盖住"这种取决于注册顺序的玄学。
-        event.registerAbove(VanillaGuiLayers.EXPERIENCE_BAR,
+        event.registerAbove(VanillaGuiLayers.CONTEXTUAL_INFO_BAR_BACKGROUND,
                 net.minecraft.resources.Identifier.fromNamespaceAndPath(
                         AnglersTackle.MOD_ID, "coins_hud"),
                 CoinsHud::render);
     }
 
-    private static void render(GuiGraphics graphics, net.minecraft.client.DeltaTracker delta) {
+    private static void render(GuiGraphicsExtractor graphics, net.minecraft.client.DeltaTracker delta) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null || mc.options.hideGui) {
             return;
@@ -105,12 +105,12 @@ public final class CoinsHud {
         int x = MARGIN_X;
         int y = MARGIN_Y;
         graphics.fill(x, y, x + w + PAD_X * 2, y + h + PAD_Y * 2, BG);
-        graphics.drawString(font, "¤", x + PAD_X, y + PAD_Y, GLYPH, false);
-        graphics.drawString(font, num, x + PAD_X + font.width("¤ "), y + PAD_Y, COLOR, false);
+        graphics.text(font, "¤", x + PAD_X, y + PAD_Y, GLYPH, false);
+        graphics.text(font, num, x + PAD_X + font.width("¤ "), y + PAD_Y, COLOR, false);
         if (showLeague) {
             int y2 = y + PAD_Y + rowH;
-            graphics.drawString(font, leagueLabel, x + PAD_X, y2, GLYPH, false);
-            graphics.drawString(font, leagueNum,
+            graphics.text(font, leagueLabel, x + PAD_X, y2, GLYPH, false);
+            graphics.text(font, leagueNum,
                     x + PAD_X + font.width(leagueLabel + " "), y2, LEAGUE_COLOR, false);
         }
     }

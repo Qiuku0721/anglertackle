@@ -2,8 +2,10 @@ package com.whitecobalt.anglertackle.client.screen;
 
 import com.whitecobalt.anglertackle.client.ClientAchievements;
 import com.whitecobalt.anglertackle.network.AchievementPayload;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 
 import java.util.ArrayList;
@@ -38,8 +40,8 @@ import java.util.List;
  * </ul>
  *
  * <h2>渲染顺序（2026-10-15 糊过一次，别再改）</h2>
- * **自己调一次** {@code renderBackground()}（开头），**绝不调** {@code super.render()} ——
- * 后者内部会再调一次，那层全屏暗化会画在面板与文字**之后** ⇒ 界面像蒙了层雾。
+ * 背景由 {@code extractBackground} 在 {@code extractRenderState} 之前抽取，本类只画内容；
+ * **绝不调** {@code super.extractRenderState()}（本界面没有 widget，也不必重画背景）。
  */
 public class AchievementScreen extends Screen {
 
@@ -238,10 +240,9 @@ public class AchievementScreen extends Screen {
     }
 
     @Override
-    public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
-        // ⚠ 顺序**照抄既有五个界面**：① 自己调一次 renderBackground()；② **绝不调 super.render()**
-        //   —— 后者内部会再调一次 renderBackground，那层**全屏暗化**画在内容之后 ⇒ 界面糊。
-        this.renderBackground(g, mouseX, mouseY, partialTick);
+    public void extractRenderState(GuiGraphicsExtractor g, int mouseX, int mouseY, float partialTick) {
+        // 背景由 extractBackground 在本方法之前抽取（Screen.extractRenderStateWithTooltipAndSubtitles）；
+        // 这里只画内容，不再调 renderBackground，也不调 super（本界面没有 widget）。
         g.fill(panelX, panelY, panelX + panelW, panelY + panelH, COLOR_BG);
         g.fill(panelX, panelY, panelX + panelW, panelY + 1, COLOR_FRAME);
         g.fill(panelX, panelY + panelH - 1, panelX + panelW, panelY + panelH, COLOR_FRAME);
@@ -249,10 +250,10 @@ public class AchievementScreen extends Screen {
         g.fill(panelX + panelW - 1, panelY, panelX + panelW, panelY + panelH, COLOR_FRAME);
 
         // ── 顶部：标题 + 总进度 + 进度条 ──
-        g.drawString(this.font, this.title, panelX + LEFT_X, panelY + 6, COLOR_TITLE, false);
+        g.text(this.font, this.title, panelX + LEFT_X, panelY + 6, COLOR_TITLE, false);
         int pct = total <= 0 ? 0 : (int) Math.round(got * 100.0 / total);
         String right = got + " / " + total + "   " + pct + "%";
-        g.drawString(this.font, right, panelX + panelW - 8 - this.font.width(right), panelY + 6, COLOR_GOT, false);
+        g.text(this.font, right, panelX + panelW - 8 - this.font.width(right), panelY + 6, COLOR_GOT, false);
         int barX = panelX + LEFT_X;
         int barW = panelW - LEFT_X * 2;
         g.fill(barX, panelY + 17, barX + barW, panelY + 20, COLOR_BAR_BG);
@@ -271,7 +272,7 @@ public class AchievementScreen extends Screen {
             String msg = ClientAchievements.synced()
                     ? Component.translatable("gui.anglertackle.ach.empty").getString()
                     : Component.translatable("gui.anglertackle.ach.reading").getString();
-            g.drawString(this.font, msg, leftX, top, COLOR_EMPTY, false);
+            g.text(this.font, msg, leftX, top, COLOR_EMPTY, false);
             return;
         }
 
@@ -285,9 +286,9 @@ public class AchievementScreen extends Screen {
             String cnt = groupGot(groups.get(i)) + "/" + groupTotal(groups.get(i));
             int cntW = this.font.width(cnt);
             // 组名给计数留出位置（cntW + 4 的间隔），左右都不越界
-            g.drawString(this.font, UiLayout.fitText(groupName(groups.get(i)), LEFT_W - cntW - 6), leftX, y,
+            g.text(this.font, UiLayout.fitText(groupName(groups.get(i)), LEFT_W - cntW - 6), leftX, y,
                     sel ? COLOR_TITLE : COLOR_LOCKED, false);
-            g.drawString(this.font, cnt, leftX + LEFT_W - cntW, y, COLOR_LOCKED, false);
+            g.text(this.font, cnt, leftX + LEFT_W - cntW, y, COLOR_LOCKED, false);
         }
 
         // ── 中栏：条目列表（已完成金色 + ✔，未完成灰色） ──
@@ -298,7 +299,7 @@ public class AchievementScreen extends Screen {
             scroll = maxScroll;
         }
         if (list.isEmpty()) {
-            g.drawString(this.font, Component.translatable("gui.anglertackle.ach.empty").getString(),
+            g.text(this.font, Component.translatable("gui.anglertackle.ach.empty").getString(),
                     midX, top, COLOR_EMPTY, false);
         }
         g.enableScissor(midX - SEL_PAD, top, midX + MID_W, bottom);
@@ -309,9 +310,9 @@ public class AchievementScreen extends Screen {
             if (idx == rowIndex) {
                 g.fill(midX - SEL_PAD, y - 1, midX + MID_W, y + ROW_H - 1, COLOR_SELECT);
             }
-            g.drawString(this.font, e.unlocked() ? "✔" : "✘", midX - 11, y,
+            g.text(this.font, e.unlocked() ? "✔" : "✘", midX - 11, y,
                     e.unlocked() ? COLOR_GOT : COLOR_LOCKED, false);
-            g.drawString(this.font, UiLayout.fitText(nameOf(e.id()), MID_W - 6), midX, y,
+            g.text(this.font, UiLayout.fitText(nameOf(e.id()), MID_W - 6), midX, y,
                     e.unlocked() ? COLOR_GOT : COLOR_LOCKED, false);
         }
         g.disableScissor();
@@ -326,24 +327,24 @@ public class AchievementScreen extends Screen {
         if (!list.isEmpty()) {
             Entry sel = list.get(Math.min(rowIndex, list.size() - 1));
             int y = top;
-            g.drawString(this.font, UiLayout.fitText(nameOf(sel.id()), rightW), rightX, y,
+            g.text(this.font, UiLayout.fitText(nameOf(sel.id()), rightW), rightX, y,
                     sel.unlocked() ? COLOR_GOT : COLOR_LOCKED, false);
             y += ROW_H + 2;
-            g.drawString(this.font, Component.translatable("gui.anglertackle.ach.detail.condition").getString(),
+            g.text(this.font, Component.translatable("gui.anglertackle.ach.detail.condition").getString(),
                     rightX, y, COLOR_TITLE, false);
             y += ROW_H;
             for (String line : UiLayout.wrapCjk(descOf(sel.id()), rightW)) {
                 if (y > bottom - ROW_H * 4) {
                     break;
                 }
-                g.drawString(this.font, line, rightX, y, COLOR_EMPTY, false);
+                g.text(this.font, line, rightX, y, COLOR_EMPTY, false);
                 y += ROW_H;
             }
             y += 2;
-            g.drawString(this.font, Component.translatable("gui.anglertackle.ach.detail.reward").getString(),
+            g.text(this.font, Component.translatable("gui.anglertackle.ach.detail.reward").getString(),
                     rightX, y, COLOR_TITLE, false);
             y += ROW_H;
-            g.drawString(this.font, Component.translatable("gui.anglertackle.ach.reward",
+            g.text(this.font, Component.translatable("gui.anglertackle.ach.reward",
                     String.valueOf(sel.coins()), String.valueOf(sel.xp())).getString(),
                     rightX, y, COLOR_REWARD, false);
             // ⚠ 连带改动（用户 2026-10-15 进游戏验收指出）：这条成就**顺带授予的称号**必须在这里说出来 ——
@@ -355,7 +356,7 @@ public class AchievementScreen extends Screen {
                     String[] parts = row.split(AchievementPayload.FIELD_SEP, -1);
                     if (parts.length >= 6 && !parts[5].isEmpty() && parts[0].equals(sel.id())) {
                         y += ROW_H;
-                        g.drawString(this.font, UiLayout.fitText(Component.translatable(
+                        g.text(this.font, UiLayout.fitText(Component.translatable(
                                         "gui.anglertackle.ach.with_title",
                                         Component.translatable("title.anglertackle." + parts[5]).getString()).getString(),
                                 rightW), rightX, y, COLOR_TITLE, false);
@@ -364,10 +365,10 @@ public class AchievementScreen extends Screen {
                 }
             }
             y += ROW_H + 2;
-            g.drawString(this.font, Component.translatable("gui.anglertackle.ach.detail.state").getString(),
+            g.text(this.font, Component.translatable("gui.anglertackle.ach.detail.state").getString(),
                     rightX, y, COLOR_TITLE, false);
             y += ROW_H;
-            g.drawString(this.font, UiLayout.fitText(Component.translatable(sel.unlocked()
+            g.text(this.font, UiLayout.fitText(Component.translatable(sel.unlocked()
                     ? "gui.anglertackle.ach.state.done" : "gui.anglertackle.ach.state.todo").getString(), rightW),
                     rightX, y, sel.unlocked() ? COLOR_GOT : COLOR_LOCKED, false);
         }
@@ -375,7 +376,7 @@ public class AchievementScreen extends Screen {
         // ── 底部：筛选状态 + 提示 ──
         String hint = "[" + filterName() + "]  "
                 + Component.translatable("gui.anglertackle.ach.hint").getString();
-        g.drawString(this.font, UiLayout.fitText(hint, panelW - LEFT_X * 2), panelX + LEFT_X, panelY + panelH - 12,
+        g.text(this.font, UiLayout.fitText(hint, panelW - LEFT_X * 2), panelX + LEFT_X, panelY + panelH - 12,
                 COLOR_LOCKED, false);
     }
 
@@ -386,7 +387,10 @@ public class AchievementScreen extends Screen {
     }
 
     @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+    public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
+        double mouseX = event.x();
+        double mouseY = event.y();
+        int button = event.button();
         int leftX = panelX + LEFT_X;
         int midX = panelX + MID_X;
         int top = bodyTop();
@@ -407,11 +411,12 @@ public class AchievementScreen extends Screen {
                 return true;
             }
         }
-        return super.mouseClicked(mouseX, mouseY, button);
+        return super.mouseClicked(event, doubleClick);
     }
 
     @Override
-    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+    public boolean keyPressed(KeyEvent event) {
+        int keyCode = event.key();
         // 70 = F：循环 全部 → 未完成 → 已完成（对应原神那个页签的位置）
         if (keyCode == 70) {
             filter = (filter + 1) % 3;
@@ -440,7 +445,7 @@ public class AchievementScreen extends Screen {
             scroll = 0;
             return true;
         }
-        return super.keyPressed(keyCode, scanCode, modifiers);
+        return super.keyPressed(event);
     }
 
     @Override

@@ -8,9 +8,10 @@ import com.whitecobalt.anglertackle.recipe.CuttingRecipe;
 import com.whitecobalt.anglertackle.recipe.DishRecipe;
 import com.whitecobalt.anglertackle.recipe.OilPressingRecipe;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.Item;
@@ -516,7 +517,7 @@ public class CookbookScreen extends Screen {
     }
 
     @Override
-    public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
+    public void extractRenderState(GuiGraphicsExtractor g, int mouseX, int mouseY, float partialTick) {
         int left = (this.width - panelW) / 2;
         int top = (this.height - panelH) / 2;
         g.fill(left - 6, top - 6, left + panelW + 6, top + panelH + 6, C_SHADOW);
@@ -526,11 +527,14 @@ public class CookbookScreen extends Screen {
         g.fill(left + colX - 2, top + selectedRowY, left + DETAIL_X - 12,
                 top + selectedRowY + ROW_H, C_SELECT);
         g.fill(left + DETAIL_X - 8, top + 6, left + DETAIL_X - 7, top + panelH - 6, C_LINE);
-        super.render(g, mouseX, mouseY, partialTick);
+        super.extractRenderState(g, mouseX, mouseY, partialTick);
     }
 
     @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+    public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
+        double mouseX = event.x();
+        double mouseY = event.y();
+        int button = event.button();
         int left = (this.width - panelW) / 2;
         int top = (this.height - panelH) / 2;
         int perCol = Math.max(1, Math.min(visibleRows, (dishes.size() + 1) / 2));
@@ -546,7 +550,7 @@ public class CookbookScreen extends Screen {
                 return true;
             }
         }
-        return super.mouseClicked(mouseX, mouseY, button);
+        return super.mouseClicked(event, doubleClick);
     }
 
     @Override

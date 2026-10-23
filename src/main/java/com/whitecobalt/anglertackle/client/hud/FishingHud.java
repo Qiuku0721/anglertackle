@@ -4,7 +4,7 @@ import com.whitecobalt.anglertackle.AnglersTackle;
 import com.whitecobalt.anglertackle.client.ClientFishingState;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.network.chat.Component;
 import net.neoforged.api.distmarker.Dist;
@@ -42,12 +42,12 @@ public final class FishingHud {
 
     @SubscribeEvent
     public static void register(RegisterGuiLayersEvent event) {
-        event.registerAbove(VanillaGuiLayers.EXPERIENCE_BAR,
+        event.registerAbove(VanillaGuiLayers.CONTEXTUAL_INFO_BAR_BACKGROUND,
                 net.minecraft.resources.Identifier.fromNamespaceAndPath(AnglersTackle.MOD_ID, "fishing_hud"),
                 FishingHud::render);
     }
 
-    private static void render(GuiGraphics graphics, DeltaTracker delta) {
+    private static void render(GuiGraphicsExtractor graphics, DeltaTracker delta) {
         Minecraft mc = Minecraft.getInstance();
         LocalPlayer player = mc.player;
         if (player == null || mc.options.hideGui) {
@@ -117,7 +117,7 @@ public final class FishingHud {
      * 不走网络：判定本身只在服务端做，这里显示的只是"天色"，两边天然一致。
      * 开关是 {@code environment.showCondition}（默认开）。
      */
-    private static void renderEnvironment(GuiGraphics graphics, ClientFishingState state,
+    private static void renderEnvironment(GuiGraphicsExtractor graphics, ClientFishingState state,
                                           int screenW, int screenH) {
         if (!com.whitecobalt.anglertackle.fishing.Tuning.envShowCondition()) {
             return;
@@ -134,7 +134,7 @@ public final class FishingHud {
         String text = env.describe();
         int w = Minecraft.getInstance().font.width(text);
         // 画在底部居中偏下：张力条在中间、耐久面板在左下角，这一行放这儿不打架。
-        graphics.drawString(Minecraft.getInstance().font, text,
+        graphics.text(Minecraft.getInstance().font, text,
                 (screenW - w) / 2, screenH - 100, 0xFF9FB6C8, true);
     }
 
@@ -149,7 +149,7 @@ public final class FishingHud {
      * 每行 = 槽位名 + 迷你耐久条 + "剩余/上限"数字；
      * 剩余比例低于 20% 时数字转红，低于 10% 再闪烁，提示"再拉就断"。
      */
-    private static void renderPartsDurability(GuiGraphics graphics, ClientFishingState state,
+    private static void renderPartsDurability(GuiGraphicsExtractor graphics, ClientFishingState state,
                                               int screenW, int screenH) {
         int[] pd = state.partsDurability();
         if (pd == null || pd.length < 3) {
@@ -169,7 +169,7 @@ public final class FishingHud {
         graphics.fill(x - 3, y - 8, x - 3 + panelW, y - 8 + panelH, 0x90000000);
 
         String header = Component.translatable("hud.anglertackle.parts_durability").getString();
-        graphics.drawString(font, header, x, y - 7, 0xFFE8E8E8, false);
+        graphics.text(font, header, x, y - 7, 0xFFE8E8E8, false);
         y += 4;
 
         for (int i = 0; i + 2 < pd.length; i += 3) {
@@ -180,7 +180,7 @@ public final class FishingHud {
             float ratio = (float) left / max;
 
             String name = slotName(slot);
-            graphics.drawString(font, name, x, y, 0xFFBFBFBF, false);
+            graphics.text(font, name, x, y, 0xFFBFBFBF, false);
 
             // 迷你耐久条
             int bx = x + 34;
@@ -193,7 +193,7 @@ public final class FishingHud {
 
             String num = left + "/" + max;
             int numColor = ratio > 0.2f ? 0xFFDDDDDD : 0xFFFF5555;
-            graphics.drawString(font, num, bx + barW + 4, y, numColor, false);
+            graphics.text(font, num, bx + barW + 4, y, numColor, false);
 
             y += rowH;
         }
@@ -212,14 +212,14 @@ public final class FishingHud {
      * <p>刻意做得极简（用户要求"不用花里胡哨"）：鱼线本身会轻微变暗
      * （见 FishingLineRenderer），HUD 这里只给一行小字。
      */
-    private static void renderFatigueHint(GuiGraphics graphics, ClientFishingState state,
+    private static void renderFatigueHint(GuiGraphicsExtractor graphics, ClientFishingState state,
                                           int screenW, int screenH) {
         if (!state.fatigued()) {
             return;
         }
         String text = Component.translatable("hud.anglertackle.fatigue").getString();
         int w = Minecraft.getInstance().font.width(text);
-        graphics.drawString(Minecraft.getInstance().font, text,
+        graphics.text(Minecraft.getInstance().font, text,
                 (screenW - w) / 2, screenH - 86, 0xFF8FCBF5, true);
     }
 
@@ -231,7 +231,7 @@ public final class FishingHud {
      * 这样即使网络抖动也不会出现"卡住/回退"。
      * 绿区 = 最佳力度，松手时落在绿区抛得最准。
      */
-    private static void renderChargeBar(GuiGraphics graphics, ClientFishingState state, int screenW, int screenH) {
+    private static void renderChargeBar(GuiGraphicsExtractor graphics, ClientFishingState state, int screenW, int screenH) {
         float progress = state.chargeProgress();
         int x = (screenW - CHARGE_WIDTH) / 2;
         int y = screenH - 62;
@@ -257,16 +257,16 @@ public final class FishingHud {
                 ? Component.translatable("hud.anglertackle.release_to_cast").getString()
                 : Component.translatable("hud.anglertackle.charging").getString();
         int w = Minecraft.getInstance().font.width(hint);
-        graphics.drawString(Minecraft.getInstance().font, hint,
+        graphics.text(Minecraft.getInstance().font, hint,
                 (screenW - w) / 2, y - 14,
                 progress >= 1.0f ? 0xFFFFD050 : 0xFFA8A8A8, true);
     }
 
     // ------------------------------------------------------------ 提竿提示
-    private static void renderHookPrompt(GuiGraphics graphics, int screenW, int screenH, LocalPlayer player) {
+    private static void renderHookPrompt(GuiGraphicsExtractor graphics, int screenW, int screenH, LocalPlayer player) {
         String text = Component.translatable("hud.anglertackle.hook_now").getString();
         int w = Minecraft.getInstance().font.width(text);
-        graphics.drawString(Minecraft.getInstance().font, text,
+        graphics.text(Minecraft.getInstance().font, text,
                 (screenW - w) / 2, screenH / 2 - 40, 0xFFFF5555, true);
     }
 
@@ -284,18 +284,18 @@ public final class FishingHud {
      * ⇒ 现在挪到**左下角**（耐久面板上方，那儿是空的），并照耐久面板的做法加一条半透明黑底。
      * 判据（{@code check-fishing-camera.js}）也跟着改：不许再画在屏幕中心线上。
      */
-    private static void renderAwaitBiteHint(GuiGraphics graphics, int screenW, int screenH) {
+    private static void renderAwaitBiteHint(GuiGraphicsExtractor graphics, int screenW, int screenH) {
         String text = Component.translatable("hud.anglertackle.await_bite").getString();
         var font = Minecraft.getInstance().font;
         int w = font.width(text);
         int x = 6;                       // 与耐久面板同一列（左下角）
         int y = screenH - 118;           // 面板从 screenH-12-rows*11 往上长，这里是它上面的空白
         graphics.fill(x - 3, y - 4, x + w + 3, y + 10, 0x90000000);
-        graphics.drawString(font, text, x, y, 0xFFCFCFCF, false);
+        graphics.text(font, text, x, y, 0xFFCFCFCF, false);
     }
 
     // ------------------------------------------------------------ 张力细条
-    private static void renderTensionBar(GuiGraphics graphics, ClientFishingState state,
+    private static void renderTensionBar(GuiGraphicsExtractor graphics, ClientFishingState state,
                                          int screenW, int screenH, float partial) {
         int x = (screenW - BAR_WIDTH) / 2;
         int y = screenH - 46;
@@ -322,7 +322,7 @@ public final class FishingHud {
     }
 
     // ---------------------------------------------------------- 鱼体力条
-    private static void renderStaminaBar(GuiGraphics graphics, ClientFishingState state,
+    private static void renderStaminaBar(GuiGraphicsExtractor graphics, ClientFishingState state,
                                          int screenW, int screenH, float partial) {
         int x = (screenW - BAR_WIDTH) / 2;
         int y = screenH - 34;
@@ -332,7 +332,7 @@ public final class FishingHud {
     }
 
     // ---------------------------------------------------------- 挣扎方向
-    private static void renderStruggleArrow(GuiGraphics graphics, ClientFishingState state,
+    private static void renderStruggleArrow(GuiGraphicsExtractor graphics, ClientFishingState state,
                                             int screenW, int screenH) {
         int dir = state.struggleDir();
         String arrow = switch (dir) {
@@ -358,6 +358,6 @@ public final class FishingHud {
             default -> cx - w / 2;          // 直冲 ⇒ 准心正上方
         };
         int ay = dir == 3 ? cy - off - 8 : cy - 4;
-        graphics.drawString(Minecraft.getInstance().font, arrow, ax, ay, color, true);
+        graphics.text(Minecraft.getInstance().font, arrow, ax, ay, color, true);
     }
 }

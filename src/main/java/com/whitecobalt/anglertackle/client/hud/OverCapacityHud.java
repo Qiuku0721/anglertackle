@@ -2,7 +2,7 @@ package com.whitecobalt.anglertackle.client.hud;
 
 import com.whitecobalt.anglertackle.AnglersTackle;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -42,13 +42,13 @@ public final class OverCapacityHud {
 
     @SubscribeEvent
     public static void register(RegisterGuiLayersEvent event) {
-        event.registerAbove(VanillaGuiLayers.EXPERIENCE_BAR,
+        event.registerAbove(VanillaGuiLayers.CONTEXTUAL_INFO_BAR_BACKGROUND,
                 net.minecraft.resources.Identifier.fromNamespaceAndPath(
                         AnglersTackle.MOD_ID, "over_capacity_hud"),
                 OverCapacityHud::render);
     }
 
-    private static void render(GuiGraphics graphics, net.minecraft.client.DeltaTracker delta) {
+    private static void render(GuiGraphicsExtractor graphics, net.minecraft.client.DeltaTracker delta) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null || mc.options.hideGui) {
             return;
@@ -68,8 +68,8 @@ public final class OverCapacityHud {
         int w = font.width(warn);
         int y = screenH / 2 - 70;
         // 描边式画两遍：先黑后红，红字在深色水面/天空上都读得清
-        graphics.drawString(font, warn, (screenW - w) / 2 + 1, y + 1, 0xFF000000, false);
-        graphics.drawString(font, warn, (screenW - w) / 2, y, RED, false);
+        graphics.text(font, warn, (screenW - w) / 2 + 1, y + 1, 0xFF000000, false);
+        graphics.text(font, warn, (screenW - w) / 2, y, RED, false);
 
         // 竿耐久条：画在警告下面，宽度随剩余耐久收缩
         float left = state.rodDurabilityRatio();

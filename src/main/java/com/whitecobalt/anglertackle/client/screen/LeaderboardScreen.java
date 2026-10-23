@@ -7,8 +7,10 @@ import com.whitecobalt.anglertackle.AnglersTackle;
 import com.whitecobalt.anglertackle.item.Quality;
 import com.whitecobalt.anglertackle.network.RankPayload;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.core.Holder;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
@@ -171,7 +173,10 @@ public class LeaderboardScreen extends Screen {
     }
 
     @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+    public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
+        double mouseX = event.x();
+        double mouseY = event.y();
+        int button = event.button();
         if (button == 0) {
             // ① 目录标签（空目录不画、也点不到）
             int tx = this.left + PAD;
@@ -200,11 +205,12 @@ public class LeaderboardScreen extends Screen {
                 y += LINE_STEP;
             }
         }
-        return super.mouseClicked(mouseX, mouseY, button);
+        return super.mouseClicked(event, doubleClick);
     }
 
     @Override
-    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+    public boolean keyPressed(KeyEvent event) {
+        int keyCode = event.key();
         if (keyCode == GLFW.GLFW_KEY_LEFT || keyCode == GLFW.GLFW_KEY_PAGE_UP) {
             switchBy(-1);
             return true;
@@ -213,16 +219,16 @@ public class LeaderboardScreen extends Screen {
             switchBy(1);
             return true;
         }
-        return super.keyPressed(keyCode, scanCode, modifiers);
+        return super.keyPressed(event);
     }
 
     @Override
-    public void render(GuiGraphics gfx, int mouseX, int mouseY, float partialTick) {
-        super.render(gfx, mouseX, mouseY, partialTick);
+    public void extractRenderState(GuiGraphicsExtractor gfx, int mouseX, int mouseY, float partialTick) {
+        super.extractRenderState(gfx, mouseX, mouseY, partialTick);
         gfx.fill(this.left - 2, this.top - 2, this.left + this.panelW + 2, this.top + this.panelH + 2, 0xC8000000);
 
         RankPayload.Board cur = current();
-        gfx.drawString(this.font, UiLayout.fitText(cur == null ? "排行榜" : cur.name(), this.panelW - 2 * PAD),
+        gfx.text(this.font, UiLayout.fitText(cur == null ? "排行榜" : cur.name(), this.panelW - 2 * PAD),
                 this.left + this.tocX, this.top + 10, 0xFFFFFF, false);
 
         // ---- 目录标签（点它换目录；**空目录不画** —— 点开是空的比没有更糟）----
@@ -239,7 +245,7 @@ public class LeaderboardScreen extends Screen {
                 gfx.fill(tx - 2, this.top + TAB_TOP - 1, tx + w,
                         this.top + TAB_TOP + TAB_H, selTab ? 0x50FFFFFF : 0x28FFFFFF);
             }
-            gfx.drawString(this.font, GROUP_NAMES[g], tx + 4, this.top + TAB_TOP,
+            gfx.text(this.font, GROUP_NAMES[g], tx + 4, this.top + TAB_TOP,
                     selTab ? 0xFFF0C0 : 0x9AA0A6, false);
             tx += w + 4;
         }
@@ -256,7 +262,7 @@ public class LeaderboardScreen extends Screen {
                 gfx.fill(this.left + this.tocX - 3, y - 1, this.left + this.tocX + TOC_W, y + LINE_STEP - 1, 0x60FFFFFF);
             }
             int color = sel ? 0xFFF0C0 : (hover ? 0xE0E0FF : 0xA0A4AA);
-            gfx.drawString(this.font, UiLayout.fitText(b.name(), TOC_W), this.left + this.tocX, y, color, false);
+            gfx.text(this.font, UiLayout.fitText(b.name(), TOC_W), this.left + this.tocX, y, color, false);
             y += LINE_STEP;
         }
 
@@ -266,10 +272,10 @@ public class LeaderboardScreen extends Screen {
                 drawRow(gfx, cur.lines().get(i), ly);
                 ly += LINE_STEP;
             }
-            gfx.drawString(this.font, UiLayout.fitText(cur.footer(), this.bodyW),
+            gfx.text(this.font, UiLayout.fitText(cur.footer(), this.bodyW),
                     this.left + this.bodyX, this.top + this.panelH - 22, 0x9AA0A6, false);
         }
-        gfx.drawString(this.font, UiLayout.fitText("点上方目录分类 · 点左侧切榜 · ← → 或点击切换 · Esc 关闭", this.panelW - 2 * PAD),
+        gfx.text(this.font, UiLayout.fitText("点上方目录分类 · 点左侧切榜 · ← → 或点击切换 · Esc 关闭", this.panelW - 2 * PAD),
                 this.left + this.tocX, this.top + this.panelH - 10, 0x707070, false);
     }
 
@@ -278,7 +284,7 @@ public class LeaderboardScreen extends Screen {
      *
      * <p>字段顺序（`\u0003` 分隔 ✓）：名次 / 玩家 / 数值 / 体长 / 鱼种 id / 评级 / 品质档 ✓。
      */
-    private void drawRow(GuiGraphics gfx, String line, int y) {
+    private void drawRow(GuiGraphicsExtractor gfx, String line, int y) {
         String[] f = line.split("\u0003", -1);
         int tier = -1;
         if (f.length > 6) {
@@ -302,7 +308,7 @@ public class LeaderboardScreen extends Screen {
             head.append("  ").append(f[3]);
         }
         String headText = UiLayout.fitText(head.toString(), this.bodyW);
-        gfx.drawString(this.font, headText, this.left + this.bodyX, y, 0xD8D8D8, false);
+        gfx.text(this.font, headText, this.left + this.bodyX, y, 0xD8D8D8, false);
 
         int x = this.left + this.bodyX + this.font.width(headText) + 6;
         int remain = this.left + this.bodyX + this.bodyW - x;
@@ -322,7 +328,7 @@ public class LeaderboardScreen extends Screen {
         if (!grade.isEmpty()) {
             tail.append(tail.length() > 0 ? " · " : "").append(grade);
         }
-        gfx.drawString(this.font, UiLayout.fitText(tail.toString(), remain), x, y, tierColor, false);
+        gfx.text(this.font, UiLayout.fitText(tail.toString(), remain), x, y, tierColor, false);
     }
 
     /** 鱼种 id → 中文名 ✓（客户端从物品注册表取本地化名 ✓；取不到退回 id ✓，绝不抛 ✗）。 */
