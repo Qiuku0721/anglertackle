@@ -20,12 +20,11 @@ import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Rarity;
+import net.minecraft.world.item.SpawnEggItem;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredItem;
 import net.neoforged.neoforge.registries.DeferredRegister;
-
-import java.util.function.Supplier;
 
 /**
  * 物品注册。
@@ -668,37 +667,32 @@ public final class ModItems {
      * <p>⚠ 公开发布前要决定：留着（玩家也能刷，等于绕过探索）还是拿掉
      * （调试改用 {@code /summon anglertackle:fisherman}）。待办记在 docs/13。
      *
-     * <h2>为什么是 {@code DeferredSpawnEggItem} 而不是原版 {@code SpawnEggItem}</h2>
-     * 原版那个构造器在 NeoForge 里被标了 {@code @Deprecated}，注释原话是
-     * "Use {@code net.neoforged.neoforge.common.DeferredSpawnEggItem} instead for suppliers"。
+     * <h2>为什么现在可以直接用原版 {@code SpawnEggItem}</h2>
+     * NeoForge 的 {@code DeferredSpawnEggItem} 在 26.1.2 已被**删除**
+     * （universal jar 与 sources 里都没有这个类）。刷怪蛋的实体类型改由**数据组件**携带：
+     * {@code new Item.Properties().spawnEgg(ModEntities.FISHERMAN.get())}
+     * 写入 {@code DataComponents.ENTITY_DATA}，原版 {@code SpawnEggItem.getType(ItemStack)}
+     * 读取（{@code SpawnEggItem} 现在只有 {@code SpawnEggItem(Item.Properties)} 一个构造器）。
      *
-     * <p>但这不是"新旧 API 二选一"的洁癖问题，而是**会不会炸**的问题，两个理由：
-     * <ol>
-     *   <li><b>注册顺序不保证。</b>原版构造器收的是<b>已经解析好的</b> {@code EntityType}，
-     *       所以得写 {@code ModEntities.FISHERMAN.get()}。物品注册和实体注册是两个
-     *       {@code DeferredRegister}、两次独立的 {@code RegisterEvent} ——
-     *       谁先谁后**不能靠"我在主类里先调用了谁"来保证**。
-     *       真炸起来是这样：物品先注册 → 实体还没解析 → {@code get()} 抛异常，
-     *       而报错只会说"registry not present"，看不出是刷怪蛋引起的。
-     *       {@code DeferredSpawnEggItem} 收的是 {@code Supplier}，把取值推迟到
-     *       "真的要用这个蛋"那一刻，天然绕开顺序问题。</li>
-     *   <li><b>原版构造器会往静态表里塞东西。</b>反编译看过（{@code javap -c}）：
-     *       {@code super(null, ...)} 里 {@code if (type != null) BY_ID.put(type, this)}。
-     *       传空是为了不污染那张表，再由子类重写 {@code getDefaultType()} 走 supplier。
-     *       我们直接调原版构造器就等于把自己登记进 {@code BY_ID} ——
-     *       这个副作用在物品注册失败时不会回滚，会留下一个指向半初始化状态的条目。</li>
-     * </ol>
+     * <p>当初用 {@code DeferredSpawnEggItem} 的唯一理由是"实体类型注册早于物品注册"没有保证；
+     * 这个顺序在 26.1.2 已由 NeoForge 固定：{@code GameData.postRegisterEvents()}
+     * 逐个 registry 发 {@code RegisterEvent}，顺序取自
+     * {@code GameData.getRegistrationOrder()}（GameData.java:120-128）——
+     * 先 {@code ATTRIBUTE} / {@code DATA_COMPONENT_TYPE} / {@code PARTICLE_TYPE}，
+     * 再接 {@code BuiltInRegistries.getVanillaRegistrationOrder()}
+     * （BuiltInRegistries.java:439-441：返回 {@code LOADERS.keySet()}，
+     * 底层是 {@code LinkedHashMap}，保留声明顺序；{@code ENTITY_TYPE} 声明于 :182，
+     * 早于 {@code ITEM} 的 :185）。所以物品注册时
+     * {@code ModEntities.FISHERMAN.get()} 已经可用。
      *
-     * <p>配色（底色 + 斑点）在 1.21.1 仍然是构造器参数，没有数据驱动：
-     * {@code (Supplier, int, int, Properties)}，已从 {@code neoforge-21.1.252-universal.jar}
-     * javap 确认（1.20.5 之前的老教程是三个参数）。
+     * <p>颜色：26.1.2 起原版不再接受构造器颜色，改为**每个蛋一张贴图**
+     * （P2 资源阶段逐蛋出图）。原配色先记在这里供出图对照：
+     * 底色深靛蓝 {@code 0x3B4A63}（老渔夫的粗布褂子）、
+     * 斑点米白 {@code 0xE8DCC0}（草帽/白胡）。
      */
-    public static final DeferredItem<net.neoforged.neoforge.common.DeferredSpawnEggItem> FISHERMAN_SPAWN_EGG =
-            ITEMS.register("fisherman_spawn_egg", () -> new net.neoforged.neoforge.common.DeferredSpawnEggItem(
-                    com.whitecobalt.anglertackle.registry.ModEntities.FISHERMAN,   // 传 supplier，不 .get()
-                    0x3B4A63,   // 底色：深靛蓝（老渔夫的粗布褂子）
-                    0xE8DCC0,   // 斑点：草帽/白胡的米白
-                    new Item.Properties()));
+    public static final DeferredItem<SpawnEggItem> FISHERMAN_SPAWN_EGG =
+            ITEMS.register("fisherman_spawn_egg", () -> new SpawnEggItem(
+                    new Item.Properties().spawnEgg(ModEntities.FISHERMAN.get())));
 
     // ------------------------------------------------------------------ 鱼的刷怪蛋
     // 21 个，调试用。颜色直接取该鱼的背部色 + 花纹色（与模型贴图同源），
