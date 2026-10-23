@@ -7,9 +7,10 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.component.TooltipDisplay;
 import net.minecraft.world.item.TooltipFlag;
 
-import java.util.List;
+import java.util.function.Consumer;
 
 /**
  * 鱼获物品。
@@ -38,20 +39,21 @@ public class FishItem extends Item implements HasQuality {
     }
 
     @Override
-    public void appendHoverText(ItemStack stack, Item.TooltipContext context, List<Component> lines, TooltipFlag flag) {
+    public void appendHoverText(ItemStack stack, Item.TooltipContext context,
+                                TooltipDisplay display, Consumer<Component> builder, TooltipFlag flag) {
         var data = stack.get(ModDataComponents.FISH_DATA.get());
         if (data == null) {
-            lines.add(Component.translatable("tooltip.anglertackle.fish_no_data")
+            builder.accept(Component.translatable("tooltip.anglertackle.fish_no_data")
                     .withStyle(ChatFormatting.DARK_GRAY));
             return;
         }
 
         // ★ 品质：和配件用同一套显示方式（颜色 = 品质，玩家学一次就够）
-        lines.add(qualityLine(stack));
+        builder.accept(qualityLine(stack));
 
-        lines.add(Component.translatable("tooltip.anglertackle.fish_length",
+        builder.accept(Component.translatable("tooltip.anglertackle.fish_length",
                 String.format("%.1f", data.lengthCm())).withStyle(ChatFormatting.GRAY));
-        lines.add(Component.translatable("tooltip.anglertackle.fish_weight",
+        builder.accept(Component.translatable("tooltip.anglertackle.fish_weight",
                 String.format("%.2f", data.weightKg())).withStyle(ChatFormatting.GRAY));
 
         // ★ 尺寸评级：同种鱼也有 5 档追求（幼体→纪录级），
@@ -59,7 +61,7 @@ public class FishItem extends Item implements HasQuality {
         //   它是玩家"这条鱼好不好"的第二个维度（第一是品质），该在面板上。
         //   ⚠ 评级那一小段按**档位颜色**上色（2026-10-03 用户："该显示颜色的文本却是白色"）：
         //   整行 GRAY 会让"纪录级"和"幼体"看起来一样，而它俩差 3.5 倍售价。
-        lines.add(Component.translatable("tooltip.anglertackle.fish_grade",
+        builder.accept(Component.translatable("tooltip.anglertackle.fish_grade",
                         Component.translatable("grade.anglertackle." + data.grade().key())
                                 .withStyle(Quality.of(data.effectiveTier()).color()))
                 .withStyle(ChatFormatting.GRAY));
@@ -72,7 +74,7 @@ public class FishItem extends Item implements HasQuality {
         //
         // 用 [售价] 这种方括号前缀而不是单开一行小字：它和图鉴里的说明行
         // 视觉上要能分开，玩家扫一眼就知道这行是钱。
-        lines.add(Component.translatable("tooltip.anglertackle.fish_value",
+        builder.accept(Component.translatable("tooltip.anglertackle.fish_value",
                         String.format("%,d", sellValue(stack)))
                 .withStyle(ChatFormatting.GOLD));
 
@@ -87,20 +89,20 @@ public class FishItem extends Item implements HasQuality {
         //
         //   L0/L1 的鱼两行都不出现 ⇒ 悬浮文本与改动前**逐字一致**。
         if (!com.whitecobalt.anglertackle.recipe.FishPalatability.inDishMenu(data.speciesId())) {
-            lines.add(Component.translatable(
+            builder.accept(Component.translatable(
                             com.whitecobalt.anglertackle.recipe.FishPalatability.INEDIBLE_KEY)
                     .withStyle(ChatFormatting.RED));
         } else {
             String rawWarn = com.whitecobalt.anglertackle.recipe.FishPalatability
                     .warningKey(data.speciesId(), true);
             if (rawWarn != null) {
-                lines.add(Component.translatable(rawWarn).withStyle(ChatFormatting.RED));
+                builder.accept(Component.translatable(rawWarn).withStyle(ChatFormatting.RED));
             }
         }
         // 慢性风险（汞/雪卡/二噁英）：吃够几次从常量现取，不写死在文案里（写死 = 第二个真源）。
         String chronic = com.whitecobalt.anglertackle.recipe.FishPalatability.chronicKey(data.speciesId());
         if (chronic != null) {
-            lines.add(Component.translatable(chronic,
+            builder.accept(Component.translatable(chronic,
                             com.whitecobalt.anglertackle.recipe.PalatabilityLedger.THRESHOLD)
                     .withStyle(ChatFormatting.DARK_RED));
         }

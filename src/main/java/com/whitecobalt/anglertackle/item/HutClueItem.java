@@ -12,10 +12,11 @@ import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.component.TooltipDisplay;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.level.Level;
 
-import java.util.List;
+import java.util.function.Consumer;
 
 /**
  * 「渔夫小屋定位线索」—— 用一次，直接报出**离玩家最近的那座渔夫小屋的坐标**。
@@ -70,12 +71,12 @@ public class HutClueItem extends Item {
      */
     @Override
     public void appendHoverText(ItemStack stack, Item.TooltipContext context,
-                                List<Component> lines, TooltipFlag flag) {
-        lines.add(Component.translatable("item.anglertackle.hut_clue.desc")
+                                TooltipDisplay display, Consumer<Component> builder, TooltipFlag flag) {
+        builder.accept(Component.translatable("item.anglertackle.hut_clue.desc")
                 .withStyle(ChatFormatting.GRAY));
-        lines.add(Component.translatable("item.anglertackle.hut_clue.craft")
+        builder.accept(Component.translatable("item.anglertackle.hut_clue.craft")
                 .withStyle(ChatFormatting.DARK_GRAY));
-        lines.add(Component.translatable("item.anglertackle.hut_clue.cost")
+        builder.accept(Component.translatable("item.anglertackle.hut_clue.cost")
                 .withStyle(ChatFormatting.DARK_GRAY));
     }
 
@@ -113,8 +114,10 @@ public class HutClueItem extends Item {
         sp.sendSystemMessage(Component.translatable("message.anglertackle.hut_clue_dir",
                 compassWord(dx, dz)).withStyle(ChatFormatting.GRAY));
 
+        // 26.1.2 的冷却按 ItemStack 取冷却组（旧的 addCooldown(Item,int) 已移除）；
+        // 必须在 shrink 之前调 —— 空栈取不到这件物品的冷却组。
+        sp.getCooldowns().addCooldown(stack, COOLDOWN);
         stack.shrink(1);   // 一次性道具：报完就没了（8 张纸 + 一条鱼换一条线索）
-        sp.getCooldowns().addCooldown(this, COOLDOWN);
         com.whitecobalt.anglertackle.AnglersTackle.LOGGER.info(
                 "[垂纶] 定位线索：{} 找到小屋 {}（{} 格，{}）",
                 sp.getName().getString(), target.toShortString(), distance, compassWord(dx, dz));

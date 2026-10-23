@@ -294,7 +294,7 @@ public class CookbookScreen extends Screen {
         List<String> parts = new ArrayList<>();
         parts.add(base);
         for (Item item : dish.extraItems()) {
-            parts.add(item.getDescription().getString());
+            parts.add(item.getName(new ItemStack(item)).getString());
         }
         return String.join(" + ", parts);
     }
@@ -370,7 +370,7 @@ public class CookbookScreen extends Screen {
                             ? Component.translatable("screen.anglertackle.cookbook.station.oil_pressing").getString()
                             : station(entry.display(), context);
                     text = Component.translatable("screen.anglertackle.cookbook.source",
-                            item.getDescription().getString(),
+                            item.getName(new ItemStack(item)).getString(),
                             label + (names.isEmpty() ? "" : "：" + String.join(" + ", names))).getString();
                     // 榨油的份数（瘦鱼 2 块 / 多脂鱼 1 块）在配方里表达不出来（自定义配方的 matches 里算的），
                     // 所以从 OilPressingRecipe 的公开常量现取 —— 依旧不写死数字
@@ -384,7 +384,7 @@ public class CookbookScreen extends Screen {
         }
         if (text == null) {
             text = Component.translatable("screen.anglertackle.cookbook.source_none",
-                    item.getDescription().getString()).getString();
+                    item.getName(new ItemStack(item)).getString()).getString();
         }
         SOURCE_CACHE.put(item, text);
         return text;

@@ -4,9 +4,10 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.component.TooltipDisplay;
 import net.minecraft.world.item.TooltipFlag;
 
-import java.util.List;
+import java.util.function.Consumer;
 
 /**
  * 调料 / 加工食材（盐、酱油、芥末、鱼油）。
@@ -39,7 +40,7 @@ public class SeasoningItem extends Item {
 
     @Override
     public void appendHoverText(ItemStack stack, Item.TooltipContext context,
-                                List<Component> lines, TooltipFlag flag) {
-        lines.add(Component.translatable(tooltipKey).withStyle(color));
+                                TooltipDisplay display, Consumer<Component> builder, TooltipFlag flag) {
+        builder.accept(Component.translatable(tooltipKey).withStyle(color));
     }
 }

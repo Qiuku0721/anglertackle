@@ -8,11 +8,12 @@ import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.component.TooltipDisplay;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.level.Level;
-import net.neoforged.neoforge.network.PacketDistributor;
+import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 
-import java.util.List;
+import java.util.function.Consumer;
 
 /**
  * 菜谱（2026-10-03 用户："制作菜谱，菜谱合成方式（原版任意熟鱼加书）"）。
@@ -44,7 +45,7 @@ public class CookbookItem extends Item {
         ItemStack stack = player.getItemInHand(hand);
         if (level.isClientSide()) {
             // 只在客户端发：服务端 use() 里发的话方向就反了（那会变成 S→C 请求）
-            PacketDistributor.sendToServer(CookbookRequestPayload.INSTANCE);
+            ClientPacketDistributor.sendToServer(CookbookRequestPayload.INSTANCE);
         }
         // 两端都 consume：不 consume 的话会接着走"物品使用"的后续分支（挥手 / 副手判定），
         // 表现成"右键了但什么也没发生"
@@ -53,8 +54,8 @@ public class CookbookItem extends Item {
 
     @Override
     public void appendHoverText(ItemStack stack, Item.TooltipContext context,
-                                List<Component> lines, TooltipFlag flag) {
-        lines.add(Component.translatable("tooltip.anglertackle.cookbook_hint")
+                                TooltipDisplay display, Consumer<Component> builder, TooltipFlag flag) {
+        builder.accept(Component.translatable("tooltip.anglertackle.cookbook_hint")
                 .withStyle(ChatFormatting.GRAY));
     }
 }

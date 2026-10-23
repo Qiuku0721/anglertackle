@@ -9,9 +9,11 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.component.TooltipDisplay;
 import net.minecraft.world.item.TooltipFlag;
 
 import java.util.List;
+import java.util.function.Consumer;
 
 /**
  * 成品菜（12 道"菜型"共用的物品类）。
@@ -107,10 +109,9 @@ public class DishItem extends Item {
      * {@code use}/吃上又变成"吃到才算做过"（与条件不符 ✗）。
      */
     @Override
-    public void onCraftedBy(ItemStack stack, net.minecraft.world.level.Level level,
-                            net.minecraft.world.entity.player.Player player) {
-        super.onCraftedBy(stack, level, player);
-        if (level.isClientSide() || !(player instanceof net.minecraft.server.level.ServerPlayer sp)) {
+    public void onCraftedBy(ItemStack stack, net.minecraft.world.entity.player.Player player) {
+        super.onCraftedBy(stack, player);
+        if (player.level().isClientSide() || !(player instanceof net.minecraft.server.level.ServerPlayer sp)) {
             return;
         }
         try {
@@ -165,12 +166,12 @@ public class DishItem extends Item {
      */
     @Override
     public void appendHoverText(ItemStack stack, Item.TooltipContext context,
-                                List<Component> lines, TooltipFlag flag) {
-        lines.add(Component.translatable(tooltipKey).withStyle(ChatFormatting.GRAY));
+                                TooltipDisplay display, Consumer<Component> builder, TooltipFlag flag) {
+        builder.accept(Component.translatable(tooltipKey).withStyle(ChatFormatting.GRAY));
         FishChunkData data = stack.get(ModDataComponents.FISH_CHUNK.get());
         if (data == null) {
             // 创造模式/JEI 直拿的菜没有鱼数据：给不了具体数值，就说清"取决于哪条鱼"
-            lines.add(Component.translatable("tooltip.anglertackle.dish_no_data")
+            builder.accept(Component.translatable("tooltip.anglertackle.dish_no_data")
                     .withStyle(ChatFormatting.DARK_GRAY));
             return;
         }
@@ -178,7 +179,7 @@ public class DishItem extends Item {
         //   如出现顶级鱼等该显示颜色的文本却是白色，就改一下"）。
         //   原来这里写死 GRAY，于是"顶级"和"普通"看起来一模一样 ——
         //   而模组的约定是"颜色 = 品质"（图鉴、配件、鱼的 tooltip 都是这么做的）。
-        lines.add(Component.translatable("item.anglertackle." + data.speciesId())
+        builder.accept(Component.translatable("item.anglertackle." + data.speciesId())
                 .withStyle(ChatFormatting.WHITE)
                 .append(Component.literal(" · ").withStyle(ChatFormatting.DARK_GRAY))
                 .append(Component.translatable("tooltip.anglertackle.chunk_group."
@@ -197,20 +198,20 @@ public class DishItem extends Item {
             }
         }
         if (!subs.isEmpty()) {
-            lines.add(Component.translatable("tooltip.anglertackle.dish_substitute",
+            builder.accept(Component.translatable("tooltip.anglertackle.dish_substitute",
                     String.join("、", subs)).withStyle(ChatFormatting.DARK_GRAY));
         }
 
         // ---- ① 这道菜在这个档位实际会给的效果 ----
         List<DishEffects.Grant> grants = DishEffects.grantsFor(id, data.tier());
         if (grants.isEmpty()) {
-            lines.add(Component.translatable("tooltip.anglertackle.dish_no_effect")
+            builder.accept(Component.translatable("tooltip.anglertackle.dish_no_effect")
                     .withStyle(ChatFormatting.DARK_GRAY));
         } else {
-            lines.add(Component.translatable("tooltip.anglertackle.dish_effects")
+            builder.accept(Component.translatable("tooltip.anglertackle.dish_effects")
                     .withStyle(ChatFormatting.GRAY));
             for (DishEffects.Grant g : grants) {
-                lines.add(EffectText.line(g).withStyle(ChatFormatting.BLUE));
+                builder.accept(EffectText.line(g).withStyle(ChatFormatting.BLUE));
             }
         }
 
@@ -226,10 +227,10 @@ public class DishItem extends Item {
                 }
             }
             if (!extra.isEmpty()) {
-                lines.add(Component.translatable("tooltip.anglertackle.dish_supreme_extra")
+                builder.accept(Component.translatable("tooltip.anglertackle.dish_supreme_extra")
                         .withStyle(ChatFormatting.GRAY));
                 for (DishEffects.Grant g : extra) {
-                    lines.add(EffectText.line(g).withStyle(ChatFormatting.DARK_GRAY));
+                    builder.accept(EffectText.line(g).withStyle(ChatFormatting.DARK_GRAY));
                 }
             }
         }
@@ -242,13 +243,13 @@ public class DishItem extends Item {
         String palatWarn = com.whitecobalt.anglertackle.recipe.FishPalatability.warningKey(
                 data.speciesId(), "sashimi".equals(id));
         if (palatWarn != null) {
-            lines.add(Component.translatable(palatWarn).withStyle(ChatFormatting.RED));
+            builder.accept(Component.translatable(palatWarn).withStyle(ChatFormatting.RED));
         }
         // 慢性风险（汞/雪卡/二噁英）：**吃够几次**这个数字从 PalatabilityLedger.THRESHOLD 现取，
         // 不许写死在文案里 —— 写死就成了第二个真源，调阈值时悬浮文本立刻开始撒谎。
         String chronic = com.whitecobalt.anglertackle.recipe.FishPalatability.chronicKey(data.speciesId());
         if (chronic != null) {
-            lines.add(Component.translatable(chronic,
+            builder.accept(Component.translatable(chronic,
                             com.whitecobalt.anglertackle.recipe.PalatabilityLedger.THRESHOLD)
                     .withStyle(ChatFormatting.DARK_RED));
         }

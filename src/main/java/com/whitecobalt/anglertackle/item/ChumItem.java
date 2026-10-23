@@ -13,10 +13,11 @@ import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.component.TooltipDisplay;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.level.Level;
 
-import java.util.List;
+import java.util.function.Consumer;
 
 /**
  * 窝料（打窝用）。
@@ -165,21 +166,21 @@ public class ChumItem extends Item {
 
     @Override
     public void appendHoverText(ItemStack stack, Item.TooltipContext context,
-                                List<Component> lines, TooltipFlag flag) {
-        lines.add(Component.translatable(sinking
+                                TooltipDisplay display, Consumer<Component> builder, TooltipFlag flag) {
+        builder.accept(Component.translatable(sinking
                         ? "tooltip.anglertackle.chum_sinking"
                         : "tooltip.anglertackle.chum_floating")
                 .withStyle(sinking ? ChatFormatting.LIGHT_PURPLE : ChatFormatting.AQUA));
         // 档位名与颜色都走 Quality（与鱼/鱼块/配件同一套）——
         // 这里原来自己写了一张 tierName/tierColor 表，等于把"哪一档是哪个颜色"
         // 抄了第二份（2026-10-03 自查"该显示颜色的文本却是白色"时合并掉）
-        lines.add(Component.translatable("tooltip.anglertackle.chum_floor."
+        builder.accept(Component.translatable("tooltip.anglertackle.chum_floor."
                 + Quality.of(tier).key()).withStyle(Quality.of(tier).color()));
-        lines.add(Component.translatable("tooltip.anglertackle.chum_time",
+        builder.accept(Component.translatable("tooltip.anglertackle.chum_time",
                 String.format("x%.2f", timeMultiplier)).withStyle(ChatFormatting.GREEN));
-        lines.add(Component.translatable("tooltip.anglertackle.chum_duration", durationMinutes)
+        builder.accept(Component.translatable("tooltip.anglertackle.chum_duration", durationMinutes)
                 .withStyle(ChatFormatting.GRAY));
-        lines.add(Component.translatable("tooltip.anglertackle.chum_same_water")
+        builder.accept(Component.translatable("tooltip.anglertackle.chum_same_water")
                 .withStyle(ChatFormatting.DARK_GRAY));
         // ⚠ 这里曾经有一行「参考价：X 鱼币」（tooltip.anglertackle.bait_price），
         //   与 BaitItem 同源，一起删掉：那是定价还写在物品定义里时的遗留，

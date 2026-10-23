@@ -6,9 +6,10 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.component.TooltipDisplay;
 import net.minecraft.world.item.TooltipFlag;
 
-import java.util.List;
+import java.util.function.Consumer;
 
 /**
  * 鱼块（三档材料：普通鱼块 / 优质鱼肉 / 顶级鱼排，各带一个"熟"版本）。
@@ -52,15 +53,15 @@ public class FishChunkItem extends Item {
 
     @Override
     public void appendHoverText(ItemStack stack, Item.TooltipContext context,
-                                List<Component> lines, TooltipFlag flag) {
+                                TooltipDisplay display, Consumer<Component> builder, TooltipFlag flag) {
         FishChunkData data = stack.get(ModDataComponents.FISH_CHUNK.get());
         if (data == null) {
             // 创造模式直接拿出来的那一块没有数据 —— 说清楚，别让玩家以为坏了
-            lines.add(Component.translatable("tooltip.anglertackle.chunk_no_data")
+            builder.accept(Component.translatable("tooltip.anglertackle.chunk_no_data")
                     .withStyle(ChatFormatting.DARK_GRAY));
             return;
         }
-        lines.add(Component.translatable("item.anglertackle." + data.speciesId())
+        builder.accept(Component.translatable("item.anglertackle." + data.speciesId())
                 .withStyle(ChatFormatting.WHITE)
                 .append(Component.literal(" · ").withStyle(ChatFormatting.DARK_GRAY))
                 .append(Component.translatable("tooltip.anglertackle.chunk_group." + group)
@@ -69,7 +70,7 @@ public class FishChunkItem extends Item {
                 .append(Component.literal(String.format("%.2f kg", data.weightKg()))
                         .withStyle(ChatFormatting.GRAY)));
         if (cooked) {
-            lines.add(Component.translatable("tooltip.anglertackle.chunk_cooked")
+            builder.accept(Component.translatable("tooltip.anglertackle.chunk_cooked")
                     .withStyle(ChatFormatting.GOLD));
         }
     }

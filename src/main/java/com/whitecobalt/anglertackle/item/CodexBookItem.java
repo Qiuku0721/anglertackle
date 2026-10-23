@@ -8,11 +8,12 @@ import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.component.TooltipDisplay;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.level.Level;
-import net.neoforged.neoforge.network.PacketDistributor;
+import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 
-import java.util.List;
+import java.util.function.Consumer;
 
 /**
  * 鱼类图鉴书：右键打开图鉴界面。
@@ -45,7 +46,7 @@ public class CodexBookItem extends Item {
         ItemStack stack = player.getItemInHand(hand);
         if (level.isClientSide()) {
             // 只在客户端发：服务端 use() 里发的话方向就反了（那会变成 S→C 请求）。
-            PacketDistributor.sendToServer(CodexRequestPayload.INSTANCE);
+            ClientPacketDistributor.sendToServer(CodexRequestPayload.INSTANCE);
         }
         // 两端都 consume：不 consume 的话接着会走"物品使用"的后续分支
         //（挥手动画 / 副手判定 / 吃掉之类），表现成"右键了但什么也没发生"。
@@ -53,8 +54,9 @@ public class CodexBookItem extends Item {
     }
 
     @Override
-    public void appendHoverText(ItemStack stack, Item.TooltipContext context, List<Component> lines, TooltipFlag flag) {
-        lines.add(Component.translatable("tooltip.anglertackle.codex_hint")
+    public void appendHoverText(ItemStack stack, Item.TooltipContext context,
+                                TooltipDisplay display, Consumer<Component> builder, TooltipFlag flag) {
+        builder.accept(Component.translatable("tooltip.anglertackle.codex_hint")
                 .withStyle(ChatFormatting.GRAY));
     }
 }

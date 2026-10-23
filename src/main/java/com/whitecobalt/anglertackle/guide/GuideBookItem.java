@@ -11,11 +11,12 @@ import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.component.TooltipDisplay;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.level.Level;
-import net.neoforged.neoforge.network.PacketDistributor;
+import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 
-import java.util.List;
+import java.util.function.Consumer;
 
 /**
  * 钓鱼手册（教程书）。
@@ -47,7 +48,7 @@ public class GuideBookItem extends Item {
     /** 打开指定章节（由界面里的目录点击触发）。 */
     public static void requestChapter(int index) {
         lastChapter = Math.max(0, index);
-        PacketDistributor.sendToServer(new GuideRequestPayload((byte) lastChapter));
+        ClientPacketDistributor.sendToServer(new GuideRequestPayload((byte) lastChapter));
     }
 
     public static int lastChapter() {
@@ -55,8 +56,9 @@ public class GuideBookItem extends Item {
     }
 
     @Override
-    public void appendHoverText(ItemStack stack, Item.TooltipContext context, List<Component> lines, TooltipFlag flag) {
-        lines.add(Component.translatable("tooltip.anglertackle.guide_hint")
+    public void appendHoverText(ItemStack stack, Item.TooltipContext context,
+                                TooltipDisplay display, Consumer<Component> builder, TooltipFlag flag) {
+        builder.accept(Component.translatable("tooltip.anglertackle.guide_hint")
                 .withStyle(ChatFormatting.GRAY));
     }
 }

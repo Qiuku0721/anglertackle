@@ -5,9 +5,10 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.component.TooltipDisplay;
 import net.minecraft.world.item.TooltipFlag;
 
-import java.util.List;
+import java.util.function.Consumer;
 
 /**
  * 渔具配件（鱼线 / 渔轮 / 鱼钩 / 浮漂 / 拟饵）。
@@ -111,33 +112,34 @@ public class TacklePartItem extends Item implements HasQuality {
     }
 
     @Override
-    public void appendHoverText(ItemStack stack, Item.TooltipContext context, List<Component> lines, TooltipFlag flag) {
+    public void appendHoverText(ItemStack stack, Item.TooltipContext context,
+                                TooltipDisplay display, Consumer<Component> builder, TooltipFlag flag) {
         PartStats stats = stack.get(ModDataComponents.PART_STATS.get());
         if (stats == null) {
-            lines.add(Component.translatable("tooltip.anglertackle.part.no_stats").withStyle(ChatFormatting.DARK_GRAY));
+            builder.accept(Component.translatable("tooltip.anglertackle.part.no_stats").withStyle(ChatFormatting.DARK_GRAY));
             return;
         }
 
         // 品质行：和鱼获格式一致（"品质：金"），玩家学一次就够
-        lines.add(qualityLine(stack));
+        builder.accept(qualityLine(stack));
 
-        lines.add(Component.translatable("tooltip.anglertackle.slot." + slot.name().toLowerCase())
+        builder.accept(Component.translatable("tooltip.anglertackle.slot." + slot.name().toLowerCase())
                 .withStyle(ChatFormatting.GRAY));
 
         // 只有实际影响该槽位的属性才显示，避免玩家被无关数字淹没
         switch (slot) {
             case LINE -> {
-                lines.add(line("tension_ceiling", stats.tensionCeiling()));
-                lines.add(line("tension_gen", stats.tensionGen()));
-                lines.add(line("tension_recover", stats.tensionRecover()));
-                lines.add(line("line_length", stats.lineLength()));
-                lines.add(durabilityLine(stack));
+                builder.accept(line("tension_ceiling", stats.tensionCeiling()));
+                builder.accept(line("tension_gen", stats.tensionGen()));
+                builder.accept(line("tension_recover", stats.tensionRecover()));
+                builder.accept(line("line_length", stats.lineLength()));
+                builder.accept(durabilityLine(stack));
             }
             case REEL -> {
-                lines.add(line("pull_idle", stats.pullIdle()));
-                lines.add(line("pull_struggle", stats.pullStruggle()));
-                lines.add(line("stamina_drain", stats.staminaDrain()));
-                lines.add(line("damping", stats.damping()));
+                builder.accept(line("pull_idle", stats.pullIdle()));
+                builder.accept(line("pull_struggle", stats.pullStruggle()));
+                builder.accept(line("stamina_drain", stats.staminaDrain()));
+                builder.accept(line("damping", stats.damping()));
                 // 压制阻尼的第二重收益：高于 1.0 的部分，按折算比例转成单轮拉线扣力上限。
                 // 必须显式写出来——否则玩家只看得到它"抑制回气"，会以为高档轮子没差别。
                 //
@@ -154,7 +156,7 @@ public class TacklePartItem extends Item implements HasQuality {
                 double dampingBonus = com.whitecobalt.anglertackle.fishing.PartComposer
                         .dampingBonusOnCap(stats.damping(), roundCapBonus);
                 if (dampingBonus > 0.0) {
-                    lines.add(line("damping_bonus", dampingBonus * 100.0));
+                    builder.accept(line("damping_bonus", dampingBonus * 100.0));
                 }
                 // 收线速率抵抗的**抵消**（用户 2026-10-06 定案）：
                 // 双拉属性超过阈值 1.2 的部分会被鱼按档位打折（白 5% … 红 75%），
@@ -164,7 +166,7 @@ public class TacklePartItem extends Item implements HasQuality {
                 double resistOffset = com.whitecobalt.anglertackle.fishing.PartComposer
                         .reelResistOffset(com.whitecobalt.anglertackle.fishing.PartComposer.damping(stats));
                 if (resistOffset > 0.0) {
-                    lines.add(Component.translatable("tooltip.anglertackle.reel_resist_offset",
+                    builder.accept(Component.translatable("tooltip.anglertackle.reel_resist_offset",
                             String.format("%.0f", resistOffset * 100.0)).withStyle(ChatFormatting.AQUA));
                 }
                 // 保底体力削减（用户 2026-10-06 定案）：压制阻尼的**第三重**收益。
@@ -174,17 +176,17 @@ public class TacklePartItem extends Item implements HasQuality {
                 //   一句话写在提示里，玩家才知道高档轮子的价值不止"抑制回气"。
                 double floorDrain = com.whitecobalt.anglertackle.fishing.PartComposer.floorDrainPerSec(stats);
                 if (floorDrain > 0.0) {
-                    lines.add(Component.translatable("tooltip.anglertackle.floor_drain",
+                    builder.accept(Component.translatable("tooltip.anglertackle.floor_drain",
                             String.format("%.1f", floorDrain)).withStyle(ChatFormatting.AQUA));
                 }
             }
             case HOOK -> {
                 // 鱼钩只剩这一个属性。曾经还显示"大个体概率 / 夜间效率"，
                 // 但那两个字段**没有任何实现**——显示出来只是骗玩家，已删。
-                lines.add(line("hook_window", stats.hookWindowBonus()));
+                builder.accept(line("hook_window", stats.hookWindowBonus()));
             }
             case LURE -> {
-                lines.add(durabilityLine(stack));
+                builder.accept(durabilityLine(stack));
                 // ★ 专攻词条：这个拟饵认哪些鱼的习性（见 tools/fish-habits.json）。
                 //
                 //   为什么必须写在 tooltip 上：词条是**双向**的 —— 鱼在图鉴里显示
@@ -200,13 +202,13 @@ public class TacklePartItem extends Item implements HasQuality {
                             : com.whitecobalt.anglertackle.fishing.FishHabits.habitsOfMask(habitMask)) {
                         names.add(Component.translatable(h.langKey()).getString());
                     }
-                    lines.add(Component.translatable("tooltip.anglertackle.lure_habit",
+                    builder.accept(Component.translatable("tooltip.anglertackle.lure_habit",
                             String.join(" / ", names)).withStyle(ChatFormatting.GOLD));
                 }
                 // 说明文字：一句话告诉玩家"这饵什么时候用"。
                 // 文案全在语言文件里（tooltip.anglertackle.<id>.desc），
                 // 缺 key 由 check-fish-habits.js 在构建期拦住，不在运行期显示原始 key。
-                lines.add(Component.translatable("tooltip.anglertackle." + itemId(stack) + ".desc")
+                builder.accept(Component.translatable("tooltip.anglertackle." + itemId(stack) + ".desc")
                         .withStyle(ChatFormatting.DARK_GRAY));
             }
         }

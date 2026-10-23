@@ -7,7 +7,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
-import net.neoforged.neoforge.network.PacketDistributor;
+import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 
 /**
  * **邮箱物品**（用户 2026-10-11 点名要的邮件系统；策划 `docs/36` §5.7 的主入口）。
@@ -31,7 +31,7 @@ public class MailboxItem extends Item {
         ItemStack stack = player.getItemInHand(hand);
         if (level.isClientSide()) {
             // 只在客户端发（服务端发就变成 S→C 了，方向反了）
-            PacketDistributor.sendToServer(new MailActionPayload(MailActionPayload.OPEN, -1));
+            ClientPacketDistributor.sendToServer(new MailActionPayload(MailActionPayload.OPEN, -1));
         }
         return InteractionResult.CONSUME.heldItemTransformedTo(stack);
     }

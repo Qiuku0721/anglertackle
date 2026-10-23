@@ -5,9 +5,10 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.item.component.TooltipDisplay;
 import net.minecraft.world.item.TooltipFlag;
 
-import java.util.List;
+import java.util.function.Consumer;
 
 /**
  * 鱼刀：切鱼、做刺身用的工具。
@@ -27,24 +28,18 @@ public class FishKnifeItem extends Item {
     public static final int DURABILITY = 64;
 
     public FishKnifeItem(Properties properties) {
-        super(properties);
-    }
-
-    /**
-     * 铁砧上可以用**铁锭**修：配方主体就是铁锭，修理材料跟着它走一条线，
-     * 玩家不用另记第二种材料。{@code super} 里保留原版逻辑（同物品互修）。
-     */
-    @Override
-    public boolean isValidRepairItem(ItemStack stack, ItemStack repairCandidate) {
-        return repairCandidate.is(Items.IRON_INGOT) || super.isValidRepairItem(stack, repairCandidate);
+        // 26.1.2 的铁砧可修材料改由 REPAIRABLE 数据组件决定（ItemStack#isValidRepairItem 读它），
+        // 不再有 Item#isValidRepairItem 可覆写。行为不变：仍然只认铁锭；
+        //「同物品互修」由 AnvilMenu 自己处理，与旧版 super 返回值无关。
+        super(properties.repairable(Items.IRON_INGOT));
     }
 
     @Override
     public void appendHoverText(ItemStack stack, Item.TooltipContext context,
-                                List<Component> lines, TooltipFlag flag) {
-        lines.add(Component.translatable("tooltip.anglertackle.fish_knife")
+                                TooltipDisplay display, Consumer<Component> builder, TooltipFlag flag) {
+        builder.accept(Component.translatable("tooltip.anglertackle.fish_knife")
                 .withStyle(ChatFormatting.AQUA));
-        lines.add(Component.translatable("tooltip.anglertackle.fish_knife_durability", DURABILITY)
+        builder.accept(Component.translatable("tooltip.anglertackle.fish_knife_durability", DURABILITY)
                 .withStyle(ChatFormatting.DARK_GRAY));
     }
 }

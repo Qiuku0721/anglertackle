@@ -4,9 +4,10 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.component.TooltipDisplay;
 import net.minecraft.world.item.TooltipFlag;
 
-import java.util.List;
+import java.util.function.Consumer;
 
 /**
  * 鱼饵（消耗品）。
@@ -93,7 +94,7 @@ public class BaitItem extends Item {
 
     @Override
     public void appendHoverText(ItemStack stack, Item.TooltipContext context,
-                                List<Component> lines, TooltipFlag flag) {
+                                TooltipDisplay display, Consumer<Component> builder, TooltipFlag flag) {
         // ★ 用法那一句（用户 2026-10-01 定案：用**初版未删减**的说明）。
         //
         //   放在最前面：下面全是**由配置现算**的数字行（占比/门槛/上限/定向吸引），
@@ -104,7 +105,7 @@ public class BaitItem extends Item {
         //   而这些数字下面几行已经按**真实配置**现算出来了（改配置会跟着变），
         //   照抄一份进语言文件就会变成"两处同样的数字、其中一处永不更新"——
         //   正是本仓库最忌讳的那种漂移。
-        lines.add(Component.translatable("tooltip.anglertackle." + baitId(stack) + ".desc")
+        builder.accept(Component.translatable("tooltip.anglertackle." + baitId(stack) + ".desc")
                 .withStyle(ChatFormatting.DARK_GRAY));
 
         // ★ 咬钩快慢（用户定案 2026-10-02："台钓的咬钩时间单独下降 30%，
@@ -114,7 +115,7 @@ public class BaitItem extends Item {
         //   竿的 −30% 在 RodItem 那边，两边各显示各的，加算关系写在手册里。
         double cut = cutPercent();
         if (floatRodAllowed && cut > 0) {
-            lines.add(Component.translatable("tooltip.anglertackle.bait_cut_time",
+            builder.accept(Component.translatable("tooltip.anglertackle.bait_cut_time",
                             com.whitecobalt.anglertackle.fishing.BiteTiming.percentText(cut))
                     .withStyle(ChatFormatting.AQUA));
         }
@@ -124,32 +125,32 @@ public class BaitItem extends Item {
         //   留着那行就是在骗玩家（用户原话："我知道内容改了，但描述没改"）。
         double hv = highValueTargetPct();
         if (hv > 0) {
-            lines.add(Component.translatable("tooltip.anglertackle.bait_hv_target",
+            builder.accept(Component.translatable("tooltip.anglertackle.bait_hv_target",
                             String.format("%.0f%%", hv))
                     .withStyle(ChatFormatting.GOLD));
         } else {
-            lines.add(Component.translatable("tooltip.anglertackle.bait_hv_none")
+            builder.accept(Component.translatable("tooltip.anglertackle.bait_hv_none")
                     .withStyle(ChatFormatting.DARK_GRAY));
         }
         // 不再设下限，明确写出来（免得玩家按老版本的认知去选饵）
-        lines.add(Component.translatable("tooltip.anglertackle.bait_no_floor")
+        builder.accept(Component.translatable("tooltip.anglertackle.bait_no_floor")
                 .withStyle(ChatFormatting.DARK_GRAY));
         if (minWeightKg > 0) {
-            lines.add(Component.translatable("tooltip.anglertackle.bait_min_weight",
+            builder.accept(Component.translatable("tooltip.anglertackle.bait_min_weight",
                     String.format("%.1f", minWeightKg)).withStyle(ChatFormatting.GRAY));
         }
         if (maxWeightKg > 0) {
-            lines.add(Component.translatable("tooltip.anglertackle.bait_max_weight",
+            builder.accept(Component.translatable("tooltip.anglertackle.bait_max_weight",
                     String.format("%.1f", maxWeightKg)).withStyle(ChatFormatting.GRAY));
         } else {
-            lines.add(Component.translatable("tooltip.anglertackle.bait_no_limit")
+            builder.accept(Component.translatable("tooltip.anglertackle.bait_no_limit")
                     .withStyle(ChatFormatting.GRAY));
         }
         if (attractionBonus > 1.0) {
-            lines.add(Component.translatable("tooltip.anglertackle.bait_attraction",
+            builder.accept(Component.translatable("tooltip.anglertackle.bait_attraction",
                     String.format("x%.1f", attractionBonus)).withStyle(ChatFormatting.AQUA));
         }
-        lines.add(Component.translatable(floatRodAllowed
+        builder.accept(Component.translatable(floatRodAllowed
                         ? "tooltip.anglertackle.bait_float_ok"
                         : "tooltip.anglertackle.bait_float_no")
                 .withStyle(floatRodAllowed ? ChatFormatting.GREEN : ChatFormatting.RED));
@@ -158,7 +159,7 @@ public class BaitItem extends Item {
         //   在物品定义里的旧数值，而商店早就改成走 ShopCatalog 的定价了，于是
         //   tooltip 上同时出现"参考价 300"和"价值 200"两个数字，前者还是错的。
         //   真正该看的是下面那行"价值"（由商店统一给出）。
-        lines.add(Component.translatable("tooltip.anglertackle.bait_consumed")
+        builder.accept(Component.translatable("tooltip.anglertackle.bait_consumed")
                 .withStyle(ChatFormatting.DARK_GRAY));
     }
 

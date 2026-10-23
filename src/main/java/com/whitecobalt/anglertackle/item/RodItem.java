@@ -15,10 +15,12 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.ItemUseAnimation;
+import net.minecraft.world.item.component.TooltipDisplay;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.level.Level;
 
-import java.util.List;
+import java.util.function.Consumer;
 
 /**
  * 钓竿：台钓竿（浮漂）与路亚竿（拟饵）共用同一个物品类，靠 {@link RodType} 区分。
@@ -61,7 +63,9 @@ public class RodItem extends Item implements HasQuality {
     private final RodSpec spec;
 
     public RodItem(RodType type, RodSpec spec, Properties properties) {
-        super(properties);
+        // 26.1.2 的附魔亲和度是数据组件（DataComponents.ENCHANTABLE），不再是
+        // 可覆写的 Item#getEnchantmentValue()；注册时按材质烘进物品默认组件。
+        super(properties.enchantable(enchantmentValue(spec.material())));
         this.type = type;
         this.spec = spec;
     }
@@ -71,21 +75,20 @@ public class RodItem extends Item implements HasQuality {
     }
 
     /**
-     * 附魔亲和度（1.21.1 靠重写这个方法 —— 既不是属性也不是组件）。
+     * 附魔亲和度（1.21.1 靠重写 {@code Item#getEnchantmentValue()}；26.1.2 改由
+     * {@code DataComponents.ENCHANTABLE} 组件决定，只能在注册时经
+     * {@code Item.Properties#enchantable(int)} 烘进去）。
      *
      * <p>用户 2026-10-02："我可以在附魔书界面看到附魔，但路亚竿直接放上附魔台似乎并不会出现。"
-     * 根因就是这里：{@code Item.getEnchantmentValue()} 默认返回 **0**，
-     * 而附魔台的报价是按亲和度算的 —— 亲和度 0 时台子只给 1~2 级的报价，
-     * 我们的附魔 min_cost 是 10~40，于是一个都刷不出来
-     * （附魔书走的是另一条分支：书会被当成"任意附魔"，所以书能看到）。
+     * 根因就是亲和度：0 时台子只给 1~2 级的报价，我们的附魔 min_cost 是 10~40，
+     * 于是一个都刷不出来（附魔书走的是另一条分支：书会被当成"任意附魔"，所以书能看到）。
      *
      * <p>数值按材质对齐原版同类材质：木 15 / 铁 14 / 金 25 / 钻 10 / 下界合金 15
      * （原版鱼竿是 1，那是给"没有材质的普通竿"的）。亲和度越高报价越高，
      * 抢救 / 拉扯（min_cost 30）才可能出现。
      */
-    @Override
-    public int getEnchantmentValue() {
-        return switch (spec.material()) {
+    private static int enchantmentValue(RodSpec.Material material) {
+        return switch (material) {
             case WOOD -> 15;
             case IRON -> 14;
             case GOLD -> 25;
@@ -184,11 +187,14 @@ public class RodItem extends Item implements HasQuality {
      * 自定义物品没有。所以客户端在 tick 里自己检测松手的下降沿，发包给服务端。
      */
     @Override
-    public void releaseUsing(ItemStack stack, Level level, LivingEntity entity, int timeCharged) {
+    public boolean releaseUsing(ItemStack stack, Level level, LivingEntity entity, int timeCharged) {
         // 松开右键 = 停止收线（在服务端生效）
         if (!level.isClientSide() && entity instanceof ServerPlayer serverPlayer) {
             FishingManager.get().setReeling(serverPlayer, false);
         }
+        // 26.1.2 起返回 boolean：true 会触发 use 组件（耐久/容器/remainder）的后续副作用。
+        // 这里与 1.21.1 的 void 版本等价 —— 不触发任何后续副作用。
+        return false;
     }
 
     @Override
@@ -199,8 +205,8 @@ public class RodItem extends Item implements HasQuality {
 
     /** 拉起弓弦时会放慢移动——钓竿同理，蓄力时走得慢一点，手感更像"稳住"。 */
     @Override
-    public net.minecraft.world.item.UseAnim getUseAnimation(ItemStack stack) {
-        return net.minecraft.world.item.UseAnim.BOW;
+    public ItemUseAnimation getUseAnimation(ItemStack stack) {
+        return ItemUseAnimation.BOW;
     }
 
     // ------------------------------------------------------------------ 破损
@@ -233,10 +239,11 @@ public class RodItem extends Item implements HasQuality {
 
     // ------------------------------------------------------------------ 提示
     @Override
-    public void appendHoverText(ItemStack stack, Item.TooltipContext context, List<Component> lines, TooltipFlag flag) {
+    public void appendHoverText(ItemStack stack, Item.TooltipContext context,
+                                TooltipDisplay display, Consumer<Component> builder, TooltipFlag flag) {
         // 品质行：和鱼获、配件格式一致
-        lines.add(qualityLine(stack));
-        lines.add(Component.translatable("tooltip.anglertackle.rod_type." + type.id())
+        builder.accept(qualityLine(stack));
+        builder.accept(Component.translatable("tooltip.anglertackle.rod_type." + type.id())
                 .withStyle(ChatFormatting.GRAY));
         // ★ 台钓竿的咬钩减时（用户定案 2026-10-02："台钓的咬钩时间单独下降 30%"）。
         //   它和**饵料那一档**是加算关系（饵的那一行在 BaitItem 上），
@@ -245,12 +252,12 @@ public class RodItem extends Item implements HasQuality {
         if (type == RodType.FLOAT) {
             double cut = com.whitecobalt.anglertackle.fishing.BiteTiming.rodCutPercent();
             if (cut > 0) {
-                lines.add(Component.translatable("tooltip.anglertackle.rod_cut_time",
+                builder.accept(Component.translatable("tooltip.anglertackle.rod_cut_time",
                                 com.whitecobalt.anglertackle.fishing.BiteTiming.percentText(cut))
                         .withStyle(ChatFormatting.AQUA));
             }
         }
-        lines.add(Component.translatable("tooltip.anglertackle.max_weight",
+        builder.accept(Component.translatable("tooltip.anglertackle.max_weight",
                 String.format("%.0f", spec.maxWeightKg())).withStyle(ChatFormatting.AQUA));
         // 档位上限：这根竿最高能出到几档品质的鱼。
         // 必须显式写出来——玩家反馈"几十杆没一条金以上"就是因为这个上限
@@ -264,18 +271,18 @@ public class RodItem extends Item implements HasQuality {
             //   整行 AQUA 会让"金"和"白"长得一样，而这一行的全部意义就是那个字。
             //   传进去的子组件自带颜色，渲染时盖住外层的 AQUA。
             Quality q = Quality.of(spec.tier());
-            lines.add(Component.translatable("tooltip.anglertackle.max_tier",
+            builder.accept(Component.translatable("tooltip.anglertackle.max_tier",
                             Component.translatable("tooltip.anglertackle.quality." + q.key())
                                     .withStyle(q.color()))
                     .withStyle(ChatFormatting.AQUA));
         } else {
-            lines.add(Component.translatable("tooltip.anglertackle.no_tier_cap")
+            builder.accept(Component.translatable("tooltip.anglertackle.no_tier_cap")
                     .withStyle(ChatFormatting.AQUA));
         }
 
         // ---- 改装结构：把各槽已装了什么列出来（用户要求"在信息栏显示改装结构"）----
         ModDataComponents.RodParts parts = stack.get(ModDataComponents.ROD_PARTS.get());
-        lines.add(Component.translatable("tooltip.anglertackle.parts_header")
+        builder.accept(Component.translatable("tooltip.anglertackle.parts_header")
                 .withStyle(ChatFormatting.YELLOW));
 
         // 台钓竿只有 鱼饵 一栏可改；路亚竿有 线/轮/钩/拟饵
@@ -314,11 +321,11 @@ public class RodItem extends Item implements HasQuality {
                 //   但还没被清掉"的配件：显示成空槽，和它的实际作用（不提供加成）
                 //   保持一致。曾经短暂地在这里显示过「（已耗尽）」—— 用户否掉了：
                 //   那种状态不该存在，用光就该是空槽。
-                lines.add(Component.literal("  ").append(slotLabel).append(" ")
+                builder.accept(Component.literal("  ").append(slotLabel).append(" ")
                         .append(Component.translatable("gui.anglertackle.empty"))
                         .withStyle(ChatFormatting.DARK_GRAY));
             } else {
-                lines.add(Component.literal("  ").append(slotLabel).append(" ")
+                builder.accept(Component.literal("  ").append(slotLabel).append(" ")
                         .append(itemNameOf(values[i]))
                         .withStyle(ChatFormatting.GREEN));
             }
@@ -326,23 +333,23 @@ public class RodItem extends Item implements HasQuality {
 
         // ---- 合成出来的关键属性 ----
         RodStats stats = RodStats.of(stack);
-        lines.add(Component.translatable("tooltip.anglertackle.stats_header")
+        builder.accept(Component.translatable("tooltip.anglertackle.stats_header")
                 .withStyle(ChatFormatting.YELLOW));
-        lines.add(Component.literal("  ")
+        builder.accept(Component.literal("  ")
                 .append(Component.translatable("gui.anglertackle.stat.tension_ceiling"))
                 .append(" " + String.format("%.1f", stats.tensionCeiling()))
                 .withStyle(ChatFormatting.AQUA));
-        lines.add(Component.literal("  ")
+        builder.accept(Component.literal("  ")
                 .append(Component.translatable("gui.anglertackle.stat.tension_recover"))
                 .append(" x" + String.format("%.2f", stats.tensionRecover()))
                 .withStyle(ChatFormatting.AQUA));
-        lines.add(Component.literal("  ")
+        builder.accept(Component.literal("  ")
                 .append(Component.translatable("gui.anglertackle.stat.line_length"))
                 .append(" " + String.format("%.0f 格", stats.lineLength()))
                 .withStyle(ChatFormatting.AQUA));
 
         if (isBroken(stack)) {
-            lines.add(Component.translatable("tooltip.anglertackle.broken_warning")
+            builder.accept(Component.translatable("tooltip.anglertackle.broken_warning")
                     .withStyle(ChatFormatting.RED));
         }
     }
