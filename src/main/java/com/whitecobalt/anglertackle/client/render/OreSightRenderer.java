@@ -3,17 +3,17 @@ package com.whitecobalt.anglertackle.client.render;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.whitecobalt.anglertackle.client.ClientOreSight;
-import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.SubmitNodeCollector;
+import net.minecraft.client.renderer.rendertype.RenderTypes;
+import net.minecraft.client.renderer.state.level.CameraRenderState;
 import net.minecraft.core.BlockPos;
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
+import net.neoforged.neoforge.client.event.SubmitCustomGeometryEvent;
 import org.joml.Matrix4f;
 
 /**
@@ -22,9 +22,6 @@ import org.joml.Matrix4f;
  * <h2>为什么改成画线，而不是原来的粒子点线</h2>
  * 用户原话："一个是不算很能清晰地指引方向，二个是粒子多会容易卡顿，
  * 建议参考鱼线的渲染方式，做一个由准心指向矿物块的线。"
- * 所以这里整体照搬 {@link FishingLineRenderer} 的那一套：
- * {@code RenderLevelStageEvent(AFTER_TRANSLUCENT_BLOCKS)} + {@code RenderType.lines()}
- * + 把 PoseStack 平移到相机原点，然后自己往里塞线段顶点。
  * 一个目标一共约 30 条线段，**没有粒子实体**，方向和颜色都能自己定。
  *
  * <h2>三个视觉元素（都在回答"往哪走"）</h2>
@@ -38,10 +35,17 @@ import org.joml.Matrix4f;
  * </ol>
  *
  * <h2>遮挡</h2>
- * 用的是原版 {@code RenderType.lines()}，与鱼线同一档：**会被方块挡住**。
+ * 用的是原版 {@code RenderTypes.lines()}，与鱼线同一档：**会被方块挡住**。
  * 这是刻意的（看不见矿时线本来也不该穿墙），代价是目标在墙后时只看得见线的前半段
  * —— 那一段的**方向**仍然指向矿物。要改成穿墙可见得新建一个关掉深度测试的 RenderType，
  * 等用户明确要再说（新建 RenderType 有画错的风险，而这里没法靠单元测试看出来）。
+ *
+ * <h2>26.1.2 迁移</h2>
+ * {@code RenderLevelStageEvent} 不再给 {@code MultiBufferSource}，官方替代是
+ * {@link SubmitCustomGeometryEvent}：用 {@code event.getPoseStack()} 平移相机，
+ * 再 {@code event.getSubmitNodeCollector().submitCustomGeometry(...)} 提交线段。
+ * 相机位置/朝向从 {@code LevelRenderState.cameraRenderState} 取，partialTick
+ * 从 {@code Minecraft.getDeltaTracker()} 取。坐标、颜色、透明度原样不动。
  */
 @EventBusSubscriber(modid = com.whitecobalt.anglertackle.AnglersTackle.MOD_ID, value = Dist.CLIENT)
 public final class OreSightRenderer {
@@ -56,15 +60,14 @@ public final class OreSightRenderer {
     private static final double DOT_SPEED = 0.9;
     /** 目标框比方块大出来的半径（格）。0.5 = 正好贴方块；多 2 cm 防止与原版选中框打架。 */
     private static final double BOX_INFLATE = 0.52;
+    /** 线宽：旧版 {@code RenderType.lines()} 的实际宽度是 GL 默认 1.0；新接口线宽是顶点属性，必须显式写。 */
+    private static final float LINE_WIDTH = 1.0F;
 
     private OreSightRenderer() {
     }
 
     @SubscribeEvent
-    public static void onRenderLevel(RenderLevelStageEvent event) {
-        if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_TRANSLUCENT_BLOCKS) {
-            return;
-        }
+    public static void onSubmitCustomGeometry(SubmitCustomGeometryEvent event) {
         BlockPos target = ClientOreSight.target();
         if (target == null) {
             return;
@@ -73,11 +76,11 @@ public final class OreSightRenderer {
         if (mc.player == null || mc.level == null) {
             return;
         }
-        Camera camera = event.getCamera();
-        Vec3 cam = camera.getPosition();
+        CameraRenderState camera = event.getLevelRenderState().cameraRenderState;
+        Vec3 cam = camera.pos;
         Vec3 end = Vec3.atCenterOf(target);
         // 准心方向用**相机**的朝向（我们自己的钓鱼相机会改它，用玩家的会与画面差一截）
-        Vec3 look = Vec3.directionFromRotation(camera.getXRot(), camera.getYRot());
+        Vec3 look = Vec3.directionFromRotation(camera.xRot, camera.yRot);
         Vec3 start = cam.add(look.scale(START_OFFSET));
         Vec3 delta = end.subtract(start);
         double dist = delta.length();
@@ -88,16 +91,16 @@ public final class OreSightRenderer {
         PoseStack poseStack = event.getPoseStack();
         poseStack.pushPose();
         poseStack.translate(-cam.x, -cam.y, -cam.z);
-        MultiBufferSource.BufferSource buffers = mc.renderBuffers().bufferSource();
-        VertexConsumer lines = buffers.getBuffer(RenderType.lines());
-        Matrix4f matrix = poseStack.last().pose();
 
-        drawSegment(lines, matrix, start, end, LINE_COLOR, 0.9f);
-        drawTargetBox(lines, matrix, target);
-        drawFlowDot(lines, matrix, start, delta.scale(1.0 / dist), dist,
-                event.getPartialTick().getGameTimeDeltaPartialTick(false));
+        float partialTick = mc.getDeltaTracker().getGameTimeDeltaPartialTick(false);
+        SubmitNodeCollector collector = event.getSubmitNodeCollector();
+        collector.submitCustomGeometry(poseStack, RenderTypes.lines(), (pose, lines) -> {
+            Matrix4f matrix = pose.pose();
+            drawSegment(lines, matrix, start, end, LINE_COLOR, 0.9f);
+            drawTargetBox(lines, matrix, target);
+            drawFlowDot(lines, matrix, start, delta.scale(1.0 / dist), dist, partialTick);
+        });
 
-        buffers.endBatch(RenderType.lines());
         poseStack.popPose();
     }
 
@@ -153,9 +156,12 @@ public final class OreSightRenderer {
         nx /= (float) len;
         ny /= (float) len;
         nz /= (float) len;
+
         lines.addVertex(matrix, (float) from.x, (float) from.y, (float) from.z)
-                .setColor(rgb[0], rgb[1], rgb[2], alpha).setNormal(nx, ny, nz);
+                .setColor(rgb[0], rgb[1], rgb[2], alpha).setNormal(nx, ny, nz)
+                .setLineWidth(LINE_WIDTH);
         lines.addVertex(matrix, (float) to.x, (float) to.y, (float) to.z)
-                .setColor(rgb[0], rgb[1], rgb[2], alpha).setNormal(nx, ny, nz);
+                .setColor(rgb[0], rgb[1], rgb[2], alpha).setNormal(nx, ny, nz)
+                .setLineWidth(LINE_WIDTH);
     }
 }

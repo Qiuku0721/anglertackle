@@ -1,8 +1,8 @@
 package com.whitecobalt.anglertackle.client.render;
 
 import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.whitecobalt.anglertackle.AnglersTackle;
+import com.whitecobalt.anglertackle.client.render.state.BobberRenderState;
 import com.whitecobalt.anglertackle.entity.BobberEntity;
 import net.minecraft.client.model.geom.ModelLayerLocation;
 import net.minecraft.client.model.geom.ModelPart;
@@ -11,10 +11,11 @@ import net.minecraft.client.model.geom.builders.CubeListBuilder;
 import net.minecraft.client.model.geom.builders.LayerDefinition;
 import net.minecraft.client.model.geom.builders.MeshDefinition;
 import net.minecraft.client.model.geom.builders.PartDefinition;
-import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
+import net.minecraft.client.renderer.rendertype.RenderTypes;
+import net.minecraft.client.renderer.state.level.CameraRenderState;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
@@ -32,8 +33,13 @@ import net.minecraft.util.Mth;
  *   <li>三段预告时按 {@code getBitePhase()} 加大下沉幅度——玩家能"看见鱼在试饵"</li>
  *   <li>吞钩（phase 3）时整根沉入水下</li>
  * </ul>
+ *
+ * <p><b>26.1.2 迁移</b>：旧 {@code render(BobberEntity, yaw, partial, PoseStack, MultiBufferSource, light)}
+ * 已不存在。现在拆成 {@link #createRenderState()} / {@link #extractRenderState} 抽状态，
+ * {@link #submit} 只读状态；模型用 {@code SubmitNodeCollector.submitModelPart} 提交。
+ * 坐标、旋转、偏移量与旧实现逐字一致。
  */
-public class BobberRenderer extends EntityRenderer<BobberEntity> {
+public class BobberRenderer extends EntityRenderer<BobberEntity, BobberRenderState> {
 
     /** 模型层：注册在 {@code EntityRenderersEvent.RegisterLayerDefinitions}。 */
     public static final ModelLayerLocation LAYER =
@@ -83,34 +89,45 @@ public class BobberRenderer extends EntityRenderer<BobberEntity> {
     }
 
     @Override
-    public Identifier getTextureLocation(BobberEntity entity) {
-        return TEXTURE;
+    public BobberRenderState createRenderState() {
+        return new BobberRenderState();
     }
 
     @Override
-    public void render(BobberEntity entity, float entityYaw, float partialTick, PoseStack poseStack,
-                       MultiBufferSource buffer, int packedLight) {
+    public void extractRenderState(BobberEntity entity, BobberRenderState state, float partialTick) {
+        super.extractRenderState(entity, state, partialTick);
+        state.bob = entity.getBob();
+        state.bitePhase = entity.getBitePhase();
+        state.landed = entity.isLanded();
+        state.tickCount = entity.tickCount;
+    }
+
+    @Override
+    public void submit(BobberRenderState state, PoseStack poseStack,
+                       SubmitNodeCollector submitNodeCollector, CameraRenderState camera) {
         poseStack.pushPose();
 
         // 上下浮动：落水后由实体同步，咬钩阶段加大幅度
-        float bob = entity.getBob();
-        float bite = switch (entity.getBitePhase()) {
-            case 1 -> Mth.sin((entity.tickCount + partialTick) * 0.8f) * 0.06f;   // 探饵：轻微抖动
-            case 2 -> -0.12f + Mth.sin((entity.tickCount + partialTick) * 1.2f) * 0.05f;  // 试探：下沉 1/3
-            case 3 -> -0.35f;                                                      // 吞钩：完全沉入
+        // ageInTicks = tickCount + partialTick，与旧代码的 (entity.tickCount + partialTick) 完全相同。
+        float bite = switch (state.bitePhase) {
+            case 1 -> Mth.sin(state.ageInTicks * 0.8f) * 0.06f;   // 探饵：轻微抖动
+            case 2 -> -0.12f + Mth.sin(state.ageInTicks * 1.2f) * 0.05f;  // 试探：下沉 1/3
+            case 3 -> -0.35f;                                     // 吞钩：完全沉入
             default -> 0.0f;
         };
-        poseStack.translate(0.0, bob + bite, 0.0);
+        poseStack.translate(0.0, state.bob + bite, 0.0);
 
-        // 未落水（飞行中）时让浮漂朝运动方向倾斜一点点，看起来像被抛出去
-        if (!entity.isLanded()) {
-            poseStack.mulPose(com.mojang.math.Axis.XP.rotationDegrees(entity.tickCount * 12.0f));
+        // 未落水（飞行中）时让浮漂朝运动方向倾斜一点点，看起来像被抛出去。
+        // 旧代码用 entity.tickCount（不含 partialTick），这里保持同一个数。
+        if (!state.landed) {
+            poseStack.mulPose(com.mojang.math.Axis.XP.rotationDegrees(state.tickCount * 12.0f));
         }
 
-        VertexConsumer consumer = buffer.getBuffer(RenderType.entityCutoutNoCull(TEXTURE));
-        this.root.render(poseStack, consumer, packedLight, OverlayTexture.NO_OVERLAY);
+        // 旧 RenderType.entityCutoutNoCull(TEXTURE) 在 26.1.2 改名为 entityCutout（非 cull 版本）。
+        submitNodeCollector.submitModelPart(this.root, poseStack, RenderTypes.entityCutout(TEXTURE),
+                state.lightCoords, OverlayTexture.NO_OVERLAY, null);
 
         poseStack.popPose();
-        super.render(entity, entityYaw, partialTick, poseStack, buffer, packedLight);
+        super.submit(state, poseStack, submitNodeCollector, camera);
     }
 }

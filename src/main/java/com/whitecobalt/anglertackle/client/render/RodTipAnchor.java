@@ -4,21 +4,24 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
 import com.whitecobalt.anglertackle.item.RodItem;
-import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
-import net.minecraft.client.resources.model.BakedModel;
+import net.minecraft.client.renderer.SubmitNodeCollector;
+import net.minecraft.client.renderer.item.ItemStackRenderState;
+import net.minecraft.client.renderer.state.level.CameraRenderState;
 import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.HumanoidArm;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.ItemUseAnimation;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.RenderHandEvent;
+import org.joml.Matrix4f;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
 
@@ -30,7 +33,7 @@ import org.joml.Vector4f;
  * 它经历了两步变换：
  * <ol>
  *   <li>{@code ItemInHandRenderer.renderArmWithItem} 里的**手持 / 使用动画**变换
- *       （我们右键蓄力时走的是 {@code UseAnim.BOW} 分支，竿会被拉开、转 45°）；</li>
+ *       （我们右键蓄力时走的是 {@code ItemUseAnimation.BOW} 分支，竿会被拉开、转 45°）；</li>
  *   <li>物品**模型自己的显示变换**（{@code item/generated} 的
  *       {@code firstperson_righthand}：{@code rotation [0,−90,25]}、
  *       {@code translation [1.13,3.2,1.13]}、{@code scale 0.68}），
@@ -137,6 +140,45 @@ public final class RodTipAnchor {
      */
     private static Vec3 viewSpaceTip;
 
+    /** 复用同一个探测用物品状态，避免每帧分配。 */
+    private static final ItemStackRenderState PROBE_ITEM_STATE = new ItemStackRenderState();
+    /** 探测用的"只记录 submitItem 姿态"的收集器；其余提交一律丢弃。 */
+    private static final SubmitNodeCollector POSE_PROBE = createPoseProbe();
+    /** {@link #POSE_PROBE} 捕获到的完整物品姿态（含事件 PoseStack 与物品显示变换）。 */
+    private static Matrix4f capturedItemPose;
+
+    /**
+     * 26.1.2 不再暴露 {@code BakedModel.applyTransform}，物品显示变换只在
+     * {@code ItemStackRenderState.submit} 内部应用。为了拿到"物品真正被画出来时"的矩阵，
+     * 这里用一个动态代理收集器调用一次 submit，只截获 {@code submitItem} 收到的
+     * {@code PoseStack.last().pose()}，不真正提交任何几何。
+     */
+    private static SubmitNodeCollector createPoseProbe() {
+        return (SubmitNodeCollector) java.lang.reflect.Proxy.newProxyInstance(
+                SubmitNodeCollector.class.getClassLoader(),
+                new Class<?>[]{SubmitNodeCollector.class},
+                (proxy, method, args) -> {
+                    if (method.getName().equals("submitItem")
+                            && args != null && args.length > 0 && args[0] instanceof PoseStack poseStack) {
+                        capturedItemPose = new Matrix4f(poseStack.last().pose());
+                        return null;
+                    }
+                    if (method.getName().equals("order")) {
+                        return proxy;
+                    }
+                    if (method.getName().equals("toString")) {
+                        return "RodTipAnchorPoseProbe";
+                    }
+                    if (method.getName().equals("hashCode")) {
+                        return System.identityHashCode(proxy);
+                    }
+                    if (method.getName().equals("equals")) {
+                        return proxy == args[0];
+                    }
+                    return null;
+                });
+    }
+
     private RodTipAnchor() {
     }
 
@@ -167,12 +209,12 @@ public final class RodTipAnchor {
         HumanoidArm arm = mainHand ? player.getMainArm() : player.getMainArm().getOpposite();
         boolean right = arm == HumanoidArm.RIGHT;
 
-        // ================= 以下照抄 ItemInHandRenderer.renderArmWithItem（NeoForge 1.21.1）=================
+        // ================= 以下照抄 ItemInHandRenderer.renderArmWithItem（26.1.2）=================
         boolean using = player.isUsingItem() && player.getUseItemRemainingTicks() > 0
                 && player.getUsedItemHand() == event.getHand();
         if (using) {
             applyItemArmTransform(ps, right, event.getEquipProgress());
-            if (stack.getUseAnimation() == net.minecraft.world.item.UseAnim.BOW) {
+            if (stack.getUseAnimation() == ItemUseAnimation.BOW) {
                 applyBowTransform(ps, right, stack, player, event.getPartialTick());
             }
         } else {
@@ -185,13 +227,21 @@ public final class RodTipAnchor {
             applyItemArmAttackTransform(ps, right, swing);
         }
 
-        // 物品自己的显示变换 + 模型空间居中（对应原版 ItemRenderer.render 里的
-        // ClientHooks.handleCameraTransforms(...) 与紧随其后的 translate(-0.5,-0.5,-0.5)）
-        BakedModel model = mc.getItemRenderer().getModel(stack, mc.level, player, 0);
-        model.applyTransform(
-                right ? ItemDisplayContext.FIRST_PERSON_RIGHT_HAND : ItemDisplayContext.FIRST_PERSON_LEFT_HAND,
-                ps, !right);
-        ps.translate(-0.5F, -0.5F, -0.5F);
+        // 物品自己的显示变换 + 模型空间居中。
+        // 旧版是 BakedModel.applyTransform(...) 再 translate(-0.5,-0.5,-0.5)；
+        // 26.1.2 的 ItemTransform.apply 已经自带 -0.5 居中，且只在 ItemStackRenderState.submit
+        // 内部应用。用探测收集器截获 submitItem 的完整姿态，等价于旧版的 ps.last().pose()。
+        ItemDisplayContext displayContext = right
+                ? ItemDisplayContext.FIRST_PERSON_RIGHT_HAND
+                : ItemDisplayContext.FIRST_PERSON_LEFT_HAND;
+        mc.getItemModelResolver().updateForLiving(PROBE_ITEM_STATE, stack, displayContext, player);
+        capturedItemPose = null;
+        PROBE_ITEM_STATE.submit(ps, POSE_PROBE, 0, 0, 0);
+        if (capturedItemPose == null) {
+            // 普通 generated 物品一定走 submitItem；特殊模型渲染器不在本类支持范围内，
+            // 这一帧放弃记录，让调用方退回近平面锚点。
+            return;
+        }
 
         // 竿尖：图标像素 → 贴图 UV → 物品模型空间 [0,1]³（v 轴向下，模型 y 轴向上，故 y = 1 − v）
         double[] tipPx = tipOf(stack, rod);
@@ -202,7 +252,7 @@ public final class RodTipAnchor {
                 (float) (1.0 - py / ICON_SIZE),
                 0.5F,      // 扁平物品的厚度中心
                 1.0F);
-        tip.mul(ps.last().pose());
+        tip.mul(capturedItemPose);
 
         // ★★ 这一步**绝对不能省**，也是 2026-10-02 用户报"端点不固定、摇视角反向跑、
         //    落到身体里"的真凶。原版 GameRenderer.renderItemInHand 是这么摆的：
@@ -279,19 +329,15 @@ public final class RodTipAnchor {
      * @return 世界坐标；还没记录到（第三人称、或这一帧之前没渲染过手）时返回 {@code null}，
      *         调用方应退回原版近平面锚点。
      */
-    public static Vec3 worldTip(Camera camera) {
+    public static Vec3 worldTip(CameraRenderState camera) {
         Vec3 tip = viewSpaceTip;
         if (tip == null) {
             return null;
         }
-        Vector3f left = camera.getLeftVector();
-        Vector3f up = camera.getUpVector();
-        Vector3f look = camera.getLookVector();
-        Vec3 pos = camera.getPosition();
-        return new Vec3(
-                pos.x - left.x() * tip.x + up.x() * tip.y - look.x() * tip.z,
-                pos.y - left.y() * tip.x + up.y() * tip.y - look.y() * tip.z,
-                pos.z - left.z() * tip.x + up.z() * tip.y - look.z() * tip.z);
+        // camera.orientation 把相机空间向量（+x 右 / +y 上 / -z 前）转回世界方向；
+        // 与旧版的 pos - left*x + up*y - look*z 是同一个式子。
+        Vector3f world = camera.orientation.transform(new Vector3f((float) tip.x, (float) tip.y, (float) tip.z));
+        return camera.pos.add(world.x(), world.y(), world.z());
     }
 
     /** 退出世界 / 断线时清掉，避免下次进世界第一帧用到上一次的记录。 */

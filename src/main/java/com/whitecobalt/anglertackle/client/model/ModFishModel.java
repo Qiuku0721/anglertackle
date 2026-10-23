@@ -6,11 +6,11 @@ package com.whitecobalt.anglertackle.client.model;
  *   重新生成：node tools/gen-fish-model.js
  */
 
-import com.whitecobalt.anglertackle.entity.ModFish;
+import com.whitecobalt.anglertackle.client.render.state.FishRenderState;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import net.minecraft.client.model.HierarchicalModel;
+import net.minecraft.client.model.EntityModel;
 import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.client.model.geom.PartPose;
 import net.minecraft.client.model.geom.builders.CubeListBuilder;
@@ -35,7 +35,7 @@ import net.minecraft.util.Mth;
  * <p><b>朝向约定</b>：吻端在 -Z，尾在 +Z，体轴在 y = 24 - 体高/2 - 1
  * （抬高 1 格是为了给向下的臀鳍留位置，让鱼的最低点正好落在 y=24 的"地面"上）。
  */
-public class ModFishModel extends HierarchicalModel<ModFish> {
+public class ModFishModel extends EntityModel<FishRenderState> {
 
     /**
      * 会摆动的零件名。不同鱼种的尾型不同（叉尾/圆尾/新月尾/歪尾），
@@ -49,11 +49,10 @@ public class ModFishModel extends HierarchicalModel<ModFish> {
 
     private static final String[] EMPTY = new String[0];
 
-    private final ModelPart root;
     private final List<ModelPart> tails = new ArrayList<>();
 
     public ModFishModel(ModelPart root, String species) {
-        this.root = root;
+        super(root);
         for (String name : TAILS.getOrDefault(species, EMPTY)) {
             this.tails.add(root.getChild(name));
         }
@@ -905,17 +904,11 @@ public class ModFishModel extends HierarchicalModel<ModFish> {
     );
 
     @Override
-    public ModelPart root() {
-        return this.root;
-    }
-
-    @Override
-    public void setupAnim(ModFish entity, float limbSwing, float limbSwingAmount,
-                          float ageInTicks, float netHeadYaw, float headPitch) {
+    public void setupAnim(FishRenderState state) {
         // 摆尾：照抄 CodModel，出水时摆得更快。
         // 四种尾型（叉/圆/新月/歪尾）共用这一句，只是各自只有属于自己的零件存在。
-        float f = entity.isInWater() ? 1.0F : 1.5F;
-        float swing = -f * 0.45F * Mth.sin(0.6F * ageInTicks);
+        float f = state.isInWater ? 1.0F : 1.5F;
+        float swing = -f * 0.45F * Mth.sin(0.6F * state.ageInTicks);
         for (ModelPart tail : this.tails) {
             tail.yRot = swing;
         }

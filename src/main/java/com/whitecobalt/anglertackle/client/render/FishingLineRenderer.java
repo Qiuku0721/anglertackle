@@ -6,15 +6,16 @@ import com.whitecobalt.anglertackle.client.ClientFishingState;
 import com.whitecobalt.anglertackle.item.RodItem;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
-import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.SubmitNodeCollector;
+import net.minecraft.client.renderer.rendertype.RenderTypes;
+import net.minecraft.client.renderer.state.level.CameraRenderState;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.HumanoidArm;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
+import net.neoforged.neoforge.client.event.SubmitCustomGeometryEvent;
 import org.joml.Matrix4f;
 
 /**
@@ -51,17 +52,19 @@ public final class FishingLineRenderer {
     /** 完全绷直时的抖动幅度（格）。 */
     private static final double JITTER = 0.01;
 
+    /**
+     * 线宽：旧版 {@code RenderType.lines()} 的实际宽度是 GL 默认 1.0。
+     * 26.1.2 的线宽是顶点属性（LINE_WIDTH），不写就是 0（线不可见），所以显式写 1.0。
+     */
+    private static final float LINE_WIDTH = 1.0F;
+
     private FishingLineRenderer() {
     }
 
     @SubscribeEvent
-    public static void onRenderLevel(RenderLevelStageEvent event) {
-        if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_TRANSLUCENT_BLOCKS) {
-            return;
-        }
-
+    public static void onSubmitCustomGeometry(SubmitCustomGeometryEvent event) {
         // ★ 别人的线（2026-10-10 多人实测：对方的鱼线完全不渲染 ✗）
-        //   ⚠ 必须在下面 `state.inSession()` 早退**之前**调用 ✗ ——
+        //   ⚠ 必须在下面 state.inSession() 早退**之前**调用 ✗ ——
         //   那个判断问的是"**我**在不在钓"✓，和别人在不在钓毫无关系 ✓
         renderOtherPlayersLines(event);
 
@@ -85,9 +88,11 @@ public final class FishingLineRenderer {
             return;
         }
 
-        // 相机内插值位置：RenderLevelStageEvent 给的投影矩阵基于相机位置
-        Vec3 cam = event.getCamera().getPosition();
-        Vec3 rodTip = rodTipPosition(player, event.getPartialTick().getGameTimeDeltaPartialTick(false));
+        // 相机位置：26.1.2 从 LevelRenderState 的相机状态取（提交阶段没有 Camera 对象）。
+        CameraRenderState camera = event.getLevelRenderState().cameraRenderState;
+        Vec3 cam = camera.pos;
+        float partialTick = mc.getDeltaTracker().getGameTimeDeltaPartialTick(false);
+        Vec3 rodTip = rodTipPosition(player, partialTick, camera);
 
         // 实体不可见时才画幽灵线，避免和原版浮漂自带的线重叠
         boolean entityVisible = isBobberSynced(bobber);
@@ -96,9 +101,8 @@ public final class FishingLineRenderer {
         double dist = cam.distanceTo(bobber);
         boolean simplified = dist > simplifyBeyond();
 
-        int color = state.lineColor(event.getPartialTick().getGameTimeDeltaPartialTick(false));
-        float straightness = simplified ? 1.0f
-                : state.lineStraightness(event.getPartialTick().getGameTimeDeltaPartialTick(false));
+        int color = state.lineColor(partialTick);
+        float straightness = simplified ? 1.0f : state.lineStraightness(partialTick);
 
         // 疲劳期：鱼线轻微变暗（"现在好拉"的极简视觉提示，不做额外特效）
         if (state.fatigued()) {
@@ -109,28 +113,29 @@ public final class FishingLineRenderer {
         poseStack.pushPose();
         poseStack.translate(-cam.x, -cam.y, -cam.z);
 
-        MultiBufferSource.BufferSource buffers = mc.renderBuffers().bufferSource();
-        VertexConsumer lines = buffers.getBuffer(RenderType.lines());
-
-        Matrix4f matrix = poseStack.last().pose();
+        SubmitNodeCollector collector = event.getSubmitNodeCollector();
         float r = ((color >> 16) & 0xFF) / 255.0f;
         float g = ((color >> 8) & 0xFF) / 255.0f;
         float b = (color & 0xFF) / 255.0f;
+        final Vec3 tip = rodTip;
+        final Vec3 end = lineEnd;
 
         if (entityVisible || !simplified) {
             // 带下垂曲率：白区明显下垂，红区绷直（这是"看线就知道张力"的关键）
-            drawSaggingLine(lines, matrix, rodTip, lineEnd, straightness, r, g, b);
+            collector.submitCustomGeometry(poseStack, RenderTypes.lines(),
+                    (pose, lines) -> drawSaggingLine(lines, pose.pose(), tip, end, straightness, r, g, b));
         } else {
             // 简化线型：两点直连
-            drawSegment(lines, matrix, rodTip, lineEnd, r, g, b, 1.0f);
+            collector.submitCustomGeometry(poseStack, RenderTypes.lines(),
+                    (pose, lines) -> drawSegment(lines, pose.pose(), tip, end, r, g, b, 1.0f));
         }
 
         // 落点标记：远距离时让玩家知道"线到哪了"
         if (!entityVisible) {
-            drawLandingMarker(lines, matrix, lineEnd, r, g, b);
+            collector.submitCustomGeometry(poseStack, RenderTypes.lines(),
+                    (pose, lines) -> drawLandingMarker(lines, pose.pose(), end, r, g, b));
         }
 
-        buffers.endBatch(RenderType.lines());
         poseStack.popPose();
     }
 
@@ -148,7 +153,7 @@ public final class FishingLineRenderer {
      * 客户端拿不到；而本模组一人同时只有一根线 ✓ ⇒ 就近配对在玩法上等价 ✓，
      * 而且**不需要新增任何同步字段** ✓（多人适配里这是最省事、最不影响本体的一条路 ✓）。
      */
-    private static void renderOtherPlayersLines(RenderLevelStageEvent event) {
+    private static void renderOtherPlayersLines(SubmitCustomGeometryEvent event) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.level == null) {
             return;
@@ -168,17 +173,15 @@ public final class FishingLineRenderer {
             return;
         }
 
-        float partial = event.getPartialTick().getGameTimeDeltaPartialTick(false);
-        Vec3 cam = event.getCamera().getPosition();
+        float partial = mc.getDeltaTracker().getGameTimeDeltaPartialTick(false);
+        CameraRenderState camera = event.getLevelRenderState().cameraRenderState;
+        Vec3 cam = camera.pos;
         PoseStack poseStack = event.getPoseStack();
-        MultiBufferSource.BufferSource buffers = mc.renderBuffers().bufferSource();
-        VertexConsumer lines = buffers.getBuffer(RenderType.lines());
 
         poseStack.pushPose();
         poseStack.translate(-cam.x, -cam.y, -cam.z);
-        Matrix4f matrix = poseStack.last().pose();
 
-        boolean any = false;
+        SubmitNodeCollector collector = event.getSubmitNodeCollector();
         for (net.minecraft.world.entity.Entity e : mc.level.entitiesForRendering()) {
             if (!(e instanceof com.whitecobalt.anglertackle.entity.BobberEntity bobber)) {
                 continue;
@@ -186,7 +189,7 @@ public final class FishingLineRenderer {
             // ★ 按**同步过来的主人 UUID** 精确配对（2026-10-10 用户指出的反例 ✓）：
             //   原来我用"就近的握竿玩家"✗ —— A 抛得远、B 站得更近时，会把线画成
             //   「B 的手 → A 的浮漂」✗✗，而 A 自己那根反而消失 ✗。"一人一根线"只保证数量 ✓，
-            //   不保证配对 ✓；`DATA_OWNER` 是同步字段（主人 UUID ✓）⇒ 客户端能精确对上 ✓。
+            //   不保证配对 ✓；DATA_OWNER 是同步字段（主人 UUID ✓）⇒ 客户端能精确对上 ✓。
             java.util.UUID ownerId = bobber.ownerId();
             if (ownerId == null) {
                 continue;                                   // 还没同步到主人 ⇒ 这一帧先不画 ✓
@@ -205,13 +208,12 @@ public final class FishingLineRenderer {
                     Mth.lerp(partial, bobber.yo, bobber.getY()),
                     Mth.lerp(partial, bobber.zo, bobber.getZ()));
             // 自己那根线上面已经画过（用的是真实竿尖 ✓）⇒ 这里**不用再判距离** ✗：
-            //   `holdsRod 列表`里本来就不含自己 ✓ ⇒ 主人是自己时上面 `owner == null` 已经 continue 了 ✓。
+            //   holdsRod 列表里本来就不含自己 ✓ ⇒ 主人是自己时上面 owner == null 已经 continue 了 ✓。
             //   （用距离判反而会误伤：两个人的浮漂挨在一起时，会把别人的线错杀 ✗）
-            drawSaggingLine(lines, matrix, handTip(owner, partial), end, 1.0f, 0.92f, 0.92f, 0.86f);
-            any = true;
-        }
-        if (any) {
-            buffers.endBatch(RenderType.lines());
+            final net.minecraft.world.entity.player.Player lineOwner = owner;
+            collector.submitCustomGeometry(poseStack, RenderTypes.lines(),
+                    (pose, lines) -> drawSaggingLine(lines, pose.pose(), handTip(lineOwner, partial), end,
+                            1.0f, 0.92f, 0.92f, 0.86f));
         }
         poseStack.popPose();
     }
@@ -264,18 +266,19 @@ public final class FishingLineRenderer {
      * （例如刚进世界的第一帧），此时 {@code worldTip} 返回 {@code null}，
      * 用原版口径先顶一帧，手感与原版一致。
      */
-    private static Vec3 rodTipPosition(LocalPlayer player, float partialTick) {
+    private static Vec3 rodTipPosition(LocalPlayer player, float partialTick, CameraRenderState camera) {
         Minecraft mc = Minecraft.getInstance();
         int side = rodHandSide(player);
         float swing = Mth.sin(Mth.sqrt(player.getAttackAnim(partialTick)) * (float) Math.PI);
 
         if (mc.options.getCameraType().isFirstPerson() && player == mc.player) {
-            Vec3 exact = RodTipAnchor.worldTip(mc.gameRenderer.getMainCamera());
+            Vec3 exact = RodTipAnchor.worldTip(camera);
             if (exact != null) {
                 return exact;
             }
             double fovScale = 960.0 / (double) mc.options.fov().get();
-            Vec3 tip = mc.gameRenderer.getMainCamera().getNearPlane()
+            // 26.1.2 的 Camera.getNearPlane 需要显式 FOV（原版 FishingHookRenderer 同样传 options.fov）。
+            Vec3 tip = mc.gameRenderer.getMainCamera().getNearPlane((float) mc.options.fov().get())
                     .getPointOnPlane((float) side * 0.525F, -0.1F)
                     .scale(fovScale)
                     .yRot(swing * 0.5F)
@@ -358,9 +361,9 @@ public final class FishingLineRenderer {
         nz /= (float) len;
 
         lines.addVertex(matrix, (float) from.x, (float) from.y, (float) from.z)
-                .setColor(red, green, blue, alpha).setNormal(nx, ny, nz);
+                .setColor(red, green, blue, alpha).setNormal(nx, ny, nz).setLineWidth(LINE_WIDTH);
         lines.addVertex(matrix, (float) to.x, (float) to.y, (float) to.z)
-                .setColor(red, green, blue, alpha).setNormal(nx, ny, nz);
+                .setColor(red, green, blue, alpha).setNormal(nx, ny, nz).setLineWidth(LINE_WIDTH);
     }
 
     /** 落点标记：水面上的一个小方框，颜色跟随张力。 */
