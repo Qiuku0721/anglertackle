@@ -319,16 +319,16 @@ public final class AquariumTank {
         }
         BlockPos pocket = findWaterPocket((ServerLevel) level, pos);
         if (pocket == null) {
-            player.displayClientMessage(Component.translatable("message.anglertackle.release_no_water")
-                    .withStyle(ChatFormatting.RED), true);
+            player.sendOverlayMessage(Component.translatable("message.anglertackle.release_no_water")
+                    .withStyle(ChatFormatting.RED));
             return InteractionResult.FAIL;
         }
         if (!spawnInWater((ServerLevel) level, pocket, data)) {
             return InteractionResult.FAIL;
         }
         stack.shrink(1);
-        player.displayClientMessage(Component.translatable("message.anglertackle.release_done")
-                .withStyle(ChatFormatting.GREEN), true);
+        player.sendOverlayMessage(Component.translatable("message.anglertackle.release_done")
+                .withStyle(ChatFormatting.GREEN));
         return InteractionResult.SUCCESS_SERVER;
     }
 
@@ -387,8 +387,8 @@ public final class AquariumTank {
 
     /** 这条鱼是被圈养的，不能就此放它出去（放生台/缸里取出的路径会清掉它）。 */
     static InteractionResult reject(Player player, String key, Object... args) {
-        player.displayClientMessage(Component.translatable(key, args)
-                .withStyle(ChatFormatting.RED), true);
+        player.sendOverlayMessage(Component.translatable(key, args)
+                .withStyle(ChatFormatting.RED));
         return InteractionResult.FAIL;
     }
 }

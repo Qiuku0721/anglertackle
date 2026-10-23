@@ -211,9 +211,9 @@ public final class Titles {
         PlayerTitles next = cur.withGrant(id);
         set(player, next);
         if (first) {
-            player.displayClientMessage(Component.translatable("message.anglertackle.title_got",
+            player.sendSystemMessage(Component.translatable("message.anglertackle.title_got",
                     Component.translatable(nameKey(id), nameArgs(id)).withStyle(com.whitecobalt.anglertackle.item
-                            .Quality.of(TitleDefs.qualityOf(id)).color())), false);
+                            .Quality.of(TitleDefs.qualityOf(id)).color())));
             AnglersTackle.LOGGER.info("[垂纶] 称号授予：{} 拿到 {}（{}）",
                     player.getName().getString(), id,
                     Component.translatable(nameKey(id), nameArgs(id)).getString());

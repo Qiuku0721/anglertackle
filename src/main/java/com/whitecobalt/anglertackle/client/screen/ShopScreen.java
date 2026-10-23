@@ -909,8 +909,8 @@ public class ShopScreen extends Screen {
             ShopCatalog.Entry e = list.get(hoverRow);
             if (!ClientShopState.unlocked(e.unlockStage())) {
                 if (Minecraft.getInstance().player != null) {
-                    Minecraft.getInstance().player.displayClientMessage(
-                            Component.literal("§c老柯还不肯卖给你（需要等级 " + e.unlockStage() + "）"), true);
+                    Minecraft.getInstance().player.sendOverlayMessage(
+                            Component.literal("§c老柯还不肯卖给你（需要等级 " + e.unlockStage() + "）"));
                 }
                 return true;
             }

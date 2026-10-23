@@ -96,8 +96,8 @@ public class HutClueItem extends Item {
 
         if (target == null) {
             // 找不到**不消耗**：玩家会连着点好几次确认，扣掉了只会让人以为道具坏了
-            sp.displayClientMessage(Component.translatable("message.anglertackle.hut_clue_none",
-                    Tuning.compassSearchRadius()).withStyle(ChatFormatting.YELLOW), false);
+            sp.sendSystemMessage(Component.translatable("message.anglertackle.hut_clue_none",
+                    Tuning.compassSearchRadius()).withStyle(ChatFormatting.YELLOW));
             return InteractionResult.SUCCESS.heldItemTransformedTo(stack);
         }
 
@@ -106,12 +106,12 @@ public class HutClueItem extends Item {
         double dz = target.getZ() - sp.getZ();
         int distance = (int) Math.round(Math.sqrt(dx * dx + dz * dz));
 
-        sp.displayClientMessage(Component.translatable("message.anglertackle.hut_clue_found",
+        sp.sendSystemMessage(Component.translatable("message.anglertackle.hut_clue_found",
                 target.getX(), target.getY(), target.getZ(), distance)
-                .withStyle(ChatFormatting.AQUA), false);
+                .withStyle(ChatFormatting.AQUA));
         // 顺手给一句方位 —— 光有坐标还得自己算朝哪边走
-        sp.displayClientMessage(Component.translatable("message.anglertackle.hut_clue_dir",
-                compassWord(dx, dz)).withStyle(ChatFormatting.GRAY), false);
+        sp.sendSystemMessage(Component.translatable("message.anglertackle.hut_clue_dir",
+                compassWord(dx, dz)).withStyle(ChatFormatting.GRAY));
 
         stack.shrink(1);   // 一次性道具：报完就没了（8 张纸 + 一条鱼换一条线索）
         sp.getCooldowns().addCooldown(this, COOLDOWN);

@@ -670,6 +670,11 @@ public final class ShopManager {
     }
 
     private static void msg(ServerPlayer player, String s, boolean actionBar) {
-        player.displayClientMessage(Component.literal(s).withStyle(ChatFormatting.RESET), actionBar);
+        Component message = Component.literal(s).withStyle(ChatFormatting.RESET);
+        if (actionBar) {
+            player.sendOverlayMessage(message);
+        } else {
+            player.sendSystemMessage(message);
+        }
     }
 }

@@ -169,8 +169,8 @@ public final class FishingManager {
             return;
         }
         if (isBrokenRod(player)) {
-            player.displayClientMessage(Component.translatable("message.anglertackle.rod_broken")
-                    .withStyle(ChatFormatting.RED), true);
+            player.sendOverlayMessage(Component.translatable("message.anglertackle.rod_broken")
+                    .withStyle(ChatFormatting.RED));
             return;
         }
         if (!(player.level() instanceof ServerLevel level)) {
@@ -197,9 +197,9 @@ public final class FishingManager {
             Long last = brokenMsgAt.get(player.getUUID());
             if (last == null || now - last > 40L) {
                 brokenMsgAt.put(player.getUUID(), now);
-                player.displayClientMessage(
+                player.sendOverlayMessage(
                         Component.translatable("message.anglertackle.rod_broken")
-                                .withStyle(ChatFormatting.RED), true);
+                                .withStyle(ChatFormatting.RED));
             }
             LOGGER.info("[垂纶] 抛投被拦：竿已破损（{}）", RodItem.durabilityInfo(player.getMainHandItem()));
             return;
@@ -367,7 +367,7 @@ public final class FishingManager {
         if (session != null) {
             session.cleanup();
         }
-        player.displayClientMessage(Component.translatable(messageKey).withStyle(ChatFormatting.YELLOW), true);
+        player.sendOverlayMessage(Component.translatable(messageKey).withStyle(ChatFormatting.YELLOW));
     }
 
     /** 断线：饵损失 + 鱼线额外 −5 + 8 秒冷却。 */
@@ -382,8 +382,8 @@ public final class FishingManager {
         } catch (Throwable t) {
             LOGGER.warn("[垂纶] 断线计数失败（已忽略）：{}", t.toString());
         }
-        player.displayClientMessage(
-                Component.translatable("message.anglertackle.line_snapped").withStyle(ChatFormatting.RED), true);
+        player.sendOverlayMessage(
+                Component.translatable("message.anglertackle.line_snapped").withStyle(ChatFormatting.RED));
         level.playSound(null, player.blockPosition(), SoundEvents.FISHING_BOBBER_RETRIEVE,
                 SoundSource.NEUTRAL, 1.0f, 0.5f);
         // 断线额外损耗鱼线耐久（配置 durability.linePerBreak）。
@@ -423,8 +423,8 @@ public final class FishingManager {
 
     /** 鱼逃出张力范围。 */
     public void onEscaped(FishingSession session, ServerLevel level) {
-        session.player().displayClientMessage(
-                Component.translatable("message.anglertackle.escaped").withStyle(ChatFormatting.YELLOW), true);
+        session.player().sendOverlayMessage(
+                Component.translatable("message.anglertackle.escaped").withStyle(ChatFormatting.YELLOW));
         session.player().getCooldowns().addCooldown(ModItems.WOOD_FLOAT_ROD.get(), 80);   // 4s
         end(session);
     }
@@ -467,12 +467,12 @@ public final class FishingManager {
         if (!player.getInventory().add(reward)) {
             player.drop(reward, false);   // 背包满 → 掉在脚下，不丢失（docs/02 §8）
         }
-        player.displayClientMessage(
+        player.sendOverlayMessage(
                 Component.translatable("message.anglertackle.caught",
                                 reward.getHoverName(),
                                 String.format("%.1f", data.lengthCm()),
                                 String.format("%.2f", data.weightKg()))
-                        .withStyle(ChatFormatting.GREEN), true);
+                        .withStyle(ChatFormatting.GREEN));
 
         // ---- 鱼币：这里**不给钱** ----
         //
@@ -540,20 +540,20 @@ public final class FishingManager {
                     com.whitecobalt.anglertackle.player.FishermanData.get(player);
 
             if (before.atGate() || (after.atGate() && levelsUp == 0)) {
-                player.displayClientMessage(Component.literal(
+                player.sendSystemMessage(Component.literal(
                         "§e垂纶等级卡在 Lv." + after.level()
-                        + " §7—— 去老柯那里做【等级评定】才能继续升级（经验暂不积攒）"), false);
+                        + " §7—— 去老柯那里做【等级评定】才能继续升级（经验暂不积攒）"));
             } else {
                 String bar = after.level() >= com.whitecobalt.anglertackle.player.AnglerLeveling.MAX_LEVEL
                         ? "§a已满级"
                         : after.xp() + "/" + com.whitecobalt.anglertackle.player.AnglerLeveling.xpToNext(after.level());
-                player.displayClientMessage(Component.literal(
-                        "§b+" + gainedXp + " 垂纶经验§7（Lv." + after.level() + " " + bar + "§7）"), true);
+                player.sendOverlayMessage(Component.literal(
+                        "§b+" + gainedXp + " 垂纶经验§7（Lv." + after.level() + " " + bar + "§7）"));
             }
             if (levelsUp > 0) {
-                player.displayClientMessage(Component.literal(
+                player.sendSystemMessage(Component.literal(
                         "§6垂纶等级提升！§fLv." + after.level()
-                        + "§7（商店解锁档位 " + after.stage() + "）"), false);
+                        + "§7（商店解锁档位 " + after.stage() + "）"));
                 player.level().playSound(null, player.blockPosition(), SoundEvents.PLAYER_LEVELUP,
                         SoundSource.PLAYERS, 0.6f, 1.4f);
             }
@@ -640,8 +640,8 @@ public final class FishingManager {
 
     /** 主动/被动结束会话。 */
     public void abort(FishingSession session, String messageKey) {
-        session.player().displayClientMessage(
-                Component.translatable(messageKey).withStyle(ChatFormatting.YELLOW), true);
+        session.player().sendOverlayMessage(
+                Component.translatable(messageKey).withStyle(ChatFormatting.YELLOW));
         end(session);
     }
 
@@ -780,7 +780,7 @@ public final class FishingManager {
             // 这些东西只在 HUD 条上看不出来，必须用文字说清楚。
             if (session.state() == FishingSession.State.FIGHT
                     && level.getGameTime() % 10L == 0L) {
-                player.displayClientMessage(session.fightHint(), true);
+                player.sendOverlayMessage(session.fightHint());
             }
 
             if (session.state() == FishingSession.State.IDLE) {

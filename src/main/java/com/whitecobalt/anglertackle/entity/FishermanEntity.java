@@ -418,13 +418,12 @@ public class FishermanEntity extends AbstractVillager {
                     lastHintPlayer = player.getUUID();
                     // 说话时带上**自己的显示名**，而不是把"老柯："写死在语言键里 ——
                     // 这样用命名牌改过名字之后，聊天栏里出现的也是新名字。
-                    player.displayClientMessage(
+                    player.sendSystemMessage(
                             Component.literal("")
                                     .append(this.getDisplayName())
                                     .append(Component.literal("："))
                                     .append(Component.translatable(
-                                            "msg.anglertackle.fisherman.line." + pickLine())),
-                            false);
+                                            "msg.anglertackle.fisherman.line." + pickLine())));
                 }
                 return InteractionResult.CONSUME;
             }

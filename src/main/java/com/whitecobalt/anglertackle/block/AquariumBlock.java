@@ -189,8 +189,8 @@ public class AquariumBlock extends Block implements SimpleWaterloggedBlock {
             return InteractionResult.FAIL;
         }
         stack.shrink(1);
-        player.displayClientMessage(Component.translatable("message.anglertackle.aquarium_added", name)
-                .withStyle(ChatFormatting.GREEN), true);
+        player.sendOverlayMessage(Component.translatable("message.anglertackle.aquarium_added", name)
+                .withStyle(ChatFormatting.GREEN));
         return InteractionResult.SUCCESS_SERVER;
     }
 
@@ -234,8 +234,8 @@ public class AquariumBlock extends Block implements SimpleWaterloggedBlock {
         if (!player.getInventory().add(out)) {
             player.drop(out, false);
         }
-        player.displayClientMessage(Component.translatable("message.anglertackle.aquarium_removed",
-                out.getHoverName()).withStyle(ChatFormatting.YELLOW), true);
+        player.sendOverlayMessage(Component.translatable("message.anglertackle.aquarium_removed",
+                out.getHoverName()).withStyle(ChatFormatting.YELLOW));
         return InteractionResult.SUCCESS_SERVER;
     }
 

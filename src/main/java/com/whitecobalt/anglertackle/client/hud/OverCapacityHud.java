@@ -16,7 +16,7 @@ import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
  * 原话："一上鱼玩家就想拉，一拉超重提示就没，不明显。"
  *
  * <p>根因是**提示只发了一次，而且是走动作栏**：咬钩那一刻弹一条
- * {@code displayClientMessage(..., true)}，而动作栏是**共用**的 ——
+ * {@code sendOverlayMessage(...)}，而动作栏是**共用**的 ——
  * 玩家一开始收线，别的消息（上鱼、张力、疲劳提示）就把它顶掉了。
  * 玩家根本来不及看见"这条鱼超重了"。
  *

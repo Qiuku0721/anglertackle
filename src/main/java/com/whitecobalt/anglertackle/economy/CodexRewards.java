@@ -106,9 +106,9 @@ public final class CodexRewards {
                 coins, List.of());
         if (sent != MailService.Result.OK) {
             // 邮箱满 ⇒ 这一趟什么都不做（**不置位** ⇒ 奖励没丢，清出格子后下次上鱼再发）
-            player.displayClientMessage(Component.translatable(
+            player.sendSystemMessage(Component.translatable(
                     "message.anglertackle.codex_milestone_full",
-                    Tuning.mailMaxMails()).withStyle(ChatFormatting.RED), false);
+                    Tuning.mailMaxMails()).withStyle(ChatFormatting.RED));
             AnglersTackle.LOGGER.warn("[垂纶] 图鉴里程碑：{} 的邮箱满了（上限 {}），"
                             + "{} 鱼币的奖励**没有置位**、下次上鱼会重试",
                     player.getName().getString(), Tuning.mailMaxMails(), coins);

@@ -104,6 +104,6 @@ public final class ShopDebug {
     }
 
     private static void line(ServerPlayer player, String s) {
-        player.displayClientMessage(Component.literal(s).withStyle(ChatFormatting.RESET), false);
+        player.sendSystemMessage(Component.literal(s).withStyle(ChatFormatting.RESET));
     }
 }

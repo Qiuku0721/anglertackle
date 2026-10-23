@@ -158,8 +158,8 @@ public final class RodModManager {
         ItemStack rodStack = heldRodOrAny(player);
         if (rodStack == null) {
             AnglersTackle.LOGGER.warn("[垂纶] 找不到钓竿，忽略（玩家 {}）", player.getName().getString());
-            player.displayClientMessage(
-                    Component.translatable("message.anglertackle.no_rod_in_hand"), true);
+            player.sendOverlayMessage(
+                    Component.translatable("message.anglertackle.no_rod_in_hand"));
             return;
         }
 
@@ -171,18 +171,18 @@ public final class RodModManager {
             return;
         }
         if (slot == SLOT_ROD) {
-            player.displayClientMessage(
-                    Component.translatable("message.anglertackle.rod_slot_readonly"), true);
+            player.sendOverlayMessage(
+                    Component.translatable("message.anglertackle.rod_slot_readonly"));
             open(player, rodStack, slot);
             return;
         }
         // ★ 服务端强制校验：台钓竿只能改鱼饵，改包也绕不过
         if (!slotApplies(rodItem.rodType(), slot)) {
-            player.displayClientMessage(Component.translatable(
+            player.sendOverlayMessage(Component.translatable(
                     "message.anglertackle.slot_not_applicable",
                     Component.translatable("gui.anglertackle.slot." + SLOT_KEYS[slot]),
                     Component.translatable("gui.anglertackle.rod_type."
-                            + (rodItem.rodType() == RodItem.RodType.FLOAT ? "float" : "lure"))), true);
+                            + (rodItem.rodType() == RodItem.RodType.FLOAT ? "float" : "lure"))));
             open(player, rodStack, slot);
             return;
         }
@@ -202,8 +202,8 @@ public final class RodModManager {
         ItemStack candidate = findInInventory(player, type, slot, wantedId);
         if (candidate.isEmpty()) {
             AnglersTackle.LOGGER.warn("[垂纶] 装备失败：背包里找不到 {}（槽位 {}）", wantedId, slot);
-            player.displayClientMessage(
-                    Component.translatable("message.anglertackle.no_such_part"), true);
+            player.sendOverlayMessage(
+                    Component.translatable("message.anglertackle.no_such_part"));
             return;
         }
 
@@ -240,25 +240,25 @@ public final class RodModManager {
         AnglersTackle.LOGGER.info("[垂纶] 装备成功：槽位 {} ← {}（竿上现在是 {}），背包剩余 {}",
                 slot, newId, after, candidate.getCount());
 
-        player.displayClientMessage(Component.translatable(
+        player.sendOverlayMessage(Component.translatable(
                 "message.anglertackle.part_equipped",
                 Component.translatable("gui.anglertackle.slot." + SLOT_KEYS[slot]),
-                newName), true);
+                newName));
     }
 
     private static void unequip(ServerPlayer player, ItemStack rodStack, int slot) {
         ModDataComponents.RodParts parts = currentParts(rodStack);
         String oldId = getSlot(parts, slot);
         if (oldId == null || oldId.isEmpty()) {
-            player.displayClientMessage(
-                    Component.translatable("message.anglertackle.slot_empty"), true);
+            player.sendOverlayMessage(
+                    Component.translatable("message.anglertackle.slot_empty"));
             return;
         }
         // ★ 退回竿上存着的那一份（带它自己用过的耐久），不要按 id 重造
         ItemStack oldStack = slotStackOf(parts, slot).copy();
         if (oldStack.isEmpty()) {
-            player.displayClientMessage(
-                    Component.translatable("message.anglertackle.slot_empty"), true);
+            player.sendOverlayMessage(
+                    Component.translatable("message.anglertackle.slot_empty"));
             return;
         }
         if (!player.getInventory().add(oldStack)) {
@@ -273,8 +273,8 @@ public final class RodModManager {
         AnglersTackle.LOGGER.info("[垂纶] 卸下成功：槽位 {} ← {}（耐久 {}/{}，按存着的那一份退回）",
                 slot, oldId,
                 oldStack.getMaxDamage() - oldStack.getDamageValue(), oldStack.getMaxDamage());
-        player.displayClientMessage(Component.translatable(
-                "message.anglertackle.part_removed", oldStack.getHoverName()), true);
+        player.sendOverlayMessage(Component.translatable(
+                "message.anglertackle.part_removed", oldStack.getHoverName()));
     }
 
     // =================================================================== 工具

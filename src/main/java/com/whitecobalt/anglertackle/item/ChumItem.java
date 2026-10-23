@@ -132,8 +132,8 @@ public class ChumItem extends Item {
         if (!com.whitecobalt.anglertackle.fishing.ChumRegistry.get(serverLevel)
                 .reserve(chum.getUUID(), now, expireAt)) {
             // 满员：不生成、不扣物品、不摆臂 —— 玩家手里那一叠窝料还在
-            player.displayClientMessage(Component.translatable("message.anglertackle.chum_cap",
-                    com.whitecobalt.anglertackle.fishing.ChumRegistry.cap()), true);
+            player.sendOverlayMessage(Component.translatable("message.anglertackle.chum_cap",
+                    com.whitecobalt.anglertackle.fishing.ChumRegistry.cap()));
             return InteractionResult.FAIL;
         }
 
@@ -147,8 +147,8 @@ public class ChumItem extends Item {
         player.swing(hand, true);
 
         stack.shrink(1);
-        player.displayClientMessage(Component.translatable("message.anglertackle.chum_thrown",
-                player.getMainHandItem().getHoverName()), true);
+        player.sendOverlayMessage(Component.translatable("message.anglertackle.chum_thrown",
+                player.getMainHandItem().getHoverName()));
 
         // 称号「打窝老手」：只有**真的打出去**（名额占到了、实体生成了）才计数 ——
         // 满员返回 fail 那一条路不算（窝子根本没落地，计数就是虚的 ✗）。

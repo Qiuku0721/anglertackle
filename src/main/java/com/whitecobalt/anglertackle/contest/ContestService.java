@@ -232,8 +232,8 @@ public final class ContestService {
             PlayerData.update(player, data -> data.addCoins(coins));
             // ⚠ 改完鱼币**必须同步给客户端**（否则 HUD 停在旧值 —— `tools/check-player-data.js` 守着这条）
             com.whitecobalt.anglertackle.network.ModNetwork.syncCoins(player);
-            player.displayClientMessage(Component.translatable(
-                    "message.anglertackle.contest_reward", coins), false);
+            player.sendSystemMessage(Component.translatable(
+                    "message.anglertackle.contest_reward", coins));
         }
         if (title != null && !title.isEmpty()) {
             try {
@@ -286,8 +286,8 @@ public final class ContestService {
             if (coins != null && coins > 0L) {
                 PlayerData.update(player, data -> data.addCoins(coins));
                 com.whitecobalt.anglertackle.network.ModNetwork.syncCoins(player);
-                player.displayClientMessage(Component.translatable(
-                        "message.anglertackle.contest_reward_offline", coins), false);
+                player.sendSystemMessage(Component.translatable(
+                        "message.anglertackle.contest_reward_offline", coins));
                 any = true;
             }
             String title = d.pendingTitles.remove(player.getUUID());

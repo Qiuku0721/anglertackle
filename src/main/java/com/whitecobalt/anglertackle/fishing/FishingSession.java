@@ -1561,8 +1561,8 @@ public final class FishingSession {
             if (!envReport.isEmpty()) {
                 FishingManager.LOGGER.info("[垂纶] 环境加成：{}", envReport);
                 if (Tuning.envLogToChat()) {
-                    this.player.displayClientMessage(
-                            net.minecraft.network.chat.Component.literal("§7[环境] §f" + envReport), false);
+                    this.player.sendSystemMessage(
+                            net.minecraft.network.chat.Component.literal("§7[环境] §f" + envReport));
                 }
             }
             // ★ 测试拟饵：把个体也钉成红档。
@@ -1784,11 +1784,11 @@ public final class FishingSession {
         this.overCapacity = true;
         // 超得越多烧得越快：刚好超一点给满 4 秒，超一倍只要 2 秒
         this.overCapacityRatio = Math.min(4.0, kg / cap);
-        this.player.displayClientMessage(
+        this.player.sendOverlayMessage(
                 net.minecraft.network.chat.Component.translatable(
                                 "message.anglertackle.over_capacity",
                                 String.format("%.2f", kg), String.format("%.0f", cap))
-                        .withStyle(net.minecraft.ChatFormatting.RED), true);
+                        .withStyle(net.minecraft.ChatFormatting.RED));
         FishingManager.LOGGER.info(
                 "[垂纶] 超承重！{} {}kg > 竿承重 {}kg（超 {} 倍）—— 开始烧竿耐久，放线可保竿",
                 this.hookedSpecies == null ? "?" : this.hookedSpecies.id(),
@@ -1830,10 +1830,10 @@ public final class FishingSession {
         if (now >= max) {
             // 竿断了：鱼跑掉，会话结束。
             // 提示要说清"是因为超承重"，否则玩家只会觉得"莫名其妙竿没了"。
-            this.player.displayClientMessage(
+            this.player.sendSystemMessage(
                     net.minecraft.network.chat.Component.translatable(
                                     "message.anglertackle.rod_broken_over_capacity")
-                            .withStyle(net.minecraft.ChatFormatting.DARK_RED), false);
+                            .withStyle(net.minecraft.ChatFormatting.DARK_RED));
             FishingManager.LOGGER.info("[垂纶] 竿被超承重的鱼拉断，鱼跑了");
             FishingManager.get().abort(this, "message.anglertackle.escaped");
             return true;
@@ -2043,9 +2043,9 @@ public final class FishingSession {
         this.reeling = false;
         this.releasing = false;
 
-        this.player.displayClientMessage(
+        this.player.sendOverlayMessage(
                 Component.translatable("message.anglertackle.retrieved_early")
-                        .withStyle(ChatFormatting.GRAY), true);
+                        .withStyle(ChatFormatting.GRAY));
         playSound(SoundEvents.FISHING_BOBBER_RETRIEVE, 0.6f, 1.9f);
         FishingManager.LOGGER.info("[垂纶] 提前收回（不消耗耐久）");
 
@@ -2240,9 +2240,9 @@ public final class FishingSession {
         // 饵料损耗
         // TODO(M2): RecipeManager.consumeBait(player, 1.0f)
 
-        this.player.displayClientMessage(
+        this.player.sendOverlayMessage(
                 Component.translatable("message.anglertackle.escaped")
-                        .withStyle(ChatFormatting.YELLOW), true);
+                        .withStyle(ChatFormatting.YELLOW));
         playSound(SoundEvents.FISHING_BOBBER_RETRIEVE, 0.5f, 0.7f);
 
         if (this.bobber != null) {
@@ -2750,10 +2750,10 @@ public final class FishingSession {
                 rescueUsed = true;
                 this.tension = this.whiteMax();
                 this.redZoneTicks = 0;
-                this.player.displayClientMessage(
+                this.player.sendOverlayMessage(
                         net.minecraft.network.chat.Component
                                 .translatable("message.anglertackle.enchant_rescue")
-                                .withStyle(net.minecraft.ChatFormatting.GOLD), true);
+                                .withStyle(net.minecraft.ChatFormatting.GOLD));
                 FishingManager.LOGGER.info("[垂纶] 抢救生效：张力回退到黄/白交界 {}",
                         String.format("%.1f", this.whiteMax()));
             } else {
@@ -3018,12 +3018,12 @@ public final class FishingSession {
         rod.setDamageValue(now);
         int real = now - cur;
         if (real > 0) {
-            this.player.displayClientMessage(
+            this.player.sendSystemMessage(
                     net.minecraft.network.chat.Component.translatable(
                                     "message.anglertackle.over_capacity_landed",
                                     String.format("%.2f", this.overCapacityRatio),
                                     real)
-                            .withStyle(net.minecraft.ChatFormatting.RED), false);
+                            .withStyle(net.minecraft.ChatFormatting.RED));
             FishingManager.LOGGER.info("[垂纶] 超承重上鱼补扣耐久：超重 ×{}，已烧 {}，补扣 {}，竿耐久 {}/{}",
                     String.format("%.2f", this.overCapacityRatio), this.overCapacityBurned,
                     real, max - now, max);

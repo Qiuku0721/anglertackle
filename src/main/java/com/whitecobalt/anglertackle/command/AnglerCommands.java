@@ -602,9 +602,9 @@ public final class AnglerCommands {
                 + (gained > 0 ? "§a（升 §f" + gained + "§a 级）" : "")
                 + (refused ? "§e —— 其中 §f" + (amount - g.xpAccepted())
                         + "§e 点没有收下：卡在评定点，要先通过评定" : "")), true);
-        target.displayClientMessage(Component.literal("§6垂纶经验 +" + g.xpAccepted()
+        target.sendSystemMessage(Component.literal("§6垂纶经验 +" + g.xpAccepted()
                 + (gained > 0 ? "§6，升到 §fLv." + after.level() + "§6！" : "")
-                + (refused ? "§7（卡在评定点，多余的经验没收下）" : "")), false);
+                + (refused ? "§7（卡在评定点，多余的经验没收下）" : "")));
         src.sendSuccess(() -> Component.literal(describeXp(target, after)), false);
         return 1;
     }
@@ -911,8 +911,8 @@ public final class AnglerCommands {
                             ServerPlayer player = ctx.getSource().getPlayerOrException();
                             com.whitecobalt.anglertackle.player.FishermanData.update(
                                     player, com.whitecobalt.anglertackle.player.FishermanProgress::withTalked);
-                            player.displayClientMessage(
-                                    Component.literal("§a已标记「跟老柯说过话」，商店开启"), false);
+                            player.sendSystemMessage(
+                                    Component.literal("§a已标记「跟老柯说过话」，商店开启"));
                             return 1;
                         }))
                         // 2026-10-02：等级改成 1–50 之后，这个调试命令改成"设垂纶等级"。
@@ -930,11 +930,11 @@ public final class AnglerCommands {
                                             com.whitecobalt.anglertackle.player.FishermanData.set(player,
                                                     new com.whitecobalt.anglertackle.player.FishermanProgress(
                                                             n, 0, true, old.stock()));
-                                            player.displayClientMessage(
+                                            player.sendSystemMessage(
                                                     Component.literal("§a垂纶等级设为 §fLv." + n
                                                             + "§a（商店档位 "
                                                             + com.whitecobalt.anglertackle.player.AnglerLeveling
-                                                                    .stageFor(n) + "）"), false);
+                                                                    .stageFor(n) + "）"));
                                             return 1;
                                         })))
                         .then(lit("resetstock").executes(ctx -> {
@@ -942,59 +942,59 @@ public final class AnglerCommands {
                             com.whitecobalt.anglertackle.player.FishermanData.update(player,
                                     p -> new com.whitecobalt.anglertackle.player.FishermanProgress(
                                             p.level(), p.xp(), p.talked(), java.util.Map.of()));
-                            player.displayClientMessage(Component.literal("§a限购计数已清零"), false);
+                            player.sendSystemMessage(Component.literal("§a限购计数已清零"));
                             return 1;
                         })))
                 .then(lit("rod").executes(ctx -> {
                     ServerPlayer player = ctx.getSource().getPlayerOrException();
                     ItemStack stack = player.getMainHandItem();
                     if (!(stack.getItem() instanceof RodItem)) {
-                        player.displayClientMessage(
-                                Component.literal("§c主手拿的不是垂纶的钓竿"), false);
+                        player.sendSystemMessage(
+                                Component.literal("§c主手拿的不是垂纶的钓竿"));
                         return 0;
                     }
 
-                    player.displayClientMessage(Component.literal("§6=== 垂纶调试 ==="), false);
-                    player.displayClientMessage(Component.literal("§7物品：§f"
-                            + stack.getHoverName().getString()), false);
-                    player.displayClientMessage(Component.literal("§7" + RodItem.durabilityInfo(stack)), false);
+                    player.sendSystemMessage(Component.literal("§6=== 垂纶调试 ==="));
+                    player.sendSystemMessage(Component.literal("§7物品：§f"
+                            + stack.getHoverName().getString()));
+                    player.sendSystemMessage(Component.literal("§7" + RodItem.durabilityInfo(stack)));
 
                     ModDataComponents.RodParts parts = stack.get(ModDataComponents.ROD_PARTS.get());
                     if (parts == null) {
-                        player.displayClientMessage(
-                                Component.literal("§7配件组件：§c未初始化（null）"), false);
+                        player.sendSystemMessage(
+                                Component.literal("§7配件组件：§c未初始化（null）"));
                     } else {
-                        player.displayClientMessage(Component.literal("§7配件组件："), false);
+                        player.sendSystemMessage(Component.literal("§7配件组件："));
                         // 每个槽位连**耐久**一起显示。
                         // 用户报过"上鱼后耐久扣了，打开背包又回满"——那是服务端/客户端不同步。
                         // 这一行打的是**服务端权威值**，用来分辨"真没存住"还是"只是没显示"。
-                        player.displayClientMessage(Component.literal(
-                                "§7  鱼线：§f" + partWithDurability(parts.lineStack())), false);
-                        player.displayClientMessage(Component.literal(
-                                "§7  渔轮：§f" + partWithDurability(parts.reelStack())), false);
-                        player.displayClientMessage(Component.literal(
-                                "§7  鱼钩：§f" + partWithDurability(parts.hookStack())), false);
-                        player.displayClientMessage(Component.literal(
-                                "§7  拟饵：§f" + partWithDurability(parts.lureStack())), false);
-                        player.displayClientMessage(Component.literal(
-                                "§7  鱼饵：§f" + partWithDurability(parts.baitStack())), false);
+                        player.sendSystemMessage(Component.literal(
+                                "§7  鱼线：§f" + partWithDurability(parts.lineStack())));
+                        player.sendSystemMessage(Component.literal(
+                                "§7  渔轮：§f" + partWithDurability(parts.reelStack())));
+                        player.sendSystemMessage(Component.literal(
+                                "§7  鱼钩：§f" + partWithDurability(parts.hookStack())));
+                        player.sendSystemMessage(Component.literal(
+                                "§7  拟饵：§f" + partWithDurability(parts.lureStack())));
+                        player.sendSystemMessage(Component.literal(
+                                "§7  鱼饵：§f" + partWithDurability(parts.baitStack())));
                     }
 
-                    player.displayClientMessage(Component.literal("§7会话：§f"
-                            + FishingManager.get().stateName(player)), false);
+                    player.sendSystemMessage(Component.literal("§7会话：§f"
+                            + FishingManager.get().stateName(player)));
                     // 上鱼判定快照：只在对抗中才有值。
                     // "蓝条满却不上鱼"这类问题全靠这一行定位。
                     for (String line : FishingManager.get().landCheckInfo(player) == null
                             ? new String[]{"§8（不在对抗中，无上鱼判定数据）"}
                             : FishingManager.get().landCheckInfo(player).split("\n")) {
-                        player.displayClientMessage(Component.literal(line), false);
+                        player.sendSystemMessage(Component.literal(line));
                     }
                     return 1;
                 }))
                 .then(lit("pool").executes(ctx -> {
                     ServerPlayer player = ctx.getSource().getPlayerOrException();
                     for (Component line : poolReport(player)) {
-                        player.displayClientMessage(line, false);
+                        player.sendSystemMessage(line);
                     }
                     return 1;
                 }))
@@ -1003,7 +1003,7 @@ public final class AnglerCommands {
                 .then(lit("water").executes(ctx -> {
                     ServerPlayer player = ctx.getSource().getPlayerOrException();
                     for (Component line : waterReport(player)) {
-                        player.displayClientMessage(line, false);
+                        player.sendSystemMessage(line);
                     }
                     return 1;
                 }))
@@ -1016,18 +1016,18 @@ public final class AnglerCommands {
                             ServerPlayer player = ctx.getSource().getPlayerOrException();
                             int n = com.whitecobalt.anglertackle.fishing.Tuning.reload();
                             if (n < 0) {
-                                player.displayClientMessage(Component.literal(
-                                        "§c热重载失败（见日志）。配置改动需要重启游戏才生效。"), false);
+                                player.sendSystemMessage(Component.literal(
+                                        "§c热重载失败（见日志）。配置改动需要重启游戏才生效。"));
                                 return 0;
                             }
-                            player.displayClientMessage(Component.literal(
-                                    "§a配置已热重载：应用 §f" + n + " §a项。§7下一条鱼就用新参数。"), false);
+                            player.sendSystemMessage(Component.literal(
+                                    "§a配置已热重载：应用 §f" + n + " §a项。§7下一条鱼就用新参数。"));
                             return 1;
                         }))
                         .then(lit("list").executes(ctx -> {
                             ServerPlayer player = ctx.getSource().getPlayerOrException();
                             for (Component line : tuningReport(ctx.getSource())) {
-                                player.displayClientMessage(line, false);
+                                player.sendSystemMessage(line);
                             }
                             return 1;
                         })))
@@ -1040,9 +1040,9 @@ public final class AnglerCommands {
                 .then(lit("coins")
                                 .executes(ctx -> {
                             ServerPlayer player = ctx.getSource().getPlayerOrException();
-                            player.displayClientMessage(Component.literal(
+                            player.sendSystemMessage(Component.literal(
                                     "§6鱼币：§f" + com.whitecobalt.anglertackle.player.PlayerData
-                                            .get(player).coins() + " ¤"), false);
+                                            .get(player).coins() + " ¤"));
                             return 1;
                         })
                         .then(lit("set")
@@ -1054,8 +1054,8 @@ public final class AnglerCommands {
                                             com.whitecobalt.anglertackle.player.PlayerData.update(
                                                     player, d -> d.withCoins(n));
                                             com.whitecobalt.anglertackle.network.ModNetwork.syncCoins(player);
-                                            player.displayClientMessage(Component.literal(
-                                                    "§a鱼币已设为 §f" + n + " ¤"), false);
+                                            player.sendSystemMessage(Component.literal(
+                                                    "§a鱼币已设为 §f" + n + " ¤"));
                                             return 1;
                                         })))
                         .then(lit("add")
@@ -1067,9 +1067,9 @@ public final class AnglerCommands {
                                             var after = com.whitecobalt.anglertackle.player.PlayerData.update(
                                                     player, d -> d.addCoins(n));
                                             com.whitecobalt.anglertackle.network.ModNetwork.syncCoins(player);
-                                            player.displayClientMessage(Component.literal(
+                                            player.sendSystemMessage(Component.literal(
                                                     "§a鱼币 " + (n >= 0 ? "+" : "") + n + " → §f"
-                                                            + after.coins() + " ¤"), false);
+                                                            + after.coins() + " ¤"));
                                             return 1;
                                         }))))
                 // ---------------------------------------------------------- 鱼类图鉴
@@ -1083,11 +1083,11 @@ public final class AnglerCommands {
                     java.util.List<com.whitecobalt.anglertackle.fishing.FishSpecies> all =
                             com.whitecobalt.anglertackle.fishing.FishSpecies.ALL;
                     int got = data.codexCount();
-                    player.displayClientMessage(Component.literal(
+                    player.sendSystemMessage(Component.literal(
                             "§6=== 鱼类图鉴 ===  §7已收集 §f" + got + "§7/§f" + all.size()
-                                    + "§7（完成度 §f" + (got * 100 / Math.max(1, all.size())) + "%§7）"), false);
-                    player.displayClientMessage(Component.literal(
-                            "§7鱼币：§f" + data.coins() + " ¤"), false);
+                                    + "§7（完成度 §f" + (got * 100 / Math.max(1, all.size())) + "%§7）"));
+                    player.sendSystemMessage(Component.literal(
+                            "§7鱼币：§f" + data.coins() + " ¤"));
 
                     // 已收集的排前面，按最高档位从高到低 —— 玩家最想看的是"我钓到过什么好的"
                     // 档位显示成中文名。数字 0~5 对玩家没有意义 ——
@@ -1124,12 +1124,12 @@ public final class AnglerCommands {
                                 + tierCn[Math.max(0, Math.min(5, e.bestTier()))]);
                     }
                     for (String line : collected) {
-                        player.displayClientMessage(Component.literal("  " + line), false);
+                        player.sendSystemMessage(Component.literal("  " + line));
                     }
                     if (!missing.isEmpty()) {
-                        player.displayClientMessage(Component.literal(
+                        player.sendSystemMessage(Component.literal(
                                 "§8尚未收集 " + missing.size() + " 种："
-                                        + String.join("、", missing)), false);
+                                        + String.join("、", missing)));
                     }
                     return 1;
                 }))
@@ -1159,13 +1159,13 @@ public final class AnglerCommands {
                     ServerPlayer player = ctx.getSource().getPlayerOrException();
                     ItemStack stack = player.getMainHandItem();
                     if (!(stack.getItem() instanceof RodItem)) {
-                        player.displayClientMessage(
-                                Component.literal("§c主手拿的不是垂纶的钓竿"), false);
+                        player.sendSystemMessage(
+                                Component.literal("§c主手拿的不是垂纶的钓竿"));
                         return 0;
                     }
                     stack.setDamageValue(0);
-                    player.displayClientMessage(Component.literal("§a已修好："
-                            + RodItem.durabilityInfo(stack)), false);
+                    player.sendSystemMessage(Component.literal("§a已修好："
+                            + RodItem.durabilityInfo(stack)));
                     return 1;
                 })));
     }

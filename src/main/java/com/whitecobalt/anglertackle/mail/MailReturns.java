@@ -45,8 +45,8 @@ public final class MailReturns {
                 MailService.Result r = MailService.deliver(sp, template, List.of(), 0L,
                         List.of(stack.copy()));
                 if (r == MailService.Result.OK) {
-                    sp.displayClientMessage(Component.translatable(
-                            "message.anglertackle.return_mailed", stack.getHoverName()), false);
+                    sp.sendSystemMessage(Component.translatable(
+                            "message.anglertackle.return_mailed", stack.getHoverName()));
                     return true;
                 }
             } catch (Throwable t) {
@@ -57,8 +57,8 @@ public final class MailReturns {
         // 邮箱满 / 寄信异常 ⇒ 退回原行为：掉在脚下（**绝不静默销毁**）
         player.drop(stack, false);
         if (player instanceof ServerPlayer sp) {
-            sp.displayClientMessage(Component.translatable(
-                    "message.anglertackle.return_dropped", stack.getHoverName()), false);
+            sp.sendSystemMessage(Component.translatable(
+                    "message.anglertackle.return_dropped", stack.getHoverName()));
         }
         return false;
     }

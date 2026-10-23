@@ -82,11 +82,11 @@ public final class AnvilEvents {
 
         String slotKey = RodModManager.slotNameOf(right, rodItem.rodType());
         if (slotKey != null && event.getPlayer() != null) {
-            event.getPlayer().displayClientMessage(
+            event.getPlayer().sendOverlayMessage(
                     net.minecraft.network.chat.Component.translatable(
                             "message.anglertackle.anvil_equipped",
                             net.minecraft.network.chat.Component.translatable("gui.anglertackle.slot." + slotKey),
-                            right.getHoverName()), true);
+                            right.getHoverName()));
         }
     }
 

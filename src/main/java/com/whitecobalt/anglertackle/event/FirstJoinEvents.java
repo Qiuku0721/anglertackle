@@ -85,15 +85,15 @@ public final class FirstJoinEvents {
                 com.whitecobalt.anglertackle.player.PlayerData.setMails(player, nudged);
             }
             if (unclaimedKit(player)) {
-                player.displayClientMessage(Component.translatable(
-                        "message.anglertackle.starter_kit_unclaimed"), true);
+                player.sendOverlayMessage(Component.translatable(
+                        "message.anglertackle.starter_kit_unclaimed"));
             }
             int unread = com.whitecobalt.anglertackle.mail.MailService.unread(player);
             if (unread > 0 && com.whitecobalt.anglertackle.fishing.Tuning.mailUnreadLoginNotice()) {
-                player.displayClientMessage(Component.translatable(
+                player.sendSystemMessage(Component.translatable(
                         "message.anglertackle.mail_unread_notice",
                         unread,
-                        com.whitecobalt.anglertackle.mail.MailService.claimable(player)), false);
+                        com.whitecobalt.anglertackle.mail.MailService.claimable(player)));
             }
         } catch (Throwable t) {
             AnglersTackle.LOGGER.warn("[垂纶] 登录时邮件检查失败（已忽略）：{}", t.toString());
@@ -143,9 +143,9 @@ public final class FirstJoinEvents {
             }
         }
         PlayerData.update(player, PlayerFishingData::withGuideGiven);
-        player.displayClientMessage(Component.translatable(mailed
+        player.sendSystemMessage(Component.translatable(mailed
                 ? "message.anglertackle.guide_mailed"
-                : "message.anglertackle.guide_given"), false);
+                : "message.anglertackle.guide_given"));
         AnglersTackle.LOGGER.info("[垂纶] 首次登录：已给 {} 一本教程（{}）",
                 player.getName().getString(), mailed ? "寄到邮箱" : "直接进背包");
     }

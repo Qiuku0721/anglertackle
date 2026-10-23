@@ -168,8 +168,8 @@ public final class ClientEvents {
                         new RodModActionPayload(RodModActionPayload.ACTION_REFRESH, (byte) 0, ""));
                 modRequestCooldown = 10;
                 // 给玩家一个即时反馈：即使界面因故没打开，也能知道请求发出去了
-                mc.player.displayClientMessage(
-                        Component.translatable("message.anglertackle.opening_rod_mod"), true);
+                mc.player.sendOverlayMessage(
+                        Component.translatable("message.anglertackle.opening_rod_mod"));
             }
         }
         wasUsingItem = usingNow;
@@ -201,8 +201,8 @@ public final class ClientEvents {
             }
             if (!fishingMoveLocked) {
                 fishingMoveLocked = true;
-                mc.player.displayClientMessage(
-                        Component.translatable("message.anglertackle.fight_move_locked"), true);
+                mc.player.sendOverlayMessage(
+                        Component.translatable("message.anglertackle.fight_move_locked"));
             }
         } else if (fishingMoveLocked) {
             fishingMoveLocked = false;

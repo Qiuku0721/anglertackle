@@ -96,8 +96,8 @@ public final class MailService {
             // ⚠ 到顶就拒绝 —— 不静默丢件、也不悄悄挤掉最旧的一封（`docs/36` §6 的断言）
             AnglersTackle.LOGGER.warn("[垂纶] 邮箱已满，拒绝投递：{} 收到 {}（上限 {} 封）",
                     to.getName().getString(), template, Tuning.mailMaxMails());
-            to.displayClientMessage(Component.translatable("message.anglertackle.mail_full",
-                    Tuning.mailMaxMails()).withStyle(ChatFormatting.RED), false);
+            to.sendSystemMessage(Component.translatable("message.anglertackle.mail_full",
+                    Tuning.mailMaxMails()).withStyle(ChatFormatting.RED));
             return Result.BOX_FULL;
         }
         List<ItemStack> capped = items == null ? List.of() : items.stream()
@@ -165,11 +165,11 @@ public final class MailService {
         try {
             // ⚠⚠ 2026-10-16 用户复验："上了鱼也没有第一时间弹，只在后续测试时再次登录后弹出"。
             //   服务端这边**确实是当场发的**（日志里「投递」与「新信提示」同一毫秒），
-            //   但只发了**动作栏**（`true`）—— 那一行会在两秒后淡出、**不进聊天记录**。
+            //   但只发了**动作栏**（`sendOverlayMessage`）—— 那一行会在两秒后淡出、**不进聊天记录**。
             //   玩家刚上鱼、眼睛在鱼和张力条上，错过它是必然的 ✗。
-            //   ⇒ 现在**聊天栏也发一行**（false）：它会留在记录里，翻一眼就能看见，
+            //   ⇒ 现在**聊天栏也发一行**（{@code sendSystemMessage}）：它会留在记录里，翻一眼就能看见，
             //     而不是"只有那两秒看得见"。
-            to.displayClientMessage(Component.translatable("message.anglertackle.mail_arrived", title), false);
+            to.sendSystemMessage(Component.translatable("message.anglertackle.mail_arrived", title));
         } catch (Throwable t) {
             AnglersTackle.LOGGER.warn("[垂纶] 新邮件（聊天栏）提示发送失败（已忽略）：{}", t.toString());
         }
@@ -180,7 +180,7 @@ public final class MailService {
             long prev = mailArrivedAt.getOrDefault(to.getUUID(), Long.MIN_VALUE);
             if (now - prev >= MAIL_TOAST_GAP_TICKS) {
                 mailArrivedAt.put(to.getUUID(), now);
-                to.displayClientMessage(Component.translatable("message.anglertackle.mail_arrived", title), true);
+                to.sendOverlayMessage(Component.translatable("message.anglertackle.mail_arrived", title));
             }
         } catch (Throwable t) {
             AnglersTackle.LOGGER.warn("[垂纶] 新邮件（动作栏）提示发送失败（已忽略）：{}", t.toString());

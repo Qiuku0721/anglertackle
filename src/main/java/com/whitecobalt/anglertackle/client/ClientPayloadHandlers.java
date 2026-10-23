@@ -256,9 +256,9 @@ public final class ClientPayloadHandlers {
                 // 聊天栏也给一条反馈：万一界面被别的模组抢掉了，
                 // 玩家至少知道"操作生效了"，而不是以为按键没反应。
                 if (mc.player != null) {
-                    mc.player.displayClientMessage(
+                    mc.player.sendSystemMessage(
                             Component.translatable("message.anglertackle.rod_mod_opened",
-                                    payload.rodName()), false);
+                                    payload.rodName()));
                 }
             }
         });

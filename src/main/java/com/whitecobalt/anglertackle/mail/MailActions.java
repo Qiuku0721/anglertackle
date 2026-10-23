@@ -57,24 +57,24 @@ public final class MailActions {
         if (LEAGUE_JOIN.equals(action)) {
             LeagueService.JoinResult r = LeagueService.joinSign(player);
             // 结果都告诉玩家 —— 不静默（"点了没反应"是最难查的一种）
-            player.displayClientMessage(Component.translatable(switch (r) {
+            player.sendSystemMessage(Component.translatable(switch (r) {
                 case OK -> "message.anglertackle.league_join_ok";
                 case ALREADY -> "message.anglertackle.league_join_already";
                 case TOO_LATE -> "message.anglertackle.league_join_too_late";
                 case NOT_ELIGIBLE -> "message.anglertackle.league_join_not_eligible";
                 case NO_PERIOD -> "message.anglertackle.league_join_no_period";
-            }), false);
+            }));
             return true;
         }
         if (QUEST_ACCEPT.equals(action)) {
             QuestService.Accept r = QuestService.acceptAll(player);
             // 结果都告诉玩家 —— 不静默（"点了没反应"是最难查的一种）
-            player.displayClientMessage(Component.translatable(switch (r) {
+            player.sendSystemMessage(Component.translatable(switch (r) {
                 case OK -> "message.anglertackle.quest_accept_ok";
                 case ALREADY -> "message.anglertackle.quest_accept_already";
                 case DISABLED -> "message.anglertackle.quest_accept_disabled";
                 case NO_OFFER -> "message.anglertackle.quest_accept_no_offer";
-            }), false);
+            }));
             // 接下了就**顺手把面板打开**（用户 2026-10-14 要的"入口之一"）：
             // 玩家点完最想知道的就是"接下来去哪看、还差多少" —— 让他再去找指令是没道理的 ✓
             // （ALREADY 也开：那条路是"我又点了一次"，正好把他送到面板去 ✓）
