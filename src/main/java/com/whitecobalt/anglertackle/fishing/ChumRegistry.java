@@ -5,11 +5,14 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
 
-import net.minecraft.core.HolderLookup;
-import net.minecraft.nbt.CompoundTag;
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
+import net.minecraft.core.UUIDUtil;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.saveddata.SavedData;
+import net.minecraft.world.level.saveddata.SavedDataType;
 
 /**
  * 全服窝料**名额登记表** —— 用户 2026-10-11 定案：
@@ -36,40 +39,39 @@ import net.minecraft.world.level.saveddata.SavedData;
  */
 public class ChumRegistry extends SavedData {
 
-    /** 存档文件名（`data/anglertackle_chum.dat`）。**不许改名**。 */
+    /** 存档文件名（26.1.2 起落在 `data/<namespace>/anglertackle_chum.dat`）。**不许改名**。 */
     public static final String FILE_ID = "anglertackle_chum";
+
+    /**
+     * 整份存档的 codec —— **NBT 布局与旧 {@code save()/load()} 逐字一致**：
+     * 顶层 {@code live} 是一个 compound，键 = {@code UUID.toString()}（带连字符），值 = long。
+     * 旧的 {@code tag.getCompoundOrEmpty("live")} + 手工遍历，正好等价于
+     * {@code Codec.unboundedMap(字符串 UUID, long)}（NbtOps 的 map 就是 CompoundTag）。
+     */
+    public static final Codec<ChumRegistry> CODEC = RecordCodecBuilder.create(inst -> inst.group(
+            Codec.unboundedMap(UUIDUtil.STRING_CODEC, Codec.LONG)
+                    .optionalFieldOf("live", Map.of())
+                    .forGetter(d -> Map.copyOf(d.live))
+    ).apply(inst, ChumRegistry::new));
+
+    /** 26.1.2 的 SavedDataType；文件名仍叫 {@code anglertackle_chum.dat}（命名空间目录由平台加）。 */
+    public static final SavedDataType<ChumRegistry> TYPE = new SavedDataType<>(
+            Identifier.withDefaultNamespace(FILE_ID), ChumRegistry::new, CODEC);
 
     /** 窝料 UUID → 到期时刻（主世界 gameTime）。 */
     private final Map<UUID, Long> live = new HashMap<>();
 
-    public static ChumRegistry load(CompoundTag tag, HolderLookup.Provider registries) {
-        ChumRegistry d = new ChumRegistry();
-        CompoundTag map = tag.getCompoundOrEmpty("live");
-        for (String key : map.keySet()) {
-            try {
-                d.live.put(UUID.fromString(key), map.getLongOr(key, 0L));
-            } catch (IllegalArgumentException ignored) {
-                // 坏数据（手改过存档 / 版本迁移）只跳过这一条，绝不让读档失败
-            }
-        }
-        return d;
+    public ChumRegistry() {
     }
 
-    @Override
-    public CompoundTag save(CompoundTag tag, HolderLookup.Provider registries) {
-        CompoundTag map = new CompoundTag();
-        for (Map.Entry<UUID, Long> e : this.live.entrySet()) {
-            map.putLong(e.getKey().toString(), e.getValue());
-        }
-        tag.put("live", map);
-        return tag;
+    /** codec 读档入口。 */
+    private ChumRegistry(Map<UUID, Long> live) {
+        this.live.putAll(live);
     }
 
     /** 全服共一份 —— 存在主世界（与排行榜、慢性风险账本同一个入口形态）。 */
     public static ChumRegistry get(ServerLevel level) {
-        return level.getDataStorage().computeIfAbsent(
-                new SavedData.Factory<>(ChumRegistry::new, ChumRegistry::load),
-                FILE_ID);
+        return level.getDataStorage().computeIfAbsent(TYPE);
     }
 
     public static ChumRegistry get(MinecraftServer server) {

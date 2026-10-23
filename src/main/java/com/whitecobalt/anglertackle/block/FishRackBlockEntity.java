@@ -8,6 +8,8 @@ import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 
 /**
  * 鱼架里存的那一条鱼。
@@ -39,19 +41,18 @@ public class FishRackBlockEntity extends BlockEntity {
     }
 
     @Override
-    protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
-        super.saveAdditional(tag, registries);
-        if (!this.fish.isEmpty()) {
-            tag.put("Fish", this.fish.save(registries));
-        }
+    protected void saveAdditional(ValueOutput output) {
+        super.saveAdditional(output);
+        // 与旧版同口径：**有鱼才写** "Fish"（空手 = 不写这个键）。
+        // 旧版是 this.fish.save(registries)，26.1.2 的对应物就是 ItemStack.CODEC（键仍是 id/count/components）。
+        output.storeNullable("Fish", ItemStack.CODEC, this.fish.isEmpty() ? null : this.fish);
     }
 
     @Override
-    protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
-        super.loadAdditional(tag, registries);
-        this.fish = tag.contains("Fish")
-                ? ItemStack.parseOptional(registries, tag.getCompoundOrEmpty("Fish"))
-                : ItemStack.EMPTY;
+    protected void loadAdditional(ValueInput input) {
+        super.loadAdditional(input);
+        // 旧版没有 "Fish" 键 ⇒ ItemStack.EMPTY；ItemStack.CODEC 缺键同样返回 empty。
+        this.fish = input.read("Fish", ItemStack.CODEC).orElse(ItemStack.EMPTY);
     }
 
     /** 方块实体同步包：没有它客户端拿不到这条鱼，鱼架上就是空的。 */

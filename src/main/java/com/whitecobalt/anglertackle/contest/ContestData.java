@@ -1,15 +1,13 @@
 package com.whitecobalt.anglertackle.contest;
 
-import com.whitecobalt.anglertackle.util.NbtCompat;
-import net.minecraft.core.Holder;
-import net.minecraft.core.HolderLookup;
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.UUIDUtil;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
-import net.minecraft.nbt.Tag;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.saveddata.SavedData;
+import net.minecraft.world.level.saveddata.SavedDataType;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -33,7 +31,7 @@ import java.util.UUID;
  */
 public class ContestData extends SavedData {
 
-    /** 数据文件名（存档里 `data/anglertackle_contest.dat`）。**不许改名**。 */
+    /** 数据文件名（26.1.2 起落在 `data/<namespace>/anglertackle_contest.dat`）。**不许改名**。 */
     public static final String FILE_ID = "anglertackle_contest";
 
     // ---------------------------------------------------------------- 正在进行的这一场
@@ -67,7 +65,127 @@ public class ContestData extends SavedData {
     /** 最后一次自动开赛的时刻（累计刻）—— `autoEveryMinutes` 用它算间隔。 */
     public long lastAutoStartGame;
 
+    // ---------------------------------------------------------------- 存档 codec
+    // 下列 record 是 codec 的"传输形状"：**NBT 键与旧 save()/load() 逐字一致**，
+    // 只是把"手工 getXOr / putX"换成同名的 optionalFieldOf。默认值全部照抄旧 getXOr 的第二个参数。
+
+    /** 一条成绩（旧 {@code entryTag}/{@code entryFrom} 的键：uuid/name/value/at/catches/fish/kg/len/grade/tier）。 */
+    private record Score(UUID player, String name, double value, long at, int catches, String fish,
+                         double kg, double len, String grade, int tier) {
+        private static final Codec<Score> CODEC = RecordCodecBuilder.create(inst -> inst.group(
+                UUIDUtil.CODEC.fieldOf("uuid").forGetter(Score::player),
+                Codec.STRING.optionalFieldOf("name", "").forGetter(Score::name),
+                Codec.DOUBLE.optionalFieldOf("value", 0.0).forGetter(Score::value),
+                Codec.LONG.optionalFieldOf("at", 0L).forGetter(Score::at),
+                Codec.INT.optionalFieldOf("catches", 0).forGetter(Score::catches),
+                Codec.STRING.optionalFieldOf("fish", "").forGetter(Score::fish),
+                Codec.DOUBLE.optionalFieldOf("kg", 0.0).forGetter(Score::kg),
+                Codec.DOUBLE.optionalFieldOf("len", 0.0).forGetter(Score::len),
+                Codec.STRING.optionalFieldOf("grade", "").forGetter(Score::grade),
+                Codec.INT.optionalFieldOf("tier", 0).forGetter(Score::tier)
+        ).apply(inst, Score::new));
+    }
+
+    /** 离线待领鱼币（旧键：uuid/coins）。 */
+    private record PendingCoins(UUID player, long coins) {
+        private static final Codec<PendingCoins> CODEC = RecordCodecBuilder.create(inst -> inst.group(
+                UUIDUtil.CODEC.fieldOf("uuid").forGetter(PendingCoins::player),
+                Codec.LONG.optionalFieldOf("coins", 0L).forGetter(PendingCoins::coins)
+        ).apply(inst, PendingCoins::new));
+    }
+
+    /** 离线待授称号（旧键：uuid/title）。 */
+    private record PendingTitles(UUID player, String title) {
+        private static final Codec<PendingTitles> CODEC = RecordCodecBuilder.create(inst -> inst.group(
+                UUIDUtil.CODEC.fieldOf("uuid").forGetter(PendingTitles::player),
+                Codec.STRING.optionalFieldOf("title", "").forGetter(PendingTitles::title)
+        ).apply(inst, PendingTitles::new));
+    }
+
+    /** 整份存档的 codec：15 个顶层键全部沿用旧 save 的名字/类型/默认值。 */
+    public static final Codec<ContestData> CODEC = RecordCodecBuilder.create(inst -> inst.group(
+            Codec.BOOL.optionalFieldOf("running", false).forGetter(d -> d.running),
+            Codec.INT.optionalFieldOf("rule", 0).forGetter(d -> d.ruleMode),
+            Codec.LONG.optionalFieldOf("start", 0L).forGetter(d -> d.startGame),
+            Codec.LONG.optionalFieldOf("end", 0L).forGetter(d -> d.endGame),
+            Codec.INT.optionalFieldOf("minutes", 0).forGetter(d -> d.minutes),
+            Codec.BOOL.optionalFieldOf("settled", false).forGetter(d -> d.settled),
+            Codec.INT.optionalFieldOf("last_rule", 0).forGetter(d -> d.lastRuleMode),
+            Codec.LONG.optionalFieldOf("last_start", 0L).forGetter(d -> d.lastStart),
+            Codec.LONG.optionalFieldOf("last_end", 0L).forGetter(d -> d.lastEnd),
+            Codec.INT.optionalFieldOf("last_players", 0).forGetter(d -> d.lastPlayers),
+            Codec.LONG.optionalFieldOf("last_auto", 0L).forGetter(d -> d.lastAutoStartGame),
+            Score.CODEC.listOf().optionalFieldOf("scores", List.of())
+                    .forGetter(ContestData::scoresForSave),
+            Codec.STRING.listOf().optionalFieldOf("last_board", List.of())
+                    .forGetter(d -> List.copyOf(d.lastBoard)),
+            PendingCoins.CODEC.listOf().optionalFieldOf("pending_coins", List.of())
+                    .forGetter(ContestData::pendingCoinsForSave),
+            PendingTitles.CODEC.listOf().optionalFieldOf("pending_titles", List.of())
+                    .forGetter(ContestData::pendingTitlesForSave)
+    ).apply(inst, ContestData::new));
+
+    /** 26.1.2 的 SavedDataType；文件名仍叫 {@code anglertackle_contest.dat}。 */
+    public static final SavedDataType<ContestData> TYPE = new SavedDataType<>(
+            Identifier.withDefaultNamespace(FILE_ID), ContestData::new, CODEC);
+
     public ContestData() {
+    }
+
+    /** codec 读档入口：与旧 load 同口径（成绩按玩家去重、后写覆盖先写）。 */
+    private ContestData(boolean running, int ruleMode, long startGame, long endGame, int minutes,
+                        boolean settled, int lastRuleMode, long lastStart, long lastEnd, int lastPlayers,
+                        long lastAutoStartGame, List<Score> scores, List<String> lastBoard,
+                        List<PendingCoins> pendingCoins, List<PendingTitles> pendingTitles) {
+        this.running = running;
+        this.ruleMode = ruleMode;
+        this.startGame = startGame;
+        this.endGame = endGame;
+        this.minutes = minutes;
+        this.settled = settled;
+        this.lastRuleMode = lastRuleMode;
+        this.lastStart = lastStart;
+        this.lastEnd = lastEnd;
+        this.lastPlayers = lastPlayers;
+        this.lastAutoStartGame = lastAutoStartGame;
+        for (Score s : scores) {
+            Contest.Entry e = new Contest.Entry(s.player(), s.name(), s.value(), s.at(), s.catches(),
+                    s.fish(), s.kg(), s.len(), s.grade(), s.tier());
+            this.scores.put(e.player(), e);
+        }
+        this.lastBoard.addAll(lastBoard);
+        for (PendingCoins p : pendingCoins) {
+            this.pendingCoins.put(p.player(), p.coins());
+        }
+        for (PendingTitles p : pendingTitles) {
+            this.pendingTitles.put(p.player(), p.title());
+        }
+    }
+
+    private List<Score> scoresForSave() {
+        List<Score> out = new ArrayList<>(this.scores.size());
+        for (Contest.Entry e : this.scores.values()) {
+            out.add(new Score(e.player(), e.name() == null ? "" : e.name(), e.value(), e.atTick(),
+                    e.catches(), e.fishId() == null ? "" : e.fishId(), e.weightKg(), e.lengthCm(),
+                    e.grade() == null ? "" : e.grade(), e.tier()));
+        }
+        return out;
+    }
+
+    private List<PendingCoins> pendingCoinsForSave() {
+        List<PendingCoins> out = new ArrayList<>(this.pendingCoins.size());
+        for (Map.Entry<UUID, Long> e : this.pendingCoins.entrySet()) {
+            out.add(new PendingCoins(e.getKey(), e.getValue()));
+        }
+        return out;
+    }
+
+    private List<PendingTitles> pendingTitlesForSave() {
+        List<PendingTitles> out = new ArrayList<>(this.pendingTitles.size());
+        for (Map.Entry<UUID, String> e : this.pendingTitles.entrySet()) {
+            out.add(new PendingTitles(e.getKey(), e.getValue()));
+        }
+        return out;
     }
 
     /** 当前赛制（按下标取，开赛时钉死的那个）。 */
@@ -120,125 +238,8 @@ public class ContestData extends SavedData {
         return b.weightKg() > a.weightKg() ? b : a;
     }
 
-    // ---------------------------------------------------------------- 存取
-    private static CompoundTag entryTag(Contest.Entry e) {
-        CompoundTag t = new CompoundTag();
-        t.putIntArray("uuid", UUIDUtil.uuidToIntArray(e.player()));
-        t.putString("name", e.name() == null ? "" : e.name());
-        t.putDouble("value", e.value());
-        t.putLong("at", e.atTick());
-        t.putInt("catches", e.catches());
-        t.putString("fish", e.fishId() == null ? "" : e.fishId());
-        t.putDouble("kg", e.weightKg());
-        t.putDouble("len", e.lengthCm());
-        t.putString("grade", e.grade() == null ? "" : e.grade());
-        t.putInt("tier", e.tier());
-        return t;
-    }
-
-    private static Contest.Entry entryFrom(CompoundTag t) {
-        return new Contest.Entry(t.getIntArray("uuid").map(UUIDUtil::uuidFromIntArray).orElseThrow(),
-                t.getStringOr("name", ""), t.getDoubleOr("value", 0.0),
-                t.getLongOr("at", 0L), t.getIntOr("catches", 0), t.getStringOr("fish", ""),
-                t.getDoubleOr("kg", 0.0), t.getDoubleOr("len", 0.0), t.getStringOr("grade", ""),
-                t.getIntOr("tier", 0));
-    }
-
-    public static ContestData load(CompoundTag tag, HolderLookup.Provider registries) {
-        ContestData d = new ContestData();
-        d.running = tag.getBooleanOr("running", false);
-        d.ruleMode = tag.getIntOr("rule", 0);
-        d.startGame = tag.getLongOr("start", 0L);
-        d.endGame = tag.getLongOr("end", 0L);
-        d.minutes = tag.getIntOr("minutes", 0);
-        d.settled = tag.getBooleanOr("settled", false);
-        d.lastRuleMode = tag.getIntOr("last_rule", 0);
-        d.lastStart = tag.getLongOr("last_start", 0L);
-        d.lastEnd = tag.getLongOr("last_end", 0L);
-        d.lastPlayers = tag.getIntOr("last_players", 0);
-        d.lastAutoStartGame = tag.getLongOr("last_auto", 0L);
-        ListTag sc = NbtCompat.listOf(tag, "scores", Tag.TAG_COMPOUND);
-        for (int i = 0; i < sc.size(); i++) {
-            try {
-                Contest.Entry e = entryFrom(sc.getCompoundOrEmpty(i));
-                d.scores.put(e.player(), e);
-            } catch (Throwable ignored) {
-                // 坏行跳过：一份坏数据不该让整场读不出来
-            }
-        }
-        ListTag lb = NbtCompat.listOf(tag, "last_board", Tag.TAG_STRING);
-        for (int i = 0; i < lb.size(); i++) {
-            d.lastBoard.add(lb.getStringOr(i, ""));
-        }
-        ListTag pc = NbtCompat.listOf(tag, "pending_coins", Tag.TAG_COMPOUND);
-        for (int i = 0; i < pc.size(); i++) {
-            CompoundTag t = pc.getCompoundOrEmpty(i);
-            try {
-                d.pendingCoins.put(t.getIntArray("uuid").map(UUIDUtil::uuidFromIntArray).orElseThrow(),
-                        t.getLongOr("coins", 0L));
-            } catch (Throwable ignored) {
-                // 同上
-            }
-        }
-        ListTag pt = NbtCompat.listOf(tag, "pending_titles", Tag.TAG_COMPOUND);
-        for (int i = 0; i < pt.size(); i++) {
-            CompoundTag t = pt.getCompoundOrEmpty(i);
-            try {
-                d.pendingTitles.put(t.getIntArray("uuid").map(UUIDUtil::uuidFromIntArray).orElseThrow(),
-                        t.getStringOr("title", ""));
-            } catch (Throwable ignored) {
-                // 同上
-            }
-        }
-        return d;
-    }
-
-    @Override
-    public CompoundTag save(CompoundTag tag, HolderLookup.Provider registries) {
-        tag.putBoolean("running", this.running);
-        tag.putInt("rule", this.ruleMode);
-        tag.putLong("start", this.startGame);
-        tag.putLong("end", this.endGame);
-        tag.putInt("minutes", this.minutes);
-        tag.putBoolean("settled", this.settled);
-        tag.putInt("last_rule", this.lastRuleMode);
-        tag.putLong("last_start", this.lastStart);
-        tag.putLong("last_end", this.lastEnd);
-        tag.putInt("last_players", this.lastPlayers);
-        tag.putLong("last_auto", this.lastAutoStartGame);
-        ListTag sc = new ListTag();
-        for (Contest.Entry e : this.scores.values()) {
-            sc.add(entryTag(e));
-        }
-        tag.put("scores", sc);
-        ListTag lb = new ListTag();
-        for (String row : this.lastBoard) {
-            lb.add(net.minecraft.nbt.StringTag.valueOf(row));
-        }
-        tag.put("last_board", lb);
-        ListTag pc = new ListTag();
-        for (Map.Entry<UUID, Long> e : this.pendingCoins.entrySet()) {
-            CompoundTag t = new CompoundTag();
-            t.putIntArray("uuid", UUIDUtil.uuidToIntArray(e.getKey()));
-            t.putLong("coins", e.getValue());
-            pc.add(t);
-        }
-        tag.put("pending_coins", pc);
-        ListTag pt = new ListTag();
-        for (Map.Entry<UUID, String> e : this.pendingTitles.entrySet()) {
-            CompoundTag t = new CompoundTag();
-            t.putIntArray("uuid", UUIDUtil.uuidToIntArray(e.getKey()));
-            t.putString("title", e.getValue());
-            pt.add(t);
-        }
-        tag.put("pending_titles", pt);
-        return tag;
-    }
-
     public static ContestData get(ServerLevel level) {
-        return level.getDataStorage().computeIfAbsent(
-                new SavedData.Factory<>(ContestData::new, ContestData::load),
-                FILE_ID);
+        return level.getDataStorage().computeIfAbsent(TYPE);
     }
 
     public static ContestData get(MinecraftServer server) {

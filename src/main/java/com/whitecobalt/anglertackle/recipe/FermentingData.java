@@ -1,21 +1,20 @@
 package com.whitecobalt.anglertackle.recipe;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
-import com.whitecobalt.anglertackle.util.NbtCompat;
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.HolderLookup;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
-import net.minecraft.nbt.Tag;
-import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.saveddata.SavedData;
+import net.minecraft.world.level.saveddata.SavedDataType;
 
 /**
  * 「正在发酵的木桶」清单 —— 用户 2026-10-11 定案的做法：
@@ -40,7 +39,7 @@ import net.minecraft.world.level.saveddata.SavedData;
  */
 public class FermentingData extends SavedData {
 
-    /** 存档文件名（`data/anglertackle_fermenting.dat`）。**不许改名**。 */
+    /** 存档文件名（26.1.2 起落在 `data/<namespace>/anglertackle_fermenting.dat`，见 {@link #TYPE}）。**不许改名**。 */
     public static final String FILE_ID = "anglertackle_fermenting";
 
     /** 发酵时长：**一天**（用户口径）= 24000 游戏刻。 */
@@ -60,47 +59,53 @@ public class FermentingData extends SavedData {
 
         /** 清单的键：同维度同坐标只留一条（重复右键同一个桶不该叠加 ✓）。 */
         public String key() {
-            return this.dimension.location() + "@" + this.pos.asLong();
+            return this.dimension.identifier() + "@" + this.pos.asLong();
         }
     }
+
+    /**
+     * 一条记录的 codec —— **NBT 键与旧 {@code save()/load()} 逐字一致**：
+     * {@code dim}（string）/ {@code pos}（long）/ {@code start}（long）。
+     * 缺 {@code pos}/{@code start} 时按旧读法取 0（{@code getLongOr(..., 0)}）。
+     */
+    private static final Codec<Entry> ENTRY_CODEC = RecordCodecBuilder.create(inst -> inst.group(
+            Identifier.CODEC.fieldOf("dim").forGetter(e -> e.dimension.identifier()),
+            Codec.LONG.optionalFieldOf("pos", 0L).forGetter(e -> e.pos.asLong()),
+            Codec.LONG.optionalFieldOf("start", 0L).forGetter(e -> e.startTick)
+    ).apply(inst, (dim, pos, start) ->
+            new Entry(ResourceKey.create(Registries.DIMENSION, dim), BlockPos.of(pos), start)));
+
+    /** 整份存档的 codec：{@code pending} = 旧存档里那张 list（元素键逐字不变）。 */
+    public static final Codec<FermentingData> CODEC = RecordCodecBuilder.create(inst -> inst.group(
+            ENTRY_CODEC.listOf().optionalFieldOf("pending", List.of())
+                    .forGetter(d -> List.copyOf(d.pending.values()))
+    ).apply(inst, FermentingData::new));
+
+    /**
+     * 26.1.2 的 SavedDataType（`SavedData` 自己已经不带 save/load 了）。
+     *
+     * <p>⚠ 文件路径：{@code SavedDataStorage#getDataFile} 现在按
+     * {@code dataFolder.resolve(id.getNamespace(), id.getPath())} 取文件 ⇒ 平台必然多一层命名空间目录。
+     * 这里用 {@code withDefaultNamespace(FILE_ID)} 保住**文件名一个字不变**
+     * （{@code anglertackle_fermenting.dat}），只多了 {@code minecraft/} 这一层。
+     */
+    public static final SavedDataType<FermentingData> TYPE = new SavedDataType<>(
+            Identifier.withDefaultNamespace(FILE_ID), FermentingData::new, CODEC);
 
     private final Map<String, Entry> pending = new HashMap<>();
 
-    public static FermentingData load(CompoundTag tag, HolderLookup.Provider registries) {
-        FermentingData d = new FermentingData();
-        ListTag list = NbtCompat.listOf(tag, "pending", Tag.TAG_COMPOUND);
-        for (int i = 0; i < list.size(); i++) {
-            CompoundTag e = list.getCompoundOrEmpty(i);
-            Identifier dim = Identifier.tryParse(e.getStringOr("dim", ""));
-            if (dim == null) {
-                continue;   // 老/坏数据：跳过这一条，读档绝不因为这里崩
-            }
-            BlockPos pos = BlockPos.of(e.getLongOr("pos", 0L));
-            Entry entry = new Entry(ResourceKey.create(Registries.DIMENSION, dim), pos,
-                    e.getLongOr("start", 0L));
-            d.pending.put(entry.key(), entry);
-        }
-        return d;
+    public FermentingData() {
     }
 
-    @Override
-    public CompoundTag save(CompoundTag tag, HolderLookup.Provider registries) {
-        ListTag list = new ListTag();
-        for (Entry e : this.pending.values()) {
-            CompoundTag t = new CompoundTag();
-            t.putString("dim", e.dimension.location().toString());
-            t.putLong("pos", e.pos.asLong());
-            t.putLong("start", e.startTick);
-            list.add(t);
+    /** codec 读档入口：重复键按旧读法"后写覆盖先写"（{@code put}）。 */
+    private FermentingData(List<Entry> entries) {
+        for (Entry e : entries) {
+            this.pending.put(e.key(), e);
         }
-        tag.put("pending", list);
-        return tag;
     }
 
     public static FermentingData get(ServerLevel level) {
-        return level.getDataStorage().computeIfAbsent(
-                new SavedData.Factory<>(FermentingData::new, FermentingData::load),
-                FILE_ID);
+        return level.getDataStorage().computeIfAbsent(TYPE);
     }
 
     public static FermentingData get(MinecraftServer server) {
@@ -109,7 +114,7 @@ public class FermentingData extends SavedData {
 
     /** 记一条（右键木桶时调；同一个桶重复记会把开始时间**保留成最早那次** ✓）。 */
     public void remember(ResourceKey<Level> dimension, BlockPos pos, long now) {
-        String k = dimension.location() + "@" + pos.asLong();
+        String k = dimension.identifier() + "@" + pos.asLong();
         if (this.pending.containsKey(k)) {
             return;   // 已经记过了 —— 不许刷新开始时间，否则玩家反复右键就永远不发效 ✗
         }

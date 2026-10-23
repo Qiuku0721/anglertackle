@@ -1,18 +1,19 @@
 package com.whitecobalt.anglertackle.recipe;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import com.whitecobalt.anglertackle.util.NbtCompat;
-import net.minecraft.core.HolderLookup;
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.UUIDUtil;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
-import net.minecraft.nbt.Tag;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.saveddata.SavedData;
+import net.minecraft.world.level.saveddata.SavedDataType;
 
 /**
  * 慢性风险的**累积计数**（汞 / 雪卡 / 二噁英）—— 用户 2026-10-11 定案 C①："**累积型**：
@@ -39,63 +40,85 @@ import net.minecraft.world.level.saveddata.SavedData;
  */
 public class PalatabilityLedger extends SavedData {
 
-    /** 存档文件名（`data/anglertackle_palatability.dat`）。**不许改名** —— 改名 = 老存档的计数全丢。 */
+    /** 存档文件名（`data/<namespace>/anglertackle_palatability.dat`）。**不许改名** —— 改名 = 老存档的计数全丢。 */
     public static final String FILE_ID = "anglertackle_palatability";
 
     /** 吃够多少次才触发一次。**这个数字是"慢性"的全部含义** —— 调它等于调这条机制的强度。 */
     public static final int THRESHOLD = 10;
 
+    /**
+     * 风险种类 → 已吃次数。**NBT 布局与旧 {@code save()/load()} 逐字一致**：
+     * 旧版是 {@code risks} 这个 CompoundTag（键 = 风险字符串，值 = int），
+     * 等价于 {@code Codec.unboundedMap(Codec.STRING, Codec.INT)}。
+     *
+     * <p>⚠ 旧 {@code load} 会**丢掉 <= 0 的项**（{@code if (v > 0)}），这里用 {@code xmap}
+     * 在解码方向保留同一过滤；编码方向原样写出（内存里本来就不会有 0）。
+     */
+    private static final Codec<Map<String, Integer>> RISKS_CODEC =
+            Codec.unboundedMap(Codec.STRING, Codec.INT).xmap(PalatabilityLedger::positiveOnly, m -> m);
+
+    /** 存档里的一条 {uuid, risks}。旧版是先读 uuid、再读 risks 表。 */
+    private record PlayerCounts(UUID player, Map<String, Integer> risks) {
+        private static final Codec<PlayerCounts> CODEC = RecordCodecBuilder.create(inst -> inst.group(
+                UUIDUtil.CODEC.fieldOf("uuid").forGetter(PlayerCounts::player),
+                RISKS_CODEC.optionalFieldOf("risks", Map.of()).forGetter(PlayerCounts::risks)
+        ).apply(inst, PlayerCounts::new));
+    }
+
+    /**
+     * 整份存档的 codec —— **顶层键 {@code players} 与旧版同名同类型**（list of compound）。
+     * 旧版会跳过"risks 为空"的玩家，这里在读写两侧都保持这个口径（空表不落盘）。
+     */
+    public static final Codec<PalatabilityLedger> CODEC = RecordCodecBuilder.create(inst -> inst.group(
+            PlayerCounts.CODEC.listOf().optionalFieldOf("players", List.of())
+                    .forGetter(PalatabilityLedger::playerCounts)
+    ).apply(inst, PalatabilityLedger::new));
+
+    /** 26.1.2 的 SavedDataType；文件名仍叫 {@code anglertackle_palatability.dat}。 */
+    public static final SavedDataType<PalatabilityLedger> TYPE = new SavedDataType<>(
+            Identifier.withDefaultNamespace(FILE_ID), PalatabilityLedger::new, CODEC);
+
     /** 玩家 → （风险种类 → 已吃次数）。风险种类见 {@link FishPalatability#chronicRisk}。 */
     private final Map<UUID, Map<String, Integer>> counts = new HashMap<>();
 
-    public static PalatabilityLedger load(CompoundTag tag, HolderLookup.Provider registries) {
-        PalatabilityLedger d = new PalatabilityLedger();
-        ListTag players = NbtCompat.listOf(tag, "players", Tag.TAG_COMPOUND);
-        for (int i = 0; i < players.size(); i++) {
-            CompoundTag p = players.getCompoundOrEmpty(i);
-            if (!p.getIntArray("uuid").map(a -> a.length == 4).orElse(false)) {
-                continue;   // 老/坏数据：跳过这一条，不整个失败（读档绝不能因为这里崩）
-            }
-            CompoundTag risks = p.getCompoundOrEmpty("risks");
-            Map<String, Integer> m = new HashMap<>();
-            for (String k : risks.keySet()) {
-                int v = risks.getIntOr(k, 0);
-                if (v > 0) {
-                    m.put(k, v);
-                }
-            }
-            if (!m.isEmpty()) {
-                d.counts.put(p.getIntArray("uuid").map(UUIDUtil::uuidFromIntArray).orElseThrow(), m);
-            }
-        }
-        return d;
+    public PalatabilityLedger() {
     }
 
-    @Override
-    public CompoundTag save(CompoundTag tag, HolderLookup.Provider registries) {
-        ListTag players = new ListTag();
+    /** codec 读档入口：与旧读法同口径（空表跳过、同 UUID 后者覆盖）。 */
+    private PalatabilityLedger(List<PlayerCounts> players) {
+        for (PlayerCounts p : players) {
+            if (!p.risks().isEmpty()) {
+                this.counts.put(p.player(), new HashMap<>(p.risks()));
+            }
+        }
+    }
+
+    /** 旧 load 里的 {@code if (v > 0)}。 */
+    private static Map<String, Integer> positiveOnly(Map<String, Integer> raw) {
+        Map<String, Integer> out = new HashMap<>();
+        for (Map.Entry<String, Integer> e : raw.entrySet()) {
+            if (e.getValue() != null && e.getValue() > 0) {
+                out.put(e.getKey(), e.getValue());
+            }
+        }
+        return out;
+    }
+
+    /** 写出用：与旧 save 一样，**清零的玩家不往存档里写垃圾**。 */
+    private List<PlayerCounts> playerCounts() {
+        List<PlayerCounts> out = new ArrayList<>();
         for (Map.Entry<UUID, Map<String, Integer>> e : this.counts.entrySet()) {
             if (e.getValue().isEmpty()) {
-                continue;   // 清零的玩家不往存档里写垃圾
+                continue;
             }
-            CompoundTag p = new CompoundTag();
-            p.putIntArray("uuid", UUIDUtil.uuidToIntArray(e.getKey()));
-            CompoundTag risks = new CompoundTag();
-            for (Map.Entry<String, Integer> r : e.getValue().entrySet()) {
-                risks.putInt(r.getKey(), r.getValue());
-            }
-            p.put("risks", risks);
-            players.add(p);
+            out.add(new PlayerCounts(e.getKey(), Map.copyOf(e.getValue())));
         }
-        tag.put("players", players);
-        return tag;
+        return out;
     }
 
     /** 取（或建）主世界那份 —— 与排行榜同一个入口形态（只有 {@code MinecraftServer} 时也够用）。 */
     public static PalatabilityLedger get(ServerLevel level) {
-        return level.getDataStorage().computeIfAbsent(
-                new SavedData.Factory<>(PalatabilityLedger::new, PalatabilityLedger::load),
-                FILE_ID);
+        return level.getDataStorage().computeIfAbsent(TYPE);
     }
 
     public static PalatabilityLedger get(MinecraftServer server) {

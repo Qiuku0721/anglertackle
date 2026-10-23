@@ -6,6 +6,8 @@ import com.whitecobalt.anglertackle.player.FishermanProgress;
 import com.whitecobalt.anglertackle.player.MailBox;
 import com.whitecobalt.anglertackle.player.PlayerFishingData;
 import com.whitecobalt.anglertackle.player.PlayerTitles;
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.MapCodec;
 import com.whitecobalt.anglertackle.player.QuestData;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.attachment.AttachmentType;
@@ -52,7 +54,7 @@ public final class ModAttachments {
     public static final DeferredHolder<AttachmentType<?>, AttachmentType<PlayerFishingData>> PLAYER_DATA =
             ATTACHMENT_TYPES.register("player_data", () -> AttachmentType
                     .builder(() -> PlayerFishingData.EMPTY)
-                    .serialize(PlayerFishingData.CODEC)
+                    .serialize(asMap(PlayerFishingData.CODEC))
                     .copyOnDeath()
                     .build());
 
@@ -69,7 +71,7 @@ public final class ModAttachments {
     public static final DeferredHolder<AttachmentType<?>, AttachmentType<FishermanProgress>> FISHERMAN =
             ATTACHMENT_TYPES.register("fisherman", () -> AttachmentType
                     .builder(() -> FishermanProgress.EMPTY)
-                    .serialize(FishermanProgress.CODEC)
+                    .serialize(asMap(FishermanProgress.CODEC))
                     .copyOnDeath()
                     .build());
 
@@ -85,7 +87,7 @@ public final class ModAttachments {
     public static final DeferredHolder<AttachmentType<?>, AttachmentType<PlayerTitles>> PLAYER_TITLES =
             ATTACHMENT_TYPES.register("player_titles", () -> AttachmentType
                     .builder(() -> PlayerTitles.EMPTY)
-                    .serialize(PlayerTitles.CODEC)
+                    .serialize(asMap(PlayerTitles.CODEC))
                     .copyOnDeath()
                     .build());
 
@@ -100,7 +102,7 @@ public final class ModAttachments {
     public static final DeferredHolder<AttachmentType<?>, AttachmentType<MailBox>> PLAYER_MAILS =
             ATTACHMENT_TYPES.register("player_mails", () -> AttachmentType
                     .builder(() -> MailBox.EMPTY)
-                    .serialize(MailBox.CODEC)
+                    .serialize(asMap(MailBox.CODEC))
                     .copyOnDeath()
                     .build());
 
@@ -117,7 +119,7 @@ public final class ModAttachments {
     public static final DeferredHolder<AttachmentType<?>, AttachmentType<QuestData>> PLAYER_QUESTS =
             ATTACHMENT_TYPES.register("player_quests", () -> AttachmentType
                     .builder(() -> QuestData.EMPTY)
-                    .serialize(QuestData.CODEC)
+                    .serialize(asMap(QuestData.CODEC))
                     .copyOnDeath()
                     .build());
 
@@ -133,9 +135,25 @@ public final class ModAttachments {
     public static final DeferredHolder<AttachmentType<?>, AttachmentType<AchievementData>> PLAYER_ACHIEVEMENTS =
             ATTACHMENT_TYPES.register("player_achievements", () -> AttachmentType
                     .builder(() -> AchievementData.EMPTY)
-                    .serialize(AchievementData.CODEC)
+                    .serialize(asMap(AchievementData.CODEC))
                     .copyOnDeath()
                     .build());
+
+    /**
+     * 把数据类自己的 {@link Codec} 适配成附件 API 要的 {@link MapCodec}。
+     *
+     * <p>26.1.2 的 {@code AttachmentType.Builder} 只收 {@code IAttachmentSerializer} 或 {@code MapCodec}
+     * （旧的 Codec 版 serialize 重载已经删了）。DFU 官方给的桥就是
+     * {@link MapCodec#assumeMapUnsafe(Codec)}；这里六个 {@code CODEC} 全是
+     * {@code RecordCodecBuilder} 产出的 record codec（编码结果一定是 map），所以这个前提成立。
+     *
+     * <p>为什么不用自写 {@code IAttachmentSerializer}：内置的 {@code serialize(MapCodec)} 做的正是
+     * {@code output.store(mapCodec, value)} / {@code input.read(mapCodec)}，写出来的 NBT
+     * 与旧版 Codec 版 serialize 完全同形（附件键下直接是各字段），没有多一层 compound。
+     */
+    private static <T> MapCodec<T> asMap(Codec<T> codec) {
+        return MapCodec.assumeMapUnsafe(codec);
+    }
 
     public static void register(IEventBus modBus) {
         ATTACHMENT_TYPES.register(modBus);

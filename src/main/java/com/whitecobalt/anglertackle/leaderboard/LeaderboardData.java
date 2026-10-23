@@ -1,22 +1,20 @@
 package com.whitecobalt.anglertackle.leaderboard;
 
-import com.whitecobalt.anglertackle.util.NbtCompat;
-
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import net.minecraft.core.Holder;
-import net.minecraft.core.HolderLookup;
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.UUIDUtil;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
-import net.minecraft.nbt.Tag;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.saveddata.SavedData;
+import net.minecraft.world.level.saveddata.SavedDataType;
 
 /**
  * 排行榜的**存档层**（2026-10-10 M1 第 1 步 ✓）。
@@ -40,7 +38,7 @@ import net.minecraft.world.level.saveddata.SavedData;
  */
 public class LeaderboardData extends SavedData {
 
-    /** 数据文件名（存档目录里的 `data/anglertackle_leaderboard.dat` ✓）。**不许改名** ✗ —— 改名 = 老存档的榜全丢 ✓。 */
+    /** 数据文件名（26.1.2 起落在 `data/<namespace>/anglertackle_leaderboard.dat`）。**不许改名** ✗ —— 改名 = 老存档的榜全丢 ✓。 */
     public static final String FILE_ID = "anglertackle_leaderboard";
 
     /** 一条榜单纪录 ✓。 */
@@ -63,38 +61,49 @@ public class LeaderboardData extends SavedData {
         public Record(UUID player) {
             this.player = player;
         }
-
-        public CompoundTag save() {
-            CompoundTag t = new CompoundTag();
-            t.putIntArray("player", UUIDUtil.uuidToIntArray(this.player));
-            t.putString("name", this.playerName);
-            t.putDouble("value", this.value);
-            t.putString("fish", this.fishId);
-            t.putDouble("kg", this.weightKg);
-            t.putDouble("len", this.lengthCm);
-            t.putString("grade", this.grade);
-            t.putInt("rounds", this.rounds);
-            t.putInt("ticks", this.ticks);
-            t.putInt("tier", this.tier);
-            t.putLong("at", this.epochMs);
-            return t;
-        }
-
-        public static Record load(CompoundTag t) {
-            Record r = new Record(t.getIntArray("player").map(UUIDUtil::uuidFromIntArray).orElseThrow());
-            r.playerName = t.getStringOr("name", "");
-            r.value = t.getDoubleOr("value", 0.0);
-            r.fishId = t.getStringOr("fish", "");
-            r.weightKg = t.getDoubleOr("kg", 0.0);
-            r.lengthCm = t.getDoubleOr("len", 0.0);
-            r.grade = t.getStringOr("grade", "");
-            r.rounds = t.getIntOr("rounds", 0);
-            r.ticks = t.getIntOr("ticks", 0);
-            r.tier = t.getIntOr("tier", 0);
-            r.epochMs = t.getLongOr("at", 0L);
-            return r;
-        }
     }
+
+    /**
+     * 存档里的一条纪录 —— **NBT 键与旧 {@code Record.save()} 逐字一致**：
+     * {@code player}(int[4]) / {@code name} / {@code value} / {@code fish} / {@code kg} / {@code len} /
+     * {@code grade} / {@code rounds} / {@code ticks} / {@code tier} / {@code at}；
+     * 外层旧 save 另外补的 {@code key} 也保持同名（旧 load 靠它做表键）。
+     */
+    private record Entry(String key, UUID player, String playerName, double value, String fishId,
+                         double weightKg, double lengthCm, String grade, int rounds, int ticks, int tier,
+                         long epochMs) {
+        private static final Codec<Entry> CODEC = RecordCodecBuilder.create(inst -> inst.group(
+                Codec.STRING.optionalFieldOf("key", "").forGetter(Entry::key),
+                UUIDUtil.CODEC.fieldOf("player").forGetter(Entry::player),
+                Codec.STRING.optionalFieldOf("name", "").forGetter(Entry::playerName),
+                Codec.DOUBLE.optionalFieldOf("value", 0.0).forGetter(Entry::value),
+                Codec.STRING.optionalFieldOf("fish", "").forGetter(Entry::fishId),
+                Codec.DOUBLE.optionalFieldOf("kg", 0.0).forGetter(Entry::weightKg),
+                Codec.DOUBLE.optionalFieldOf("len", 0.0).forGetter(Entry::lengthCm),
+                Codec.STRING.optionalFieldOf("grade", "").forGetter(Entry::grade),
+                Codec.INT.optionalFieldOf("rounds", 0).forGetter(Entry::rounds),
+                Codec.INT.optionalFieldOf("ticks", 0).forGetter(Entry::ticks),
+                Codec.INT.optionalFieldOf("tier", 0).forGetter(Entry::tier),
+                Codec.LONG.optionalFieldOf("at", 0L).forGetter(Entry::epochMs)
+        ).apply(inst, Entry::new));
+    }
+
+    /**
+     * {@code boards} = 旧存档里的那个 compound（键 = {@link Leaderboard.Board#id()}，值 = 纪录 list）。
+     * 旧 save 会把**每个**维度都写一遍（哪怕是空表），这里 {@link #encodeBoards()} 保持同样口径。
+     */
+    private static final Codec<Map<String, List<Entry>>> BOARDS_CODEC =
+            Codec.unboundedMap(Codec.STRING, Entry.CODEC.listOf());
+
+    /** 整份存档的 codec：顶层键 {@code boards} 与旧版同名同类型。 */
+    public static final Codec<LeaderboardData> CODEC = RecordCodecBuilder.create(inst -> inst.group(
+            BOARDS_CODEC.optionalFieldOf("boards", Map.of())
+                    .forGetter(LeaderboardData::encodeBoards)
+    ).apply(inst, LeaderboardData::new));
+
+    /** 26.1.2 的 SavedDataType；文件名仍叫 {@code anglertackle_leaderboard.dat}。 */
+    public static final SavedDataType<LeaderboardData> TYPE = new SavedDataType<>(
+            Identifier.withDefaultNamespace(FILE_ID), LeaderboardData::new, CODEC);
 
     /** 每个维度一张表 ✓（键 = 玩家 UUID ✓；按鱼种榜的键是 `玩家|鱼种` ✓，见 {@link #keyOf}）。 */
     private final Map<Leaderboard.Board, Map<String, Record>> boards = new HashMap<>();
@@ -103,6 +112,49 @@ public class LeaderboardData extends SavedData {
         for (Leaderboard.Board b : Leaderboard.Board.values()) {
             this.boards.put(b, new HashMap<>());
         }
+    }
+
+    /**
+     * codec 读档入口 —— 与旧 {@code load} 同口径：
+     * 只认 {@link Leaderboard.Board} 里定义的维度、空键的行跳过（旧版 {@code if (!key.isEmpty())}）。
+     */
+    private LeaderboardData(Map<String, List<Entry>> encoded) {
+        this();
+        for (Leaderboard.Board b : Leaderboard.Board.values()) {
+            Map<String, Record> table = this.boards.get(b);
+            for (Entry e : encoded.getOrDefault(b.id(), List.of())) {
+                if (e.key().isEmpty()) {
+                    continue;
+                }
+                Record r = new Record(e.player());
+                r.playerName = e.playerName();
+                r.value = e.value();
+                r.fishId = e.fishId();
+                r.weightKg = e.weightKg();
+                r.lengthCm = e.lengthCm();
+                r.grade = e.grade();
+                r.rounds = e.rounds();
+                r.ticks = e.ticks();
+                r.tier = e.tier();
+                r.epochMs = e.epochMs();
+                table.put(e.key(), r);
+            }
+        }
+    }
+
+    /** 写出用：每个维度都写（旧 save 同样口径），行内带 {@code key}。 */
+    private Map<String, List<Entry>> encodeBoards() {
+        Map<String, List<Entry>> out = new LinkedHashMap<>();
+        for (Leaderboard.Board b : Leaderboard.Board.values()) {
+            List<Entry> list = new ArrayList<>();
+            for (Map.Entry<String, Record> en : this.boards.get(b).entrySet()) {
+                Record r = en.getValue();
+                list.add(new Entry(en.getKey(), r.player, r.playerName, r.value, r.fishId, r.weightKg,
+                        r.lengthCm, r.grade, r.rounds, r.ticks, r.tier, r.epochMs));
+            }
+            out.put(b.id(), list);
+        }
+        return out;
     }
 
     /** 按鱼种榜要分鱼种存 ✓，其余维度按玩家存 ✓。 */
@@ -114,7 +166,7 @@ public class LeaderboardData extends SavedData {
      * **联赛**成绩的键前缀（`docs/39` §6.1，2026-10-13）。
      *
      * <p>为什么"前缀 + 同一张表"而不是另开一套表：这样**存读盘一行都不用改**
-     * （{@link #save}/{@link #load} 本来就是按字符串键遍历的）✓，而且"联赛期间的同一个维度"
+     * （{@link #CODEC} 本来就是按字符串键遍历的）✓，而且"联赛期间的同一个维度"
      * 天然复用完全相同的更新规则（{@link #write}）⇒ 不会出现两套口径 ✓。
      *
      * <p>⚠ 前缀用大写 {@code L}：玩家 UUID 与鱼种 id 都以十六进制字符/小写字母开头，
@@ -200,46 +252,9 @@ public class LeaderboardData extends SavedData {
         return this.boards.getOrDefault(board, Map.of());
     }
 
-    // ---------------------------------------------------------------- 存取
-
-    public static LeaderboardData load(CompoundTag tag, HolderLookup.Provider registries) {
-        LeaderboardData d = new LeaderboardData();
-        CompoundTag all = tag.getCompoundOrEmpty("boards");
-        for (Leaderboard.Board b : Leaderboard.Board.values()) {
-            ListTag list = NbtCompat.listOf(all, b.id(), Tag.TAG_COMPOUND);
-            Map<String, Record> table = d.boards.get(b);
-            for (int i = 0; i < list.size(); i++) {
-                CompoundTag e = list.getCompoundOrEmpty(i);
-                String key = e.getStringOr("key", "");
-                if (!key.isEmpty()) {
-                    table.put(key, Record.load(e));
-                }
-            }
-        }
-        return d;
-    }
-
-    @Override
-    public CompoundTag save(CompoundTag tag, HolderLookup.Provider registries) {
-        CompoundTag all = new CompoundTag();
-        for (Leaderboard.Board b : Leaderboard.Board.values()) {
-            ListTag list = new ListTag();
-            for (Map.Entry<String, Record> en : this.boards.get(b).entrySet()) {
-                CompoundTag e = en.getValue().save();
-                e.putString("key", en.getKey());
-                list.add(e);
-            }
-            all.put(b.id(), list);
-        }
-        tag.put("boards", all);
-        return tag;
-    }
-
     /** 取（或建）某个维度的榜 ✓。传 {@code ServerLevel} 是有意的 ✓：榜跟着**那个世界**走 ✓。 */
     public static LeaderboardData get(ServerLevel level) {
-        return level.getDataStorage().computeIfAbsent(
-                new SavedData.Factory<>(LeaderboardData::new, LeaderboardData::load),
-                FILE_ID);
+        return level.getDataStorage().computeIfAbsent(TYPE);
     }
 
     /** 备用入口：只有 {@code MinecraftServer} 时取主世界那份 ✓（指令/界面用得到 ✓）。 */
