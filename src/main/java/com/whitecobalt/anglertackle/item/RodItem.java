@@ -10,7 +10,7 @@ import net.minecraft.core.Holder;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
-import net.minecraft.world.InteractionResultHolder;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
@@ -158,11 +158,11 @@ public class RodItem extends Item implements HasQuality {
             return net.minecraft.world.InteractionResult.PASS;
         }
         FishingManager.get().castIntoIceHole(player, ctx.getClickedPos());
-        return net.minecraft.world.InteractionResult.sidedSuccess(ctx.getLevel().isClientSide());
+        return ctx.getLevel().isClientSide() ? net.minecraft.world.InteractionResult.SUCCESS : net.minecraft.world.InteractionResult.SUCCESS_SERVER;
     }
 
     @Override
-    public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
+    public InteractionResult use(Level level, Player player, InteractionHand hand) {
         ItemStack stack = player.getItemInHand(hand);
         // 显式启动，不依赖调用方对返回值的处理
         player.startUsingItem(hand);
@@ -173,7 +173,7 @@ public class RodItem extends Item implements HasQuality {
         if (!level.isClientSide() && player instanceof ServerPlayer serverPlayer) {
             FishingManager.get().setReeling(serverPlayer, true);
         }
-        return InteractionResultHolder.consume(stack);
+        return InteractionResult.CONSUME.heldItemTransformedTo(stack);
     }
 
     /**

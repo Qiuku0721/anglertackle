@@ -9,7 +9,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
-import net.minecraft.world.InteractionResultHolder;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -103,14 +103,14 @@ public class ChumItem extends Item {
     }
 
     @Override
-    public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
+    public InteractionResult use(Level level, Player player, InteractionHand hand) {
         ItemStack stack = player.getItemInHand(hand);
         // 客户端也要返回 consume，否则客户端不会播放挥手动作、也不预测扣物品
         if (level.isClientSide()) {
-            return InteractionResultHolder.consume(stack);
+            return InteractionResult.CONSUME.heldItemTransformedTo(stack);
         }
         if (!(player instanceof ServerPlayer serverPlayer) || !(level instanceof ServerLevel serverLevel)) {
-            return InteractionResultHolder.pass(stack);
+            return InteractionResult.PASS;
         }
 
         // ★ 抛出实体，不再"传送到水面"。
@@ -134,7 +134,7 @@ public class ChumItem extends Item {
             // 满员：不生成、不扣物品、不摆臂 —— 玩家手里那一叠窝料还在
             player.displayClientMessage(Component.translatable("message.anglertackle.chum_cap",
                     com.whitecobalt.anglertackle.fishing.ChumRegistry.cap()), true);
-            return InteractionResultHolder.fail(stack);
+            return InteractionResult.FAIL;
         }
 
         chum.throwBy(serverPlayer, this);
@@ -160,7 +160,7 @@ public class ChumItem extends Item {
             com.whitecobalt.anglertackle.AnglersTackle.LOGGER
                     .warn("[垂纶] 打窝计数失败（已忽略）：{}", t.toString());
         }
-        return InteractionResultHolder.consume(stack);
+        return InteractionResult.CONSUME.heldItemTransformedTo(stack);
     }
 
     @Override

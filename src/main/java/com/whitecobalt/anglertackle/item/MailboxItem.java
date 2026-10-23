@@ -2,7 +2,7 @@ package com.whitecobalt.anglertackle.item;
 
 import com.whitecobalt.anglertackle.network.MailActionPayload;
 import net.minecraft.world.InteractionHand;
-import net.minecraft.world.InteractionResultHolder;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -27,12 +27,12 @@ public class MailboxItem extends Item {
     }
 
     @Override
-    public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
+    public InteractionResult use(Level level, Player player, InteractionHand hand) {
         ItemStack stack = player.getItemInHand(hand);
         if (level.isClientSide()) {
             // 只在客户端发（服务端发就变成 S→C 了，方向反了）
             PacketDistributor.sendToServer(new MailActionPayload(MailActionPayload.OPEN, -1));
         }
-        return InteractionResultHolder.consume(stack);
+        return InteractionResult.CONSUME.heldItemTransformedTo(stack);
     }
 }

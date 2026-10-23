@@ -10,7 +10,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.ItemInteractionResult;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
@@ -305,31 +305,31 @@ public final class AquariumTank {
      * 生成一条 1 格长的鱼，它一出来就被挤到方块里，表现为"放生了但看不见"。
      * docs/20 §3.5 定的是往外螺旋找第一个满足 2×2×2 全是水的位置。
      */
-    public static ItemInteractionResult releaseFromPlatform(ItemStack stack, Level level,
+    public static InteractionResult releaseFromPlatform(ItemStack stack, Level level,
                                                             BlockPos pos, Player player) {
         if (!(stack.getItem() instanceof com.whitecobalt.anglertackle.item.FishItem)) {
-            return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+            return InteractionResult.TRY_WITH_EMPTY_HAND;
         }
         if (level.isClientSide()) {
-            return ItemInteractionResult.sidedSuccess(true);
+            return InteractionResult.SUCCESS;
         }
         FishData data = stack.get(ModDataComponents.FISH_DATA.get());
         if (data == null) {
-            return ItemInteractionResult.FAIL;
+            return InteractionResult.FAIL;
         }
         BlockPos pocket = findWaterPocket((ServerLevel) level, pos);
         if (pocket == null) {
             player.displayClientMessage(Component.translatable("message.anglertackle.release_no_water")
                     .withStyle(ChatFormatting.RED), true);
-            return ItemInteractionResult.FAIL;
+            return InteractionResult.FAIL;
         }
         if (!spawnInWater((ServerLevel) level, pocket, data)) {
-            return ItemInteractionResult.FAIL;
+            return InteractionResult.FAIL;
         }
         stack.shrink(1);
         player.displayClientMessage(Component.translatable("message.anglertackle.release_done")
                 .withStyle(ChatFormatting.GREEN), true);
-        return ItemInteractionResult.sidedSuccess(false);
+        return InteractionResult.SUCCESS_SERVER;
     }
 
     /**
@@ -386,9 +386,9 @@ public final class AquariumTank {
     }
 
     /** 这条鱼是被圈养的，不能就此放它出去（放生台/缸里取出的路径会清掉它）。 */
-    static ItemInteractionResult reject(Player player, String key, Object... args) {
+    static InteractionResult reject(Player player, String key, Object... args) {
         player.displayClientMessage(Component.translatable(key, args)
                 .withStyle(ChatFormatting.RED), true);
-        return ItemInteractionResult.FAIL;
+        return InteractionResult.FAIL;
     }
 }

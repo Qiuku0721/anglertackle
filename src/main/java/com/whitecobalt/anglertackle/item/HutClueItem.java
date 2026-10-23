@@ -8,7 +8,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
-import net.minecraft.world.InteractionResultHolder;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -80,11 +80,11 @@ public class HutClueItem extends Item {
     }
 
     @Override
-    public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
+    public InteractionResult use(Level level, Player player, InteractionHand hand) {
         ItemStack stack = player.getItemInHand(hand);
         if (level.isClientSide() || !(player instanceof ServerPlayer sp)) {
             // 客户端只回一个"用过了"的手势，真正的判定全在服务端
-            return InteractionResultHolder.sidedSuccess(stack, level.isClientSide());
+            return (level.isClientSide() ? InteractionResult.SUCCESS : InteractionResult.SUCCESS_SERVER).heldItemTransformedTo(stack);
         }
 
         ServerLevel serverLevel = sp.level();
@@ -98,7 +98,7 @@ public class HutClueItem extends Item {
             // 找不到**不消耗**：玩家会连着点好几次确认，扣掉了只会让人以为道具坏了
             sp.displayClientMessage(Component.translatable("message.anglertackle.hut_clue_none",
                     Tuning.compassSearchRadius()).withStyle(ChatFormatting.YELLOW), false);
-            return InteractionResultHolder.success(stack);
+            return InteractionResult.SUCCESS.heldItemTransformedTo(stack);
         }
 
         // 水平直线距离（玩家关心的"还要跑多远"就是它，不算高度差）
@@ -118,7 +118,7 @@ public class HutClueItem extends Item {
         com.whitecobalt.anglertackle.AnglersTackle.LOGGER.info(
                 "[垂纶] 定位线索：{} 找到小屋 {}（{} 格，{}）",
                 sp.getName().getString(), target.toShortString(), distance, compassWord(dx, dz));
-        return InteractionResultHolder.success(stack);
+        return InteractionResult.SUCCESS.heldItemTransformedTo(stack);
     }
 
     /** 目标在玩家的哪个方向（八个方位，和原版地图约定一致：北 = −Z）。 */

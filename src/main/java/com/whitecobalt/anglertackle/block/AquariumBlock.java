@@ -14,7 +14,6 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
-import net.minecraft.world.ItemInteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
@@ -158,21 +157,21 @@ public class AquariumBlock extends Block implements SimpleWaterloggedBlock {
      * 只说"放不下"的话，玩家会以为是坏了，而不是"缸太小"。
      */
     @Override
-    protected ItemInteractionResult useItemOn(ItemStack stack, BlockState state, Level level,
+    protected InteractionResult useItemOn(ItemStack stack, BlockState state, Level level,
                                               BlockPos pos, Player player, InteractionHand hand,
                                               BlockHitResult hit) {
         if (!(stack.getItem() instanceof com.whitecobalt.anglertackle.item.FishItem)) {
-            return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+            return InteractionResult.TRY_WITH_EMPTY_HAND;
         }
         // 客户端先乐观地当作成功（和 FishRackBlock 同一套路）：
         // 容量判定要用鱼的个体数据，那是服务端才有的，客户端算出来会和服务器不一致。
         if (level.isClientSide()) {
-            return ItemInteractionResult.sidedSuccess(true);
+            return InteractionResult.SUCCESS;
         }
         ServerLevel server = (ServerLevel) level;
         FishData data = stack.get(ModDataComponents.FISH_DATA.get());
         if (data == null) {
-            return ItemInteractionResult.FAIL;
+            return InteractionResult.FAIL;
         }
         Set<BlockPos> volume = AquariumTank.flood(server, pos);
         if (volume == null) {
@@ -187,12 +186,12 @@ public class AquariumBlock extends Block implements SimpleWaterloggedBlock {
         }
         Component name = stack.getHoverName();
         if (!AquariumTank.addFish(server, volume, data)) {
-            return ItemInteractionResult.FAIL;
+            return InteractionResult.FAIL;
         }
         stack.shrink(1);
         player.displayClientMessage(Component.translatable("message.anglertackle.aquarium_added", name)
                 .withStyle(ChatFormatting.GREEN), true);
-        return ItemInteractionResult.sidedSuccess(false);
+        return InteractionResult.SUCCESS_SERVER;
     }
 
     /**
@@ -216,7 +215,7 @@ public class AquariumBlock extends Block implements SimpleWaterloggedBlock {
             return InteractionResult.PASS;
         }
         if (level.isClientSide()) {
-            return InteractionResult.sidedSuccess(true);
+            return InteractionResult.SUCCESS;
         }
         com.whitecobalt.anglertackle.entity.ModFish pick = fish.get(0);
         double best = Double.MAX_VALUE;
@@ -237,7 +236,7 @@ public class AquariumBlock extends Block implements SimpleWaterloggedBlock {
         }
         player.displayClientMessage(Component.translatable("message.anglertackle.aquarium_removed",
                 out.getHoverName()).withStyle(ChatFormatting.YELLOW), true);
-        return InteractionResult.sidedSuccess(false);
+        return InteractionResult.SUCCESS_SERVER;
     }
 
     /**

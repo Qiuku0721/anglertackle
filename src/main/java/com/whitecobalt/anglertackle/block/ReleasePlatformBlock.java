@@ -3,7 +3,7 @@ package com.whitecobalt.anglertackle.block;
 import com.mojang.serialization.MapCodec;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.InteractionHand;
-import net.minecraft.world.ItemInteractionResult;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
@@ -42,18 +42,19 @@ public class ReleasePlatformBlock extends Block {
     }
 
     /**
-     * 右击交互。用 {@link ItemInteractionResult}（和 {@link FishRackBlock} 一致）：
-     * 1.21 的方块交互走这一套，返回 PASS 才会回退到"手上物品自己用"——
+     * 右击交互。用 {@link InteractionResult}（和 {@link FishRackBlock} 一致）：
+     * 26.1.2 的方块交互里，{@link InteractionResult#TRY_WITH_EMPTY_HAND} 表示
+     * "先试默认的 {@code useWithoutItem}"，它不消费这次右键时才会回退到"手上物品自己用"——
      * 也就是说不拿鱼右键时，水桶、骨粉这些该干嘛干嘛。
      *
-     * <p>这一层**刻意不做任何加工**，直接转发返回值。非 PASS 的那一侧由
+     * <p>这一层**刻意不做任何加工**，直接转发返回值。非默认交互的那一侧由
      * {@code AquariumTank} 负责，它按方块交互的惯例用
-     * {@link ItemInteractionResult#sidedSuccess(boolean)} 配 {@code level.isClientSide} 返回：
+     * {@link InteractionResult#SUCCESS}（客户端）／{@link InteractionResult#SUCCESS_SERVER}（服务端）：
      * 世界改动只在服务端做，客户端返回"成功"是为了把挥手动画和音效演出来 ——
      * 这就是本模组其它交互（见 {@link FishRackBlock#useItemOn}）一直在用的写法。
      */
     @Override
-    protected ItemInteractionResult useItemOn(ItemStack stack, BlockState state, Level level,
+    protected InteractionResult useItemOn(ItemStack stack, BlockState state, Level level,
                                               BlockPos pos, Player player, InteractionHand hand,
                                               BlockHitResult hit) {
         return com.whitecobalt.anglertackle.block.AquariumTank.releaseFromPlatform(stack, level, pos, player);

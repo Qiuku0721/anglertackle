@@ -5,7 +5,6 @@ import com.whitecobalt.anglertackle.entity.SeatEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
-import net.minecraft.world.ItemInteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.item.DyeColor;
@@ -64,25 +63,25 @@ public class StoolBlock extends Block {
      *   不同的外观，例如格子布 vs 纯色布，那是另一次改动 ✓）。
      */
     @Override
-    protected ItemInteractionResult useItemOn(ItemStack stack, BlockState state, Level level,
+    protected InteractionResult useItemOn(ItemStack stack, BlockState state, Level level,
                                               BlockPos pos, Player player, InteractionHand hand,
                                               net.minecraft.world.phys.BlockHitResult hit) {
         if (!state.hasProperty(CushionedStoolBlock.COLOR)) {
-            return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;   // 普通凳：不响应 ✓
+            return InteractionResult.TRY_WITH_EMPTY_HAND;   // 普通凳：不响应 ✓
         }
         if (!(stack.getItem() instanceof net.minecraft.world.item.BlockItem bi)
                 || !(bi.getBlock() instanceof WoolCarpetBlock carpet)) {
-            return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+            return InteractionResult.TRY_WITH_EMPTY_HAND;
         }
         DyeColor dye = carpet.getColor();
         if (state.getValue(CushionedStoolBlock.COLOR) == dye) {
-            return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;   // 已是该色，不浪费 ✓
+            return InteractionResult.TRY_WITH_EMPTY_HAND;   // 已是该色，不浪费 ✓
         }
         if (!level.isClientSide()) {
             level.setBlock(pos, state.setValue(CushionedStoolBlock.COLOR, dye), Block.UPDATE_ALL);
             if (!player.hasInfiniteMaterials()) stack.shrink(1);
         }
-        return ItemInteractionResult.sidedSuccess(level.isClientSide());
+        return level.isClientSide() ? InteractionResult.SUCCESS : InteractionResult.SUCCESS_SERVER;
     }
 
     @Override
@@ -98,7 +97,7 @@ public class StoolBlock extends Block {
     protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos,
                                                Player player, BlockHitResult hit) {
         if (player.isShiftKeyDown()) return InteractionResult.PASS;   // 潜行右击 = 不放座位
-        if (SeatEntity.sit(level, pos, player)) return InteractionResult.sidedSuccess(level.isClientSide());
+        if (SeatEntity.sit(level, pos, player)) return level.isClientSide() ? InteractionResult.SUCCESS : InteractionResult.SUCCESS_SERVER;
         return InteractionResult.PASS;
     }
     /**

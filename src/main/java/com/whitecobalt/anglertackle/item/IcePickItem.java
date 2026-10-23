@@ -81,6 +81,6 @@ public class IcePickItem extends Item {
                 stack.hurtAndBreak(IceFishing.icePickCost(), player, EquipmentSlot.MAINHAND);
             }
         }
-        return InteractionResult.sidedSuccess(level.isClientSide());
+        return level.isClientSide() ? InteractionResult.SUCCESS : InteractionResult.SUCCESS_SERVER;
     }
 }

@@ -4,7 +4,7 @@ import com.whitecobalt.anglertackle.network.CodexRequestPayload;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.InteractionHand;
-import net.minecraft.world.InteractionResultHolder;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -41,7 +41,7 @@ public class CodexBookItem extends Item {
     }
 
     @Override
-    public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
+    public InteractionResult use(Level level, Player player, InteractionHand hand) {
         ItemStack stack = player.getItemInHand(hand);
         if (level.isClientSide()) {
             // 只在客户端发：服务端 use() 里发的话方向就反了（那会变成 S→C 请求）。
@@ -49,7 +49,7 @@ public class CodexBookItem extends Item {
         }
         // 两端都 consume：不 consume 的话接着会走"物品使用"的后续分支
         //（挥手动画 / 副手判定 / 吃掉之类），表现成"右键了但什么也没发生"。
-        return InteractionResultHolder.consume(stack);
+        return InteractionResult.CONSUME.heldItemTransformedTo(stack);
     }
 
     @Override
