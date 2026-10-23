@@ -1,11 +1,15 @@
 package com.whitecobalt.anglertackle.recipe;
 
-import com.whitecobalt.anglertackle.registry.ModRecipes;
-import net.minecraft.core.HolderLookup;
+import com.mojang.serialization.MapCodec;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.ItemStackTemplate;
+import net.minecraft.world.item.crafting.AbstractCookingRecipe;
 import net.minecraft.world.item.crafting.CampfireCookingRecipe;
 import net.minecraft.world.item.crafting.CookingBookCategory;
 import net.minecraft.world.item.crafting.Ingredient;
+import net.minecraft.world.item.crafting.Recipe;
 import net.minecraft.world.item.crafting.RecipeSerializer;
 import net.minecraft.world.item.crafting.SingleRecipeInput;
 
@@ -24,23 +28,42 @@ import net.minecraft.world.item.crafting.SingleRecipeInput;
  * {@code AbstractCookingRecipe}，没有这个强转，所以只有营火这一条会炸。
  *
  * <p>所以改成继承原版类，**只有数据继承那一段自己写**（{@link #assemble}）——
- * 父类构造函数已经固定了 {@code RecipeType.CAMPFIRE_COOKING}。
+ * 父类构造函数已经固定了 {@code RecipeType.CAMPFIRE_COOKING}（26.1.2 里
+ * 类型由 {@code getType()} 返回，父类实现仍返回 CAMPFIRE_COOKING）。
  */
 public class ChunkCampfireRecipe extends CampfireCookingRecipe {
 
-    public ChunkCampfireRecipe(String group, CookingBookCategory category, Ingredient ingredient,
-                               ItemStack result, float experience, int cookingTime) {
-        super(group, category, ingredient, result, experience, cookingTime);
+    public static final MapCodec<ChunkCampfireRecipe> MAP_CODEC =
+            cookingMapCodec(ChunkCampfireRecipe::new, 600);
+    public static final StreamCodec<RegistryFriendlyByteBuf, ChunkCampfireRecipe> STREAM_CODEC =
+            cookingStreamCodec(ChunkCampfireRecipe::new);
+    /**
+     * ⚠ 类型必须是 {@code RecipeSerializer<CampfireCookingRecipe>}：
+     * 26.1.2 的 {@code CampfireCookingRecipe#getSerializer()} 把返回类型收窄成了
+     * 具体的 {@code RecipeSerializer<CampfireCookingRecipe>}，子类不能换成另一个
+     * 泛型实参（{@code RecipeSerializer<ChunkCampfireRecipe>} 不是它的子类型）。
+     * codec 解码出来的实际对象仍然是 {@link ChunkCampfireRecipe}，所以行为不变。
+     */
+    public static final RecipeSerializer<CampfireCookingRecipe> SERIALIZER =
+            new RecipeSerializer<>(
+                    MAP_CODEC.xmap(r -> r, r -> (ChunkCampfireRecipe) r),
+                    STREAM_CODEC.map(r -> r, r -> (ChunkCampfireRecipe) r));
+
+    public ChunkCampfireRecipe(Recipe.CommonInfo commonInfo,
+                               AbstractCookingRecipe.CookingBookInfo bookInfo,
+                               Ingredient ingredient, ItemStackTemplate result,
+                               float experience, int cookingTime) {
+        super(commonInfo, bookInfo, ingredient, result, experience, cookingTime);
     }
 
     /** 数据继承链：生块 → 炭烤块（docs/25 §14.5），与熔炉 / 烟熏炉同一段逻辑。 */
     @Override
-    public ItemStack assemble(SingleRecipeInput input, HolderLookup.Provider registries) {
-        return DataCookingRecipe.inheritChunkData(input, super.assemble(input, registries));
+    public ItemStack assemble(SingleRecipeInput input) {
+        return DataCookingRecipe.inheritChunkData(input, super.assemble(input));
     }
 
     @Override
-    public RecipeSerializer<?> getSerializer() {
-        return ModRecipes.CHUNK_CAMPFIRE.get();
+    public RecipeSerializer<CampfireCookingRecipe> getSerializer() {
+        return SERIALIZER;
     }
 }

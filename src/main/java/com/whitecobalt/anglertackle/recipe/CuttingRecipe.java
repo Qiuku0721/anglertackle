@@ -6,19 +6,31 @@ import com.whitecobalt.anglertackle.item.FishChunkItem;
 import com.whitecobalt.anglertackle.registry.ModDataComponents;
 import com.whitecobalt.anglertackle.registry.ModItems;
 import com.whitecobalt.anglertackle.registry.ModRecipes;
-import net.minecraft.core.HolderLookup;
+import com.mojang.serialization.MapCodec;
 import net.minecraft.core.NonNullList;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.resources.Identifier;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.ItemStackTemplate;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.item.crafting.CraftingBookCategory;
 import net.minecraft.world.item.crafting.CraftingInput;
 import net.minecraft.world.item.crafting.CustomRecipe;
 import net.minecraft.world.item.crafting.Ingredient;
+import net.minecraft.world.item.crafting.PlacementInfo;
 import net.minecraft.world.item.crafting.RecipeSerializer;
+import net.minecraft.world.item.crafting.display.RecipeDisplay;
+import net.minecraft.world.item.crafting.display.ShapelessCraftingRecipeDisplay;
+import net.minecraft.world.item.crafting.display.SlotDisplay;
 import net.minecraft.world.level.Level;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
+
+import java.util.List;
 
 /**
  * 切块：**一条整鱼 → 三档鱼块**（docs/25 §14.1 的"第 1 级 · 预处理"）。
@@ -27,12 +39,12 @@ import net.minecraft.world.level.Level;
  * （取决于鱼种、品质、重量），数据驱动的配方表达不了"把输入那条鱼的数据搬到产物上"。
  *
  * <h2>⚠ 但它**不是** special 配方（用户 2026-10-03："内容写进原版配方书"）</h2>
- * 原版 {@code ClientRecipeBook} 只收 {@code !isSpecial() && !isIncomplete()} 的配方，
- * 所以 {@link #isSpecial()} 覆写成 false、{@link #getIngredients()} 给出真材料、
- * {@link #getResultItem} 给出代表产物 —— 三件事缺一条配方书里就看不到这条配方。
+ * 原版配方书只收 {@code !isSpecial()} 且能摆料的配方，所以 {@link #isSpecial()}
+ * 覆写成 false、{@link #placementInfo()} 给出真材料、{@link #display()}
+ * 给出代表产物 —— 缺一条配方书里就看不到这条配方。
  * 解锁进度由 {@code tools/gen-recipe-advancements.js} 生成（材料取
- * {@code #anglertackle:fishes}，与这里的 {@link #getIngredients} 对账的检查器是
- * {@code tools/check-recipe-book.js}）。
+ * {@code #anglertackle:fishes}；对账的检查器是 {@code tools/check-recipe-book.js}，
+ * 它们读的是旧版 {@code getIngredients()/getResultItem}，26.1.2 迁移后需 P2 更新）。
  *
  * <h2>两条映射（都在 docs/25 里写死）</h2>
  * <ul>
@@ -65,8 +77,33 @@ public class CuttingRecipe extends CustomRecipe {
     private static final TagKey<Item> FISHES = TagKey.create(Registries.ITEM,
             Identifier.fromNamespaceAndPath(com.whitecobalt.anglertackle.AnglersTackle.MOD_ID, "fishes"));
 
+    /**
+     * JSON 只有 {@code type + category}（与旧版 SimpleCraftingRecipeSerializer 的格式一致）。
+     * 26.1.2 的 {@code CustomRecipe} 不再有带 category 的构造器，所以自己存一份。
+     */
+    public static final MapCodec<CuttingRecipe> MAP_CODEC = RecordCodecBuilder.mapCodec(
+            i -> i.group(
+                    CraftingBookCategory.CODEC
+                            .optionalFieldOf("category", CraftingBookCategory.MISC)
+                            .forGetter(CuttingRecipe::category))
+                    .apply(i, CuttingRecipe::new));
+
+    public static final StreamCodec<RegistryFriendlyByteBuf, CuttingRecipe> STREAM_CODEC =
+            CraftingBookCategory.STREAM_CODEC.<RegistryFriendlyByteBuf>cast()
+                    .map(CuttingRecipe::new, CuttingRecipe::category);
+
+    public static final RecipeSerializer<CuttingRecipe> SERIALIZER =
+            new RecipeSerializer<>(MAP_CODEC, STREAM_CODEC);
+
+    private final CraftingBookCategory category;
+
     public CuttingRecipe(CraftingBookCategory category) {
-        super(category);
+        this.category = category;
+    }
+
+    @Override
+    public CraftingBookCategory category() {
+        return category;
     }
 
     /**
@@ -110,7 +147,7 @@ public class CuttingRecipe extends CustomRecipe {
     }
 
     @Override
-    public ItemStack assemble(CraftingInput input, HolderLookup.Provider registries) {
+    public ItemStack assemble(CraftingInput input) {
         ItemStack fish = findFish(input);
         if (fish == null) return ItemStack.EMPTY;
         FishData data = fish.get(ModDataComponents.FISH_DATA.get());
@@ -132,8 +169,9 @@ public class CuttingRecipe extends CustomRecipe {
         return NonNullList.withSize(input.size(), ItemStack.EMPTY);
     }
 
-    // ------------------------------------------------------------------ 原版配方书
-    // 见类注释：这三件事缺一条，这条配方在配方书里就看不到。
+    // ------------------------------------------------------------------ 原版配方书 / 配方展示
+    // 26.1.2 的 Recipe 不再有 getIngredients()/getResultItem()：
+    // 配方书与 JEI 看的是 placementInfo()（摆料）与 display()（画什么）。
 
     /** 覆写成 false 才会进配方书（{@link CustomRecipe} 默认是 true）。 */
     @Override
@@ -143,10 +181,8 @@ public class CuttingRecipe extends CustomRecipe {
 
     /** 配方书里要摆一条**整鱼**（{@link #findFish} 认的就是这个标签）。 */
     @Override
-    public NonNullList<Ingredient> getIngredients() {
-        NonNullList<Ingredient> list = NonNullList.create();
-        list.add(Ingredient.of(FISHES));
-        return list;
+    public PlacementInfo placementInfo() {
+        return PlacementInfo.create(Ingredient.of(BuiltInRegistries.ITEM.getOrThrow(FISHES)));
     }
 
     /**
@@ -156,20 +192,18 @@ public class CuttingRecipe extends CustomRecipe {
      * 所以这里给个代表值 —— 玩家看到的仍然是"整鱼 → 鱼块"。
      */
     @Override
-    public ItemStack getResultItem(HolderLookup.Provider registries) {
-        return rawChunkOf(FishChunkData.GROUP_COMMON);
+    public List<RecipeDisplay> display() {
+        return List.of(new ShapelessCraftingRecipeDisplay(
+                List.of(new SlotDisplay.TagSlotDisplay(FISHES)),
+                new SlotDisplay.ItemStackSlotDisplay(new ItemStackTemplate(ModItems.FISH_CHUNK.get())),
+                new SlotDisplay.ItemSlotDisplay(Items.CRAFTING_TABLE)));
     }
 
     @Override
-    public boolean canCraftInDimensions(int width, int height) {
-        return width * height >= 1;      // 随身 2×2 也能切
-    }
-
-    @Override
-    public RecipeSerializer<?> getSerializer() {
+    public RecipeSerializer<CuttingRecipe> getSerializer() {
         // ⚠ 必须是 CRAFTING 那条序列化器（见 ModRecipes 的类注释）：
         //   配方进哪张表由 Recipe#getType() 决定，而 CustomRecipe 默认报告 CRAFTING，
         //   所以这里不要覆盖 getType()。
-        return ModRecipes.CUTTING.get();
+        return SERIALIZER;
     }
 }

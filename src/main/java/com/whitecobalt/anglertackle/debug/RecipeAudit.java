@@ -2,7 +2,6 @@ package com.whitecobalt.anglertackle.debug;
 
 import com.whitecobalt.anglertackle.AnglersTackle;
 import com.whitecobalt.anglertackle.registry.ModDataComponents;
-import net.minecraft.core.NonNullList;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.AbstractCookingRecipe;
@@ -33,7 +32,7 @@ import java.util.List;
  *
  * <p>体检的判据只有一条，但正好是用户要的那条：
  * <blockquote>
- *   把 {@link Recipe#getIngredients()}（= 配方书 / JEI 里显示的材料）原样摆进合成格，
+ *   把 {@link Recipe#placementInfo()}（= 配方书 / JEI 里显示的材料）原样摆进合成格，
  *   这条配方**必须**匹配，而且 {@code assemble} 必须给出非空产物。
  * </blockquote>
  * 材料表与匹配逻辑一旦脱节（少一条、多一条、写错物品、写死档位、丢了数据组件），
@@ -103,14 +102,14 @@ public final class RecipeAudit {
             LOGGER.info("[垂纶/体检] 食物 {}", r);
         }
         // 菜：**六个档位**各真做一次，读配方写进产物栈的值（用户要求按鱼品质区分）
-        for (RecipeHolder<?> holder : server.getRecipeManager().getRecipes()) {
+        for (RecipeHolder<?> holder : server.overworld().recipeAccess().getRecipes()) {
             if (!(holder.value() instanceof com.whitecobalt.anglertackle.recipe.DishRecipe dish)) {
                 continue;
             }
             StringBuilder ladder = new StringBuilder();
             for (int tier = com.whitecobalt.anglertackle.fishing.FoodValues.MIN_TIER;
                  tier <= com.whitecobalt.anglertackle.fishing.FoodValues.MAX_TIER; tier++) {
-                CraftingInput input = asCraftingInput(dish.getIngredients(), 1);
+                CraftingInput input = asCraftingInputFromStacks(dish.exampleIngredients(), 1);
                 if (input == null) {
                     continue;
                 }
@@ -129,13 +128,13 @@ public final class RecipeAudit {
                                         0L, java.util.Optional.empty(), tier));
                     }
                 }
-                ItemStack out = dish.assemble(input, server.registryAccess());
+                ItemStack out = dish.assemble(input);
                 net.minecraft.world.food.FoodProperties f =
                         out.get(net.minecraft.core.component.DataComponents.FOOD);
                 ladder.append(tier).append(':').append(f == null ? "—" : f.nutrition()).append(' ');
             }
             LOGGER.info("[垂纶/体检] 菜 {}（{}）档位→饥饿：{}",
-                    holder.id().getPath(), dish.species(), ladder.toString().trim());
+                    holder.id().identifier().getPath(), dish.species(), ladder.toString().trim());
         }
     }
 
@@ -144,8 +143,8 @@ public final class RecipeAudit {
         List<String> failures = new ArrayList<>();
         int checked = 0;
         int total = 0;
-        for (RecipeHolder<?> holder : server.getRecipeManager().getRecipes()) {
-            if (!holder.id().getNamespace().equals(AnglersTackle.MOD_ID)) {
+        for (RecipeHolder<?> holder : server.overworld().recipeAccess().getRecipes()) {
+            if (!holder.id().identifier().getNamespace().equals(AnglersTackle.MOD_ID)) {
                 continue;
             }
             Recipe<?> recipe = holder.value();
@@ -153,15 +152,21 @@ public final class RecipeAudit {
                 continue;                      // special 配方（鱼竿装配）没有材料表，不参与
             }
             total++;
-            String name = holder.id().toString();
-            NonNullList<Ingredient> ingredients = recipe.getIngredients();
+            String name = holder.id().identifier().toString();
+            List<Ingredient> ingredients = recipe.placementInfo().ingredients();
             if (ingredients.isEmpty()) {
                 failures.add(name + "：材料表是空的（配方书里根本不会显示，玩家也做不出来）");
                 continue;
             }
             try {
                 if (recipe instanceof CraftingRecipe crafting) {
-                    CraftingInput input = asCraftingInput(ingredients, 1);
+                    // 菜配方的主料必须带鱼种/档位组件才匹配得上；Ingredient 给不了组件，
+                    // 所以用配方类自己还原的“显示材料”（与旧版 Ingredient.of(ItemStack…) 等价）。
+                    List<ItemStack> shown = recipe
+                            instanceof com.whitecobalt.anglertackle.recipe.DishRecipe dish
+                            ? dish.exampleIngredients() : null;
+                    CraftingInput input = shown != null
+                            ? asCraftingInputFromStacks(shown, 1) : asCraftingInput(ingredients, 1);
                     if (input == null) {
                         failures.add(name + "：有材料项一个物品都没有（hasNoItems）");
                         continue;
@@ -172,7 +177,7 @@ public final class RecipeAudit {
                                 + "）匹配失败 —— 界面上写着能做，实际做不出来");
                         continue;
                     }
-                    ItemStack out = crafting.assemble(input, server.registryAccess());
+                    ItemStack out = crafting.assemble(input);
                     if (out.isEmpty()) {
                         failures.add(name + "：匹配成功但产物是空的");
                     } else if (expectsChunkData(recipe) && !out.has(ModDataComponents.FISH_CHUNK.get())) {
@@ -183,7 +188,8 @@ public final class RecipeAudit {
                     //   所以"一格放一叠"必须照样匹配 —— 这也正是能按住 Shift 批量合成的前提。
                     //   第一版按**个数**数主料（baseCount += stack.getCount()），
                     //   于是"1 块"的菜放 2 个就不匹配了，这条断言第一次跑就会红。
-                    CraftingInput stacked = asCraftingInput(ingredients, 3);
+                    CraftingInput stacked = shown != null
+                            ? asCraftingInputFromStacks(shown, 3) : asCraftingInput(ingredients, 3);
                     if (stacked != null && !crafting.matches(stacked, server.overworld())) {
                         failures.add(name + "：每格放一叠（3 个）就不匹配了 —— 玩家没法批量合成"
                                 + "（原版每次合成每格只扣 1 个，不该因为放多了而拒绝）");
@@ -199,7 +205,7 @@ public final class RecipeAudit {
                         failures.add(name + "：按它自己显示的材料匹配失败");
                         continue;
                     }
-                    ItemStack out = cooking.assemble(input, server.registryAccess());
+                    ItemStack out = cooking.assemble(input);
                     if (out.isEmpty()) {
                         failures.add(name + "：匹配成功但产物是空的");
                     } else if (input.getItem(0).has(ModDataComponents.FISH_CHUNK.get())
@@ -229,17 +235,17 @@ public final class RecipeAudit {
      * <p>{@code perSlot = 3} 那种摆法是给"一叠"用的：原版每次合成对每个非空格子只扣 1 个，
      * 所以摆一叠必须照样匹配（否则玩家没法批量合成）。
      */
-    private static CraftingInput asCraftingInput(NonNullList<Ingredient> ingredients, int perSlot) {
+    private static CraftingInput asCraftingInput(List<Ingredient> ingredients, int perSlot) {
         if (ingredients.size() > 9) {
             return null;                        // 摆不下 3×3：这条配方本身就有问题
         }
         List<ItemStack> stacks = new ArrayList<>();
         for (Ingredient ing : ingredients) {
-            ItemStack[] items = ing.getItems();
-            if (items.length == 0) {
+            List<ItemStack> items = ing.items().map(ItemStack::new).toList();
+            if (items.isEmpty()) {
                 return null;
             }
-            ItemStack one = items[0].copy();
+            ItemStack one = items.get(0).copy();
             one.setCount(Math.max(1, perSlot));
             stacks.add(one);
         }
@@ -249,12 +255,35 @@ public final class RecipeAudit {
         return CraftingInput.of(3, 3, stacks);
     }
 
-    private static SingleRecipeInput asCookingInput(NonNullList<Ingredient> ingredients) {
-        ItemStack[] items = ingredients.get(0).getItems();
-        if (items.length == 0) {
+    /**
+     * 把**已经带好数据组件的**材料栈铺进 3×3 合成格。
+     *
+     * <p>26.1.2 的 {@code Ingredient} 只认物品/标签，认不了数据组件；而菜配方的
+     * 主料必须带着 FISH_CHUNK（鱼种/档位）才能匹配 —— 所以体检不能拿
+     * {@code placementInfo()} 反推材料，要用 {@code DishRecipe#exampleIngredients()}。
+     */
+    private static CraftingInput asCraftingInputFromStacks(List<ItemStack> stacks, int perSlot) {
+        if (stacks.size() > 9) {
             return null;
         }
-        return new SingleRecipeInput(items[0].copy());
+        List<ItemStack> items = new ArrayList<>();
+        for (ItemStack stack : stacks) {
+            ItemStack one = stack.copy();
+            one.setCount(Math.max(1, perSlot));
+            items.add(one);
+        }
+        while (items.size() < 9) {
+            items.add(ItemStack.EMPTY);
+        }
+        return CraftingInput.of(3, 3, items);
+    }
+
+    private static SingleRecipeInput asCookingInput(List<Ingredient> ingredients) {
+        List<ItemStack> items = ingredients.get(0).items().map(ItemStack::new).toList();
+        if (items.isEmpty()) {
+            return null;
+        }
+        return new SingleRecipeInput(items.get(0).copy());
     }
 
     /**

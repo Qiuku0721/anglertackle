@@ -3,17 +3,26 @@ package com.whitecobalt.anglertackle.recipe;
 import com.whitecobalt.anglertackle.fishing.FishChunkData;
 import com.whitecobalt.anglertackle.registry.ModDataComponents;
 import com.whitecobalt.anglertackle.registry.ModItems;
-import com.whitecobalt.anglertackle.registry.ModRecipes;
-import net.minecraft.core.HolderLookup;
+import com.mojang.serialization.MapCodec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.NonNullList;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.ItemStackTemplate;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.item.crafting.CraftingBookCategory;
 import net.minecraft.world.item.crafting.CraftingInput;
 import net.minecraft.world.item.crafting.CustomRecipe;
 import net.minecraft.world.item.crafting.Ingredient;
+import net.minecraft.world.item.crafting.PlacementInfo;
 import net.minecraft.world.item.crafting.RecipeSerializer;
+import net.minecraft.world.item.crafting.display.RecipeDisplay;
+import net.minecraft.world.item.crafting.display.ShapelessCraftingRecipeDisplay;
+import net.minecraft.world.item.crafting.display.SlotDisplay;
 import net.minecraft.world.level.Level;
 
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -26,10 +35,10 @@ import java.util.Set;
  * 数据驱动的配方做不到。
  *
  * <h2>⚠ 但它**不是** special 配方（用户 2026-10-03："内容写进原版配方书"）</h2>
- * 原版 {@code ClientRecipeBook} 只收 {@code !isSpecial() && !isIncomplete()} 的配方。
- * 所以 {@link #isSpecial()} 覆写成 false、{@link #getIngredients()} 给出**普通鱼的 2 块**
+ * 原版配方书只收 {@code !isSpecial()} 且能摆料的配方。
+ * 所以 {@link #isSpecial()} 覆写成 false、{@link #placementInfo()} 给出**普通鱼的 2 块**
  * （多脂鱼只要 1 块，配方书表达不了"两种都行"，就按多数情况显示 —— 玩家按 2 块准备一定没错）、
- * {@link #getResultItem} 给出鱼油。解锁进度见 {@code tools/gen-recipe-advancements.js}。
+ * {@link #display()} 给出鱼油。解锁进度见 {@code tools/gen-recipe-advancements.js}。
  *
  * <h2>⚠ 多脂鱼名单</h2>
  * 这 5 条写在下面的 {@link #OILY_SPECIES} 里（docs/25 §13.4 + 现实依据 §13.1）：
@@ -52,8 +61,30 @@ public class OilPressingRecipe extends CustomRecipe {
     /** 多脂鱼需要的块数。 */
     public static final int OILY_CHUNKS = 1;
 
+    /** JSON 只有 {@code type + category}（与旧版 SimpleCraftingRecipeSerializer 的格式一致）。 */
+    public static final MapCodec<OilPressingRecipe> MAP_CODEC = RecordCodecBuilder.mapCodec(
+            i -> i.group(
+                    CraftingBookCategory.CODEC
+                            .optionalFieldOf("category", CraftingBookCategory.MISC)
+                            .forGetter(OilPressingRecipe::category))
+                    .apply(i, OilPressingRecipe::new));
+
+    public static final StreamCodec<RegistryFriendlyByteBuf, OilPressingRecipe> STREAM_CODEC =
+            CraftingBookCategory.STREAM_CODEC.<RegistryFriendlyByteBuf>cast()
+                    .map(OilPressingRecipe::new, OilPressingRecipe::category);
+
+    public static final RecipeSerializer<OilPressingRecipe> SERIALIZER =
+            new RecipeSerializer<>(MAP_CODEC, STREAM_CODEC);
+
+    private final CraftingBookCategory category;
+
     public OilPressingRecipe(CraftingBookCategory category) {
-        super(category);
+        this.category = category;
+    }
+
+    @Override
+    public CraftingBookCategory category() {
+        return category;
     }
 
     /** 这条鱼要几块才能榨一瓶油。 */
@@ -94,7 +125,7 @@ public class OilPressingRecipe extends CustomRecipe {
     }
 
     @Override
-    public ItemStack assemble(CraftingInput input, HolderLookup.Provider registries) {
+    public ItemStack assemble(CraftingInput input) {
         return gather(input) == null ? ItemStack.EMPTY : new ItemStack(ModItems.FISH_OIL.get());
     }
 
@@ -104,13 +135,20 @@ public class OilPressingRecipe extends CustomRecipe {
         return NonNullList.withSize(input.size(), ItemStack.EMPTY);
     }
 
-    // ------------------------------------------------------------------ 原版配方书
-    // 见类注释：这三件事缺一条，这条配方在配方书里就看不到。
+    // ------------------------------------------------------------------ 原版配方书 / 配方展示
+    // 26.1.2 的 Recipe 不再有 getIngredients()/getResultItem()：
+    // 配方书与 JEI 看的是 placementInfo()（摆料）与 display()（画什么）。
 
     /** 覆写成 false 才会进配方书（{@link CustomRecipe} 默认是 true）。 */
     @Override
     public boolean isSpecial() {
         return false;
+    }
+
+    /** 三档生块都行（与 {@link #gather} 一致）。 */
+    private static Ingredient rawChunkIngredient() {
+        return Ingredient.of(ModItems.FISH_CHUNK.get(),
+                ModItems.FINE_FISH_MEAT.get(), ModItems.SUPREME_FISH_STEAK.get());
     }
 
     /**
@@ -120,29 +158,22 @@ public class OilPressingRecipe extends CustomRecipe {
      * 玩家照它准备一定够。三档生块都行（与 {@link #gather} 一致）。
      */
     @Override
-    public NonNullList<Ingredient> getIngredients() {
-        NonNullList<Ingredient> list = NonNullList.create();
-        Ingredient raw = Ingredient.of(ModItems.FISH_CHUNK.get(),
-                ModItems.FINE_FISH_MEAT.get(), ModItems.SUPREME_FISH_STEAK.get());
-        for (int i = 0; i < LEAN_CHUNKS; i++) {
-            list.add(raw);
-        }
-        return list;
+    public PlacementInfo placementInfo() {
+        return PlacementInfo.create(List.of(rawChunkIngredient(), rawChunkIngredient()));
     }
 
     /** 配方书里那一格：鱼油一瓶。 */
     @Override
-    public ItemStack getResultItem(HolderLookup.Provider registries) {
-        return new ItemStack(ModItems.FISH_OIL.get());
+    public List<RecipeDisplay> display() {
+        SlotDisplay raw = rawChunkIngredient().display();
+        return List.of(new ShapelessCraftingRecipeDisplay(
+                List.of(raw, raw),
+                new SlotDisplay.ItemStackSlotDisplay(new ItemStackTemplate(ModItems.FISH_OIL.get())),
+                new SlotDisplay.ItemSlotDisplay(Items.CRAFTING_TABLE)));
     }
 
     @Override
-    public boolean canCraftInDimensions(int width, int height) {
-        return width * height >= 1;      // 随身 2×2 也能榨
-    }
-
-    @Override
-    public RecipeSerializer<?> getSerializer() {
-        return ModRecipes.OIL_PRESSING.get();
+    public RecipeSerializer<OilPressingRecipe> getSerializer() {
+        return SERIALIZER;
     }
 }

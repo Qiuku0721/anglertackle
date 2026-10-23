@@ -8,20 +8,30 @@ import com.whitecobalt.anglertackle.registry.ModDataComponents;
 import com.whitecobalt.anglertackle.registry.ModItems;
 import com.whitecobalt.anglertackle.registry.ModRecipes;
 import com.whitecobalt.anglertackle.registry.ModTags;
+import com.mojang.serialization.MapCodec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.Holder;
-import net.minecraft.core.HolderLookup;
 import net.minecraft.core.NonNullList;
+import net.minecraft.core.component.DataComponentPatch;
 import net.minecraft.core.component.DataComponents;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.world.food.FoodProperties;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.ItemStackTemplate;
 import net.minecraft.world.item.Items;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.crafting.CraftingBookCategory;
 import net.minecraft.world.item.crafting.CraftingInput;
 import net.minecraft.world.item.crafting.CustomRecipe;
 import net.minecraft.world.item.crafting.Ingredient;
+import net.minecraft.world.item.crafting.PlacementInfo;
 import net.minecraft.world.item.crafting.RecipeSerializer;
+import net.minecraft.world.item.crafting.display.RecipeDisplay;
+import net.minecraft.world.item.crafting.display.ShapelessCraftingRecipeDisplay;
+import net.minecraft.world.item.crafting.display.SlotDisplay;
 import net.minecraft.world.level.Level;
 
 import javax.annotation.Nullable;
@@ -51,10 +61,10 @@ import java.util.function.Supplier;
  * 所以这里三件事一起做，缺一条配方书里就看不到：
  * <ol>
  *   <li>{@link #isSpecial()} 覆写成 {@code false}；</li>
- *   <li>{@link #getIngredients()} 给出**真实材料**（配方书靠它判"做不做得出来"、
+ *   <li>{@link #placementInfo()} 给出**真实材料**（配方书靠它判"做不做得出来"、
  *       也是点一下自动摆料的依据 —— 所以条数必须和 {@link #match} 的消耗一致，
  *       例如鱼丸要两块熟块就出现两条）；</li>
- *   <li>{@link #getResultItem} 给出**代表产物**（不带鱼种数据，配方书只画图标）。
+ *   <li>{@link #display()} 给出**代表产物**（配方书/JEI 画的是它）。
  *       没有它配方书里那一格是空的。</li>
  * </ol>
  * 解锁仍然走原版那套：{@code tools/gen-recipe-advancements.js} 生成的进度
@@ -157,6 +167,11 @@ public class DishRecipe extends CustomRecipe {
         ItemStack stack = new ItemStack(item);
         stack.set(ModDataComponents.FISH_CHUNK.get(), new FishChunkData(species, sampleTier(species), 0.5f));
         return stack;
+    }
+
+    /** 标签 → Ingredient（26.1.2 删掉了 {@code Ingredient.of(TagKey)}，改走注册表的 HolderSet）。 */
+    static Ingredient tagIngredient(TagKey<Item> tag) {
+        return Ingredient.of(BuiltInRegistries.ITEM.getOrThrow(tag));
     }
 
     /** 配料种类（决定要不要返还）。 */
@@ -264,16 +279,16 @@ public class DishRecipe extends CustomRecipe {
         public boolean hasSubstitute(int index) {
             if (index < 0 || index >= needs.size()) return false;
             Need n = needs.get(index);
-            return n.tag() != null && Ingredient.of(n.tag()).getItems().length > 1;
+            return n.tag() != null && tagIngredient(n.tag()).items().count() > 1;
         }
 
         /** 这条配料可替代物的显示名（含自己），没有替代时只有一个。 */
         public List<String> substituteNames(int index) {
             if (index < 0 || index >= needs.size()) return List.of();
             Need n = needs.get(index);
-            if (n.tag() == null) return List.of(n.book().get().getDescription().getString());
-            return java.util.Arrays.stream(Ingredient.of(n.tag()).getItems())
-                    .map(st -> st.getHoverName().getString()).toList();
+            if (n.tag() == null) return List.of(new ItemStack(n.book().get()).getHoverName().getString());
+            return tagIngredient(n.tag()).items()
+                    .map(h -> new ItemStack(h).getHoverName().getString()).toList();
         }
 
         public List<Item> extraItems() {
@@ -413,11 +428,37 @@ public class DishRecipe extends CustomRecipe {
 
     private final Dish dish;
     private final String species;
+    private final CraftingBookCategory category;
 
     public DishRecipe(CraftingBookCategory category, Dish dish, String species) {
-        super(category);
+        this.category = category;
         this.dish = dish;
         this.species = species;
+    }
+
+    /**
+     * 每条「菜型 × 鱼种」一个序列化器（id 见 {@link Pair#id()}）。26.1.2 的
+     * {@code RecipeSerializer} 是 record，所以 codec 由这里按固定参数生成。
+     *
+     * <p>JSON 仍然只有 {@code type + category}（与旧版 SimpleCraftingRecipeSerializer 一致）。
+     */
+    public static MapCodec<DishRecipe> mapCodec(Dish dish, String species) {
+        return RecordCodecBuilder.mapCodec(
+                i -> i.group(
+                        CraftingBookCategory.CODEC
+                                .optionalFieldOf("category", CraftingBookCategory.MISC)
+                                .forGetter(DishRecipe::category))
+                        .apply(i, category -> new DishRecipe(category, dish, species)));
+    }
+
+    public static StreamCodec<RegistryFriendlyByteBuf, DishRecipe> streamCodec(Dish dish, String species) {
+        return CraftingBookCategory.STREAM_CODEC.<RegistryFriendlyByteBuf>cast()
+                .map(category -> new DishRecipe(category, dish, species), DishRecipe::category);
+    }
+
+    @Override
+    public CraftingBookCategory category() {
+        return category;
     }
 
     public Dish dish() {
@@ -509,7 +550,7 @@ public class DishRecipe extends CustomRecipe {
     }
 
     @Override
-    public ItemStack assemble(CraftingInput input, HolderLookup.Provider registries) {
+    public ItemStack assemble(CraftingInput input) {
         Match m = match(input);
         if (m == null) return ItemStack.EMPTY;
         ItemStack stack = new ItemStack(resultItem());
@@ -563,19 +604,14 @@ public class DishRecipe extends CustomRecipe {
      * 摆一叠也一样算一格 —— 这也正是能按住 Shift 批量合成的原因。
      */
     @Override
-    public NonNullList<Ingredient> getIngredients() {
-        NonNullList<Ingredient> list = NonNullList.create();
-        List<ItemStack> samples = dish.base().sampleStacks(species);
-        Ingredient base;
-        if (!samples.isEmpty()) {
-            base = Ingredient.of(samples.toArray(new ItemStack[0]));
-        } else if (dish.base() == Base.WHOLE_FISH) {
-            base = Ingredient.of(FISHES);                 // 兜底：鱼种查不到时用整鱼标签
-        } else if (dish.base() == Base.COOKED) {
-            base = Ingredient.of(ModItems.FISH_CHUNK_COOKED.get());
-        } else {
-            base = Ingredient.of(ModItems.FISH_CHUNK.get());
-        }
+    public PlacementInfo placementInfo() {
+        return PlacementInfo.create(ingredients());
+    }
+
+    /** 配方书 / 自动摆料用的材料表（26.1.2：取代旧的 {@code getIngredients()}）。 */
+    private List<Ingredient> ingredients() {
+        List<Ingredient> list = new ArrayList<>();
+        Ingredient base = baseIngredient();
         for (int i = 0; i < dish.baseCount(); i++) {
             list.add(base);
         }
@@ -586,17 +622,98 @@ public class DishRecipe extends CustomRecipe {
     }
 
     /**
+     * 主料在**物品层**上的匹配集合。
+     *
+     * <p>26.1.2 的 {@code Ingredient} 只能包物品/标签，包不了 ItemStack（数据组件），
+     * 所以"这条鱼的哪个档位的块"这种展示细节交给 {@link #display()}；
+     * 这里只给配方书摆料用的物品集合。
+     */
+    private Ingredient baseIngredient() {
+        if (dish.base() == Base.WHOLE_FISH) {
+            return Ingredient.of(BuiltInRegistries.ITEM.getOrThrow(FISHES));
+        }
+        List<ItemStack> samples = dish.base().sampleStacks(species);
+        if (!samples.isEmpty()) {
+            return Ingredient.of(samples.stream().map(ItemStack::getItem).distinct());
+        }
+        return Ingredient.of(dish.base() == Base.COOKED
+                ? ModItems.FISH_CHUNK_COOKED.get() : ModItems.FISH_CHUNK.get());
+    }
+
+    /**
      * 配方书 / JEI 里那一格画什么：**这条鱼的那道菜**（带鱼种组件 → 名字是"红烧草鱼"）。
      *
      * <p>档位取这条鱼档位表里最高的那一档（= docs/25 §13.5 的"材料"列），
      * 重量给个展示值 —— 真实值要钓上来才知道。
      */
+    private ItemStackTemplate resultTemplate() {
+        return new ItemStackTemplate(resultItem().builtInRegistryHolder(), 1,
+                DataComponentPatch.builder()
+                        .set(ModDataComponents.FISH_CHUNK.get(),
+                                new FishChunkData(species, sampleTier(species), 0.5f))
+                        .build());
+    }
+
+    /**
+     * 26.1.2 的配方展示（取代旧的 {@code getResultItem()}）：配方书/JEI 画的是这里。
+     *
+     * <p>材料显示成**这条鱼真能切出来的那些块**（带鱼种/档位/重量组件），
+     * 所以 hover 上去写的是"大西洋鲑 · 顶级鱼排"，不是笼统的"任意熟块"。
+     */
     @Override
-    public ItemStack getResultItem(HolderLookup.Provider registries) {
-        ItemStack stack = new ItemStack(resultItem());
-        stack.set(ModDataComponents.FISH_CHUNK.get(),
-                new FishChunkData(species, sampleTier(species), 0.5f));
-        return stack;
+    public List<RecipeDisplay> display() {
+        List<SlotDisplay> slots = new ArrayList<>();
+        SlotDisplay base = baseDisplay();
+        for (int i = 0; i < dish.baseCount(); i++) {
+            slots.add(base);
+        }
+        for (Need n : dish.needs()) {
+            slots.add(n.bookIngredient().display());
+        }
+        return List.of(new ShapelessCraftingRecipeDisplay(
+                slots,
+                new SlotDisplay.ItemStackSlotDisplay(resultTemplate()),
+                new SlotDisplay.ItemSlotDisplay(Items.CRAFTING_TABLE)));
+    }
+
+    private SlotDisplay baseDisplay() {
+        List<ItemStack> samples = dish.base().sampleStacks(species);
+        if (!samples.isEmpty()) {
+            List<SlotDisplay> parts = samples.stream()
+                    .map(s -> (SlotDisplay) new SlotDisplay.ItemStackSlotDisplay(
+                            ItemStackTemplate.fromNonEmptyStack(s)))
+                    .toList();
+            return parts.size() == 1 ? parts.get(0) : new SlotDisplay.Composite(parts);
+        }
+        if (dish.base() == Base.WHOLE_FISH) {
+            return new SlotDisplay.TagSlotDisplay(FISHES);     // 兜底：鱼种查不到时用整鱼标签
+        }
+        return new SlotDisplay.ItemSlotDisplay(dish.base() == Base.COOKED
+                ? ModItems.FISH_CHUNK_COOKED.get() : ModItems.FISH_CHUNK.get());
+    }
+
+    /**
+     * 体检用：把这条配方"自己显示的材料"还原成真实栈（主料带鱼种组件）。
+     *
+     * <p>26.1.2 的 {@code Ingredient} 包不了数据组件，而 {@code RecipeAudit} 必须把
+     * **带 FISH_CHUNK 的熟块**摆进去才能匹配 —— 所以这里单独给一份。
+     */
+    public List<ItemStack> exampleIngredients() {
+        List<ItemStack> out = new ArrayList<>();
+        List<ItemStack> samples = dish.base().sampleStacks(species);
+        ItemStack base = samples.isEmpty()
+                ? (dish.base() == Base.WHOLE_FISH
+                        ? new ItemStack(BuiltInRegistries.ITEM.getOrThrow(FISHES).get(0))
+                        : new ItemStack(dish.base() == Base.COOKED
+                                ? ModItems.FISH_CHUNK_COOKED.get() : ModItems.FISH_CHUNK.get()))
+                : samples.get(0).copy();
+        for (int i = 0; i < dish.baseCount(); i++) {
+            out.add(base.copy());
+        }
+        for (Need n : dish.needs()) {
+            out.add(new ItemStack(n.book().get()));
+        }
+        return out;
     }
 
     /**
@@ -607,7 +724,7 @@ public class DishRecipe extends CustomRecipe {
      * 给了 group → 同一组的变体在一个按钮里翻页选。
      */
     @Override
-    public String getGroup() {
+    public String group() {
         return dish.id();
     }
 
@@ -639,12 +756,7 @@ public class DishRecipe extends CustomRecipe {
     }
 
     @Override
-    public boolean canCraftInDimensions(int width, int height) {
-        return width * height >= Math.max(2, dish.baseCount() + dish.needs().size());
-    }
-
-    @Override
-    public RecipeSerializer<?> getSerializer() {
+    public RecipeSerializer<DishRecipe> getSerializer() {
         return ModRecipes.DISH.get(dish.id() + "/" + species).get();
     }
 }

@@ -2,9 +2,11 @@ package com.whitecobalt.anglertackle.recipe;
 
 import com.whitecobalt.anglertackle.fishing.RodModManager;
 import com.whitecobalt.anglertackle.item.RodItem;
-import com.whitecobalt.anglertackle.registry.ModRecipes;
-import net.minecraft.core.HolderLookup;
+import com.mojang.serialization.MapCodec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.NonNullList;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.CraftingBookCategory;
 import net.minecraft.world.item.crafting.CraftingInput;
@@ -27,8 +29,8 @@ import net.minecraft.world.level.Level;
  * 两个界面查配方的代码是同一句 {@code getRecipeFor(RecipeType.CRAFTING, …)}
  * （{@code CraftingMenu} 与 {@code InventoryMenu}），只要这条配方报告自己是
  * {@link net.minecraft.world.item.crafting.RecipeType#CRAFTING}（{@code CraftingRecipe}
- * 的默认实现），两处就**同时**生效。{@link #canCraftInDimensions} 允许 2×2，
- * 所以随身合成栏放得下。
+ * 的默认实现），两处就**同时**生效。{@link #plan} 只按格子扫材料、不要求 3×3，
+ * 所以随身 2×2 合成栏放得下（26.1.2 已删除 {@code canCraftInDimensions}）。
  *
  * <h2>只认正好两格</h2>
  * 一格竿、一格配件。多放任何东西都不匹配 —— 因为原版取走产出物时会从
@@ -41,8 +43,30 @@ import net.minecraft.world.level.Level;
  */
 public class RodAssemblyRecipe extends CustomRecipe {
 
+    /** JSON 只有 {@code type + category}（与旧版 SimpleCraftingRecipeSerializer 的格式一致）。 */
+    public static final MapCodec<RodAssemblyRecipe> MAP_CODEC = RecordCodecBuilder.mapCodec(
+            i -> i.group(
+                    CraftingBookCategory.CODEC
+                            .optionalFieldOf("category", CraftingBookCategory.MISC)
+                            .forGetter(RodAssemblyRecipe::category))
+                    .apply(i, RodAssemblyRecipe::new));
+
+    public static final StreamCodec<RegistryFriendlyByteBuf, RodAssemblyRecipe> STREAM_CODEC =
+            CraftingBookCategory.STREAM_CODEC.<RegistryFriendlyByteBuf>cast()
+                    .map(RodAssemblyRecipe::new, RodAssemblyRecipe::category);
+
+    public static final RecipeSerializer<RodAssemblyRecipe> SERIALIZER =
+            new RecipeSerializer<>(MAP_CODEC, STREAM_CODEC);
+
+    private final CraftingBookCategory category;
+
     public RodAssemblyRecipe(CraftingBookCategory category) {
-        super(category);
+        this.category = category;
+    }
+
+    @Override
+    public CraftingBookCategory category() {
+        return category;
     }
 
     /** 一次装配的配料表：哪根竿、哪件配件、装到哪个槽、竿在第几格。 */
@@ -96,7 +120,7 @@ public class RodAssemblyRecipe extends CustomRecipe {
     }
 
     @Override
-    public ItemStack assemble(CraftingInput input, HolderLookup.Provider registries) {
+    public ItemStack assemble(CraftingInput input) {
         Plan plan = plan(input);
         if (plan == null) {
             return ItemStack.EMPTY;
@@ -129,15 +153,9 @@ public class RodAssemblyRecipe extends CustomRecipe {
         return out;
     }
 
-    /** 至少要放得下竿 + 配件两格 —— 随身合成栏是 2×2，正好够。 */
     @Override
-    public boolean canCraftInDimensions(int width, int height) {
-        return width * height >= 2;
-    }
-
-    @Override
-    public RecipeSerializer<?> getSerializer() {
-        return ModRecipes.ROD_ASSEMBLY.get();
+    public RecipeSerializer<RodAssemblyRecipe> getSerializer() {
+        return SERIALIZER;
     }
 
     // ⚠ 刻意**不**覆盖 getType()：CraftingRecipe 的默认实现返回 RecipeType.CRAFTING，

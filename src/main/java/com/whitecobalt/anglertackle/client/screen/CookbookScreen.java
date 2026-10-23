@@ -7,18 +7,22 @@ import com.whitecobalt.anglertackle.item.Quality;
 import com.whitecobalt.anglertackle.recipe.CuttingRecipe;
 import com.whitecobalt.anglertackle.recipe.DishRecipe;
 import com.whitecobalt.anglertackle.recipe.OilPressingRecipe;
+import com.whitecobalt.anglertackle.registry.ModItems;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.recipebook.RecipeCollection;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
+import net.minecraft.util.context.ContextMap;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Ingredient;
-import net.minecraft.world.item.crafting.Recipe;
-import net.minecraft.world.item.crafting.RecipeHolder;
+import net.minecraft.world.item.crafting.display.RecipeDisplay;
+import net.minecraft.world.item.crafting.display.RecipeDisplayEntry;
+import net.minecraft.world.item.crafting.display.SlotDisplayContext;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -325,11 +329,18 @@ public class CookbookScreen extends Screen {
     }
 
     /**
-     * 这个物品怎么做出来的 —— <b>现场问客户端的配方管理器</b>。
+     * 这个物品怎么做出来的 —— <b>现场问客户端的配方书</b>。
      *
      * <p>为什么不手写一张表：配料的合成式会变（盐/酱油/芥末/鱼刀的 JSON 都在数据包里），
      * 界面里的表一旦手写就会撒谎。问出来的永远是当前生效的那一份，
      * 连别的 mod 覆盖配方、或者数据包改了配方，这里都跟着变。
+     *
+     * <p>⚠ 26.1.2 的客户端<b>不再同步完整配方表</b>：{@code ClientboundUpdateRecipesPacket}
+     * 只剩物品集合与切石机表，真正的配方以 {@code RecipeDisplay} 的形式随
+     * {@code ClientboundRecipeBookAddPacket} 下发。所以这里走
+     * {@code ClientLocalPlayer.getRecipeBook().getCollections()} ——
+     * 能问到的是**玩家已解锁**的配方（旧版能问全表，这是 26.1.2 的协议限制，
+     * 若要恢复全表语义得让服务端另发数据包，属 P2）。
      *
      * <p>找不到配方就老实说"原版材料"（例如甘蔗、小麦本身没有合成配方）。
      */
@@ -340,30 +351,35 @@ public class CookbookScreen extends Screen {
         }
         String text = null;
         Minecraft mc = Minecraft.getInstance();
-        if (mc.level != null) {
-            for (RecipeHolder<?> holder : mc.level.getRecipeManager().getRecipes()) {
-                Recipe<?> recipe = holder.value();
-                if (!recipe.getResultItem(mc.level.registryAccess()).is(item)) {
-                    continue;
-                }
-                List<String> names = new ArrayList<>();
-                for (Ingredient ing : recipe.getIngredients()) {
-                    ItemStack[] stacks = ing.getItems();
-                    if (stacks.length > 0) {
-                        names.add(stacks[0].getHoverName().getString());
+        if (mc.level != null && mc.player != null) {
+            ContextMap context = SlotDisplayContext.fromLevel(mc.level);
+            outer:
+            for (RecipeCollection collection : mc.player.getRecipeBook().getCollections()) {
+                for (RecipeDisplayEntry entry : collection.getRecipes()) {
+                    if (entry.resultItems(context).stream().noneMatch(stack -> stack.is(item))) {
+                        continue;
                     }
+                    List<String> names = new ArrayList<>();
+                    for (Ingredient ing : entry.craftingRequirements().orElse(List.of())) {
+                        ing.items().findFirst().ifPresent(holder ->
+                                names.add(new ItemStack(holder).getHoverName().getString()));
+                    }
+                    // 榨油是自定义配方：它的“机器”就是工作台，但界面一直写"榨油"，
+                    // 所以按产物认，不按 display 的 craft station 认。
+                    String label = item == ModItems.FISH_OIL.get()
+                            ? Component.translatable("screen.anglertackle.cookbook.station.oil_pressing").getString()
+                            : station(entry.display(), context);
+                    text = Component.translatable("screen.anglertackle.cookbook.source",
+                            item.getDescription().getString(),
+                            label + (names.isEmpty() ? "" : "：" + String.join(" + ", names))).getString();
+                    // 榨油的份数（瘦鱼 2 块 / 多脂鱼 1 块）在配方里表达不出来（自定义配方的 matches 里算的），
+                    // 所以从 OilPressingRecipe 的公开常量现取 —— 依旧不写死数字
+                    if (item == ModItems.FISH_OIL.get()) {
+                        text += " " + Component.translatable("screen.anglertackle.cookbook.source.oil",
+                                OilPressingRecipe.LEAN_CHUNKS, OilPressingRecipe.OILY_CHUNKS).getString();
+                    }
+                    break outer;
                 }
-                String label = station(holder.id().toString(), recipe);
-                text = Component.translatable("screen.anglertackle.cookbook.source",
-                        item.getDescription().getString(),
-                        label + (names.isEmpty() ? "" : "：" + String.join(" + ", names))).getString();
-                // 榨油的份数（瘦鱼 2 块 / 多脂鱼 1 块）在配方里表达不出来（自定义配方的 matches 里算的），
-                // 所以从 OilPressingRecipe 的公开常量现取 —— 依旧不写死数字
-                if (typeOf(recipe).equals("oil_pressing")) {
-                    text += " " + Component.translatable("screen.anglertackle.cookbook.source.oil",
-                            OilPressingRecipe.LEAN_CHUNKS, OilPressingRecipe.OILY_CHUNKS).getString();
-                }
-                break;
             }
         }
         if (text == null) {
@@ -374,28 +390,24 @@ public class CookbookScreen extends Screen {
         return text;
     }
 
-    /** 配方类型 id 的路径部分（{@code minecraft:smelting} → {@code smelting}）。 */
-    private static String typeOf(Recipe<?> recipe) {
-        return BuiltInRegistries.RECIPE_TYPE.getKey(recipe.getType()).getPath();
-    }
-
-    /** 配方在哪做（按类型名给语言键）。 */
-    private static String station(String recipeId, Recipe<?> recipe) {
-        String path = recipeId.substring(recipeId.indexOf(':') + 1);
-        String type = typeOf(recipe);
-        String key = switch (type) {
-            case "crafting_shaped", "crafting_shapeless" -> "crafting";
-            case "smelting" -> "furnace";
-            case "smoking" -> "smoker";
-            case "campfire_cooking" -> "campfire";
-            case "blasting" -> "blast_furnace";
-            case "stonecutting" -> "stonecutter";
-            case "oil_pressing" -> "oil_pressing";
-            case "cutting" -> "cutting";
+    /** 配方在哪做（按 display 里的 craft station 物品给语言键）。 */
+    private static String station(RecipeDisplay display, ContextMap context) {
+        ItemStack station = display.craftingStation().resolveForFirstStack(context);
+        if (station.isEmpty()) {
+            return "";
+        }
+        String path = BuiltInRegistries.ITEM.getKey(station.getItem()).getPath();
+        String key = switch (path) {
+            case "crafting_table" -> "crafting";
+            case "furnace" -> "furnace";
+            case "smoker" -> "smoker";
+            case "campfire" -> "campfire";
+            case "blast_furnace" -> "blast_furnace";
+            case "stonecutter" -> "stonecutter";
             default -> null;
         };
-        // 认不出来的类型（别的 mod 的机器）就直接显示配方 id —— 显示原始 id 也比显示错的中文好
-        return key == null ? path
+        // 认不出来的机器（别的 mod 的）就直接显示机器名 —— 显示名字也比显示错的中文好
+        return key == null ? station.getHoverName().getString()
                 : Component.translatable("screen.anglertackle.cookbook.station." + key).getString();
     }
 

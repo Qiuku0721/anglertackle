@@ -2,12 +2,12 @@ package com.whitecobalt.anglertackle.recipe;
 
 import com.whitecobalt.anglertackle.fishing.FishChunkData;
 import com.whitecobalt.anglertackle.registry.ModDataComponents;
-import net.minecraft.core.HolderLookup;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.ItemStackTemplate;
 import net.minecraft.world.item.crafting.AbstractCookingRecipe;
 import net.minecraft.world.item.crafting.CookingBookCategory;
 import net.minecraft.world.item.crafting.Ingredient;
-import net.minecraft.world.item.crafting.RecipeType;
+import net.minecraft.world.item.crafting.Recipe;
 import net.minecraft.world.item.crafting.SingleRecipeInput;
 
 /**
@@ -16,22 +16,26 @@ import net.minecraft.world.item.crafting.SingleRecipeInput;
  * <p>三种设备（熔炉/烟熏炉/营火）共用这一段，差别只在 RecipeType 与产出物品，
  * 所以拆成三个极薄的子类。
  *
- * <h2>三条 API 事实（从 build/moddev/artifacts/neoforge-21.1.252-merged.jar 用 javap 抄的）</h2>
+ * <h2>26.1.2 的 API 事实（build/refs/mc2612-src）</h2>
  * <pre>
- *   1) 工厂接口是 AbstractCookingRecipe.Factory（不在 SimpleCookingSerializer 上），
- *      create 有 6 个参数、第一个是 String group
- *   2) AbstractCookingRecipe 构造函数 = (RecipeType, String group, CookingBookCategory,
- *      Ingredient, ItemStack, float, int)
- *   3) 输入栈类型是 SingleRecipeInput（1.21.1 没有 CookingInput）
+ *   1) AbstractCookingRecipe 构造函数 = (Recipe.CommonInfo, CookingBookInfo,
+ *      Ingredient, ItemStackTemplate, float, int)
+ *      —— 不再收 RecipeType / String group，group 在 CookingBookInfo 里；
+ *   2) RecipeType 不再由配方字段决定：getType() 由每个具体类返回
+ *      （SMELTING / SMOKING / CAMPFIRE_COOKING）；
+ *   3) 输入栈类型仍是 SingleRecipeInput，但 assemble 只收一个参数
+ *      （Recipe.assemble(T) 不再收 HolderLookup.Provider）；
+ *   4) 产物从 ItemStack 变成 ItemStackTemplate（JSON 的 result 字段结构不变，
+ *      仍是 {id, count?, components?}，见 ItemStackTemplate.CODEC）。
  * </pre>
- * 前两轮就是少写了 String group 而编译不过：javac 的「需要/找到」两行当时看着自相矛盾，
- * 真正的类型要去 SimpleCookingSerializer 的字段上看。
  */
 public abstract class DataCookingRecipe extends AbstractCookingRecipe {
 
-    protected DataCookingRecipe(RecipeType<?> type, String group, CookingBookCategory category,
-                                Ingredient ingredient, ItemStack result, float experience, int cookingTime) {
-        super(type, group, category, ingredient, result, experience, cookingTime);
+    protected DataCookingRecipe(Recipe.CommonInfo commonInfo,
+                                AbstractCookingRecipe.CookingBookInfo bookInfo,
+                                Ingredient ingredient, ItemStackTemplate result,
+                                float experience, int cookingTime) {
+        super(commonInfo, bookInfo, ingredient, result, experience, cookingTime);
     }
 
     /**
@@ -62,7 +66,7 @@ public abstract class DataCookingRecipe extends AbstractCookingRecipe {
     }
 
     @Override
-    public ItemStack assemble(SingleRecipeInput input, HolderLookup.Provider registries) {
-        return inheritChunkData(input, super.assemble(input, registries));
+    public ItemStack assemble(SingleRecipeInput input) {
+        return inheritChunkData(input, super.assemble(input));
     }
 }
