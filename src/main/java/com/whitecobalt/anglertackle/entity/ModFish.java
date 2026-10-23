@@ -5,16 +5,16 @@ import com.whitecobalt.anglertackle.block.AquariumTank;
 import com.whitecobalt.anglertackle.fishing.FishData;
 import com.whitecobalt.anglertackle.registry.ModEntities;
 import net.minecraft.core.BlockPos;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.NbtOps;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
-import net.minecraft.world.entity.animal.AbstractFish;
+import net.minecraft.world.entity.animal.fish.AbstractFish;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 
@@ -132,7 +132,9 @@ public class ModFish extends AbstractFish {
             if (!(level().getBlockState(blockPosition()).getBlock() instanceof AquariumBlock)) {
                 BlockPos back = AquariumTank.nearestTankBlock(level(), blockPosition(), TANK_SEARCH_RADIUS);
                 if (back != null) {
-                    moveTo(back.getX() + 0.5D, back.getY() + 0.5D, back.getZ() + 0.5D,
+                    // 26.1.2 把 moveTo(x,y,z,yRot,xRot) 改名为 snapTo（实现逐行相同：
+                    // setPosRaw + 两个 setRot + setOldPosAndRot + reapplyPosition）。
+                    snapTo(back.getX() + 0.5D, back.getY() + 0.5D, back.getZ() + 0.5D,
                             getYRot(), getXRot());
                     setDeltaMovement(Vec3.ZERO);
                 }
@@ -143,29 +145,22 @@ public class ModFish extends AbstractFish {
     // ------------------------------------------------------------ 存盘
 
     @Override
-    public void addAdditionalSaveData(CompoundTag tag) {
-        super.addAdditionalSaveData(tag);
+    protected void addAdditionalSaveData(ValueOutput output) {
+        super.addAdditionalSaveData(output);
         if (inTank) {
-            tag.putBoolean("AnglerTackleInTank", true);
+            output.putBoolean("AnglerTackleInTank", true);
         }
-        if (fishData != null) {
-            // 用 FishData 自己的 CODEC 写盘，而不是手抄每一列 ——
-            // 以后给 FishData 加字段时，这里不用跟着改（也不会漏）。
-            FishData.CODEC.encodeStart(NbtOps.INSTANCE, fishData)
-                    .result()
-                    .ifPresent(t -> tag.put("AnglerTackleFish", t));
-        }
+        // 用 FishData 自己的 CODEC 写盘，而不是手抄每一列 ——
+        // 以后给 FishData 加字段时，这里不用跟着改（也不会漏）。
+        // 26.1.2 起存档接口是 ValueOutput/ValueInput（CompoundTag 那套已移除）。
+        output.storeNullable("AnglerTackleFish", FishData.CODEC, fishData);
     }
 
     @Override
-    public void readAdditionalSaveData(CompoundTag tag) {
-        super.readAdditionalSaveData(tag);
-        inTank = tag.getBooleanOr("AnglerTackleInTank", false);
-        if (tag.contains("AnglerTackleFish")) {
-            fishData = FishData.CODEC.parse(NbtOps.INSTANCE, tag.get("AnglerTackleFish"))
-                    .result()
-                    .orElse(null);
-        }
+    protected void readAdditionalSaveData(ValueInput input) {
+        super.readAdditionalSaveData(input);
+        inTank = input.getBooleanOr("AnglerTackleInTank", false);
+        fishData = input.read("AnglerTackleFish", FishData.CODEC).orElse(null);
     }
 
     /**

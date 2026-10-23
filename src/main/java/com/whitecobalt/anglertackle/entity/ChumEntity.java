@@ -5,7 +5,6 @@ import com.whitecobalt.anglertackle.fishing.Tuning;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.UUIDUtil;
 import net.minecraft.core.particles.ParticleTypes;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
@@ -13,11 +12,14 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MoverType;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.material.Fluids;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.phys.Vec3;
 
 import javax.annotation.Nullable;
@@ -133,7 +135,8 @@ public class ChumEntity extends Entity {
 
     public ChumEntity(EntityType<? extends ChumEntity> type, Level level) {
         super(type, level);
-        this.noCulling = true;
+        // 26.1.2 删掉了 Entity.noCulling：剔除与否改为渲染器层的 affectedByCulling()。
+        // 客户端渲染器（ChumRenderer）不受影响，这里不再有等价的实体层开关。
     }
 
     @Override
@@ -263,7 +266,7 @@ public class ChumEntity extends Entity {
         //    见 BobberEntity.scanForWater），守着它的是 tools/check-bobber-cast.js。
         if (this.motionY() > 0 || this.tickCount < Tuning.chumMinAirTicks()) {
             // 还在上升（或被强制滞空）→ 绝不判落水，只判掉出世界
-            if (this.getY() < this.level().getMinBuildHeight()) {
+            if (this.getY() < this.level().getMinY()) {
                 this.discard();
             }
             return;
@@ -274,7 +277,7 @@ public class ChumEntity extends Entity {
             land(water);
             return;
         }
-        if (this.getY() < this.level().getMinBuildHeight()) {
+        if (this.getY() < this.level().getMinY()) {
             this.discard();
         }
     }
@@ -456,39 +459,43 @@ public class ChumEntity extends Entity {
     }
 
     @Override
-    public boolean canBeCollidedWith() {
+    public boolean canBeCollidedWith(@Nullable Entity other) {
         return false;
     }
 
     @Override
-    protected void readAdditionalSaveData(CompoundTag tag) {
-        setTier(tag.getIntOr("ChumTier", 0));
-        setSinking(tag.getBooleanOr("ChumSinking", false));
-        setLanded(tag.getBooleanOr("ChumLanded", false));
-        setLifeTicks(tag.getIntOr("ChumLife", 0));
-        this.totalLifeTicks = Math.max(1, tag.getIntOr("ChumTotalLife", 0));
-        this.timeMultiplier = tag.contains("ChumMult") ? tag.getDoubleOr("ChumMult", 0.0) : 1.0;
-        // 老存档没有这个键 → 取 1.0（不加成）。**不能**拿 timeMultiplier 顶替：
-        // 那正是"越好的窝越不出好鱼"那个 bug 的来源。
-        this.rarityMultiplier = tag.contains("ChumRarity") ? tag.getDoubleOr("ChumRarity", 0.0) : 1.0;
-        this.waterY = tag.getDoubleOr("ChumWaterY", 0.0);
-        if (tag.getIntArray("ChumOwner").map(a -> a.length == 4).orElse(false)) {
-            this.ownerUuid = tag.getIntArray("ChumOwner").map(UUIDUtil::uuidFromIntArray).orElseThrow();
-        }
+    public boolean hurtServer(ServerLevel level, DamageSource source, float damage) {
+        return false;   // 窝料不是生物：任何伤害都不生效（26.1.2 起 Entity 把它声明成 abstract）
     }
 
     @Override
-    protected void addAdditionalSaveData(CompoundTag tag) {
-        tag.putInt("ChumTier", getTier());
-        tag.putBoolean("ChumSinking", isSinking());
-        tag.putBoolean("ChumLanded", isLanded());
-        tag.putInt("ChumLife", getLifeTicks());
-        tag.putInt("ChumTotalLife", totalLifeTicks);
-        tag.putDouble("ChumMult", this.timeMultiplier);
-        tag.putDouble("ChumRarity", this.rarityMultiplier);
-        tag.putDouble("ChumWaterY", this.waterY);
+    protected void readAdditionalSaveData(ValueInput input) {
+        setTier(input.getIntOr("ChumTier", 0));
+        setSinking(input.getBooleanOr("ChumSinking", false));
+        setLanded(input.getBooleanOr("ChumLanded", false));
+        setLifeTicks(input.getIntOr("ChumLife", 0));
+        this.totalLifeTicks = Math.max(1, input.getIntOr("ChumTotalLife", 0));
+        // 老存档没有这个键 → 取 1.0（不加成）。**不能**拿 timeMultiplier 顶替：
+        // 那正是"越好的窝越不出好鱼"那个 bug 的来源。
+        this.timeMultiplier = input.getDoubleOr("ChumMult", 1.0);
+        this.rarityMultiplier = input.getDoubleOr("ChumRarity", 1.0);
+        this.waterY = input.getDoubleOr("ChumWaterY", 0.0);
+        input.getIntArray("ChumOwner").filter(a -> a.length == 4)
+                .ifPresent(a -> this.ownerUuid = UUIDUtil.uuidFromIntArray(a));
+    }
+
+    @Override
+    protected void addAdditionalSaveData(ValueOutput output) {
+        output.putInt("ChumTier", getTier());
+        output.putBoolean("ChumSinking", isSinking());
+        output.putBoolean("ChumLanded", isLanded());
+        output.putInt("ChumLife", getLifeTicks());
+        output.putInt("ChumTotalLife", totalLifeTicks);
+        output.putDouble("ChumMult", this.timeMultiplier);
+        output.putDouble("ChumRarity", this.rarityMultiplier);
+        output.putDouble("ChumWaterY", this.waterY);
         if (this.ownerUuid != null) {
-            tag.putIntArray("ChumOwner", UUIDUtil.uuidToIntArray(this.ownerUuid));
+            output.putIntArray("ChumOwner", UUIDUtil.uuidToIntArray(this.ownerUuid));
         }
     }
 }

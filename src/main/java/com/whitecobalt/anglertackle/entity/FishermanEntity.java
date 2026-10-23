@@ -3,7 +3,6 @@ package com.whitecobalt.anglertackle.entity;
 import com.whitecobalt.anglertackle.registry.ModEntities;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvent;
@@ -22,20 +21,22 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.goal.FloatGoal;
 import net.minecraft.world.entity.ai.goal.LookAtPlayerGoal;
 import net.minecraft.world.entity.ai.goal.RandomLookAroundGoal;
-import net.minecraft.world.entity.npc.AbstractVillager;
+import net.minecraft.world.entity.npc.villager.AbstractVillager;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.SpawnEggItem;
 import net.minecraft.world.item.trading.MerchantOffer;
 import net.minecraft.world.item.trading.MerchantOffers;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 
 import java.util.UUID;
 
 /**
  * 渔人 · 老柯 —— 渔人小屋的 NPC 商人（策划案 {@code docs/13-新手链路与NPC系统.md} §1.3）。
  *
- * <h2>为什么继承 {@link AbstractVillager} 而不是 {@link net.minecraft.world.entity.npc.Villager}</h2>
+ * <h2>为什么继承 {@link AbstractVillager} 而不是 {@link net.minecraft.world.entity.npc.villager.Villager}</h2>
  * 两者都能给"能交易的 NPC"，但 {@code Villager} 额外背着一整套**村庄系统**：
  * Brain 日程表、床、工作站、职业、gossips、铁傀儡生成、袭击……
  * 那些东西对"固定站在码头上的一个渔夫"全是负担，而且会互相打架 ——
@@ -49,7 +50,7 @@ import java.util.UUID;
  * <h2>两条硬约束（都验证过，不是猜的）</h2>
  * <ol>
  *   <li>{@code AbstractVillager} 有两个 abstract 方法必须实现：
- *       {@link #updateTrades()} 和 {@link #rewardTradeXp(MerchantOffer)}。
+ *       {@link #updateTrades(ServerLevel)} 和 {@link #rewardTradeXp(MerchantOffer)}。
  *       {@code javap -protected} 从 {@code recompile_*output.jar} 读出来的，不是照抄教程。</li>
  *   <li>{@code VillagerModel<T extends Entity>} 的泛型上界是 {@code Entity} 而不是
  *       {@code Villager}，所以不继承村民也能用它的模型和动画。</li>
@@ -148,9 +149,9 @@ public class FishermanEntity extends AbstractVillager {
      * 同理虚空伤害（{@code out_of_world}）也放行，掉进虚空还挂着会很诡异。
      */
     @Override
-    public boolean isInvulnerableTo(DamageSource source) {
+    public boolean isInvulnerableTo(ServerLevel level, DamageSource source) {
         if (source.getEntity() instanceof Player) {
-            return false;   // 玩家打得中他（但 hurt() 会拦下伤害，只做反应）
+            return false;   // 玩家打得中他（但 hurtServer() 会拦下伤害，只做反应）
         }
         if (source.is(DamageTypeTags.BYPASSES_INVULNERABILITY)) {
             return false;   // /kill、虚空 —— 留一条"能删掉他"的路
@@ -167,14 +168,16 @@ public class FishermanEntity extends AbstractVillager {
      * （已从 jar 里 javap 确认），模型层直接读它们做红色叠加。
      */
     @Override
-    public boolean hurt(DamageSource source, float amount) {
-        if (source.getEntity() instanceof Player && !level().isClientSide()) {
+    public boolean hurtServer(ServerLevel level, DamageSource source, float amount) {
+        // 26.1.2 把伤害入口从 hurt(DamageSource, float) 拆成了 hurtServer(ServerLevel, ...)：
+        // 服务端伤害统一走这里，客户端表现由 hurtClient 走（默认 false）。
+        if (source.getEntity() instanceof Player) {
             this.hurtTime = 10;
             this.hurtDuration = 10;
             teleportHome();
             return false;
         }
-        return super.hurt(source, amount);
+        return super.hurtServer(level, source, amount);
     }
 
     /**
@@ -446,7 +449,9 @@ public class FishermanEntity extends AbstractVillager {
      * 这里会栈溢出。
      */
     @Override
-    protected void updateTrades() {
+    protected void updateTrades(ServerLevel level) {
+        // 26.1.2 的 updateTrades 多了一个 ServerLevel 参数（基类在 getOffers 里传入），
+        // 语义没变：仍然只把空交易表清一遍（表本来就是空的）。
         MerchantOffers offers = this.getOffers();
         offers.clear();
     }
@@ -474,19 +479,17 @@ public class FishermanEntity extends AbstractVillager {
 
     // ---------------------------------------------------------------- 存档
     @Override
-    public void addAdditionalSaveData(CompoundTag tag) {
-        super.addAdditionalSaveData(tag);
+    protected void addAdditionalSaveData(ValueOutput output) {
+        super.addAdditionalSaveData(output);
         if (home != null) {
-            tag.putLong("AtlHome", home.asLong());
+            output.putLong("AtlHome", home.asLong());
         }
     }
 
     @Override
-    public void readAdditionalSaveData(CompoundTag tag) {
-        super.readAdditionalSaveData(tag);
-        if (tag.contains("AtlHome")) {
-            home = BlockPos.of(tag.getLongOr("AtlHome", 0L));
-        }
+    protected void readAdditionalSaveData(ValueInput input) {
+        super.readAdditionalSaveData(input);
+        input.getLong("AtlHome").ifPresent(pos -> home = BlockPos.of(pos));
     }
 
     // ---------------------------------------------------------------- 杂项

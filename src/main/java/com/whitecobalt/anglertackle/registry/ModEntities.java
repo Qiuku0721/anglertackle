@@ -5,6 +5,8 @@ import com.whitecobalt.anglertackle.entity.BobberEntity;
 import com.whitecobalt.anglertackle.entity.ChumEntity;
 import com.whitecobalt.anglertackle.entity.FishermanEntity;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobCategory;
 import net.neoforged.bus.api.IEventBus;
@@ -37,7 +39,7 @@ public final class ModEntities {
                     .updateInterval(1)
                     .noSummon()
                     .fireImmune()
-                    .build("anglertackle:bobber"));
+                    .build(entityKey("bobber")));
 
     /**
      * 打窝料实体（右键抛出，像鸡蛋一样飞出去，落水后浮着冒泡 + 画白圈）。
@@ -57,7 +59,7 @@ public final class ModEntities {
                     .updateInterval(1)
                     .noSummon()
                     .fireImmune()
-                    .build("anglertackle:chum"));
+                    .build(entityKey("chum")));
 
     /**
      * 渔人 · 老柯（NPC 商人，见 {@code docs/13-新手链路与NPC系统.md} §1.3）。
@@ -78,7 +80,7 @@ public final class ModEntities {
                     .sized(0.6f, 1.95f)      // 和村民一样大
                     .clientTrackingRange(10)
                     .updateInterval(3)
-                    .build("anglertackle:fisherman"));
+                    .build(entityKey("fisherman")));
 
     // ---------------------------------------------------------------- 26 种鱼
     //
@@ -132,7 +134,7 @@ public final class ModEntities {
                             com.whitecobalt.anglertackle.entity.ModFish::new, MobCategory.WATER_AMBIENT)
                     .sized(v.hitW(), v.hitH())
                     .clientTrackingRange(4)
-                    .build("anglertackle:" + id)));
+                    .build(entityKey(id))));
         }
     }
 
@@ -151,6 +153,19 @@ public final class ModEntities {
         return "crucian_carp";
     }
 
+    /**
+     * 注册名 → {@link ResourceKey}。
+     *
+     * <p>26.1.2 起 {@code EntityType.Builder.build} 只收 {@code ResourceKey<EntityType<?>>}
+     * （{@code world/entity/EntityType.java:1834}），不再收 String。这里统一生成
+     * {@code anglertackle:<path>}，与 {@link #ENTITIES} 的注册名完全一致 —— 两边一旦
+     * 不一致，{@code build} 里的 choice-type 路径就会指向一个不存在的 id。
+     */
+    private static ResourceKey<EntityType<?>> entityKey(String path) {
+        return ResourceKey.create(Registries.ENTITY_TYPE,
+                Identifier.fromNamespaceAndPath(AnglersTackle.MOD_ID, path));
+    }
+
     private ModEntities() {
     }
 
@@ -163,6 +178,6 @@ public final class ModEntities {
                     .<com.whitecobalt.anglertackle.entity.SeatEntity>of(com.whitecobalt.anglertackle.entity.SeatEntity::new, MobCategory.MISC)
                     .sized(0.5F, 0.5F)
                     .clientTrackingRange(10)
-                    .build("stool_seat"));
+                    .build(entityKey("stool_seat")));
 
 }

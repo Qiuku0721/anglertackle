@@ -5,7 +5,6 @@ import com.whitecobalt.anglertackle.fishing.FishingSession;
 import com.whitecobalt.anglertackle.registry.ModEntities;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.UUIDUtil;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
@@ -13,11 +12,14 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MoverType;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.material.Fluids;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.phys.Vec3;
 
 import javax.annotation.Nullable;
@@ -118,7 +120,8 @@ public class BobberEntity extends Entity {
 
     public BobberEntity(EntityType<? extends BobberEntity> type, Level level) {
         super(type, level);
-        this.noCulling = true;   // 远处也不因包围盒被剔除（配合幽灵鱼线）
+        // 26.1.2 删掉了 Entity.noCulling：远处不剔除的行为改由渲染器层的
+        // affectedByCulling() 承担（幽灵鱼线的放宽见 shouldRenderAtSqrDistance）。
     }
 
     @Override
@@ -168,7 +171,7 @@ public class BobberEntity extends Entity {
             // this.move() 对没有碰撞箱的实体会直接穿过去（这就是"漂一直掉、
             // 撞不到陆地所以也不收线"的原因），所以这里**自己做方块检测**：
             // 当前位置或下一 tick 位置若是固体方块，就判落点无效。
-            if (this.getY() < this.level().getMinBuildHeight() || hitsSolidBlock(motion)) {
+            if (this.getY() < this.level().getMinY() || hitsSolidBlock(motion)) {
                 this.onMiss();
                 return;
             }
@@ -354,7 +357,7 @@ public class BobberEntity extends Entity {
         if (!state.getFluidState().isEmpty()) {
             return false;
         }
-        return state.isSolidRender(this.level(), pos);
+        return state.isSolidRender();
     }
 
     /** 落水：记录水深与水体类型，然后通知会话进入等待咬钩。 */
@@ -502,6 +505,11 @@ public class BobberEntity extends Entity {
     }
 
     @Override
+    public boolean hurtServer(ServerLevel level, DamageSource source, float damage) {
+        return false;   // 浮漂不是生物：任何伤害都不生效（26.1.2 起 Entity 把它声明成 abstract）
+    }
+
+    @Override
     public boolean shouldRenderAtSqrDistance(double distanceSq) {
         // 会话期间放宽渲染距离；浮漂本身很小，远处也要能看见
         double max = 256.0 * 256.0;
@@ -510,23 +518,23 @@ public class BobberEntity extends Entity {
 
     // ------------------------------------------------------------------ 存盘
     @Override
-    protected void readAdditionalSaveData(CompoundTag tag) {
-        this.landed = tag.getBooleanOr("Landed", false);
-        this.waterDepth = tag.getIntOr("WaterDepth", 0);
-        this.flowingWater = tag.getBooleanOr("Flowing", false);
-        if (tag.getIntArray("Owner").map(a -> a.length == 4).orElse(false)) {
-            this.ownerUuid = tag.getIntArray("Owner").map(UUIDUtil::uuidFromIntArray).orElseThrow();
+    protected void readAdditionalSaveData(ValueInput input) {
+        this.landed = input.getBooleanOr("Landed", false);
+        this.waterDepth = input.getIntOr("WaterDepth", 0);
+        this.flowingWater = input.getBooleanOr("Flowing", false);
+        input.getIntArray("Owner").filter(a -> a.length == 4).ifPresent(a -> {
+            this.ownerUuid = UUIDUtil.uuidFromIntArray(a);
             this.entityData.set(DATA_OWNER, this.ownerUuid.toString());
-        }
+        });
     }
 
     @Override
-    protected void addAdditionalSaveData(CompoundTag tag) {
-        tag.putBoolean("Landed", this.landed);
-        tag.putInt("WaterDepth", this.waterDepth);
-        tag.putBoolean("Flowing", this.flowingWater);
+    protected void addAdditionalSaveData(ValueOutput output) {
+        output.putBoolean("Landed", this.landed);
+        output.putInt("WaterDepth", this.waterDepth);
+        output.putBoolean("Flowing", this.flowingWater);
         if (this.ownerUuid != null) {
-            tag.putIntArray("Owner", UUIDUtil.uuidToIntArray(this.ownerUuid));
+            output.putIntArray("Owner", UUIDUtil.uuidToIntArray(this.ownerUuid));
         }
     }
 
