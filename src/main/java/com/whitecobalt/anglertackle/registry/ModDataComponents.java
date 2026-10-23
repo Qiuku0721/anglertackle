@@ -181,8 +181,8 @@ public final class ModDataComponents {
             if (id == null || id.isEmpty()) {
                 return ItemStack.EMPTY;
             }
-            net.minecraft.resources.ResourceLocation rl =
-                    net.minecraft.resources.ResourceLocation.tryParse(id);
+            net.minecraft.resources.Identifier rl =
+                    net.minecraft.resources.Identifier.tryParse(id);
             if (rl == null) {
                 return ItemStack.EMPTY;
             }
@@ -199,7 +199,7 @@ public final class ModDataComponents {
          * {@code networkSynchronized} 和会话同步包都只有普通的 {@code FriendlyByteBuf}，
          * 类型对不上。手写还有个好处：配件没有别的组件要同步，传 id+damage 比整套堆栈省得多。
          *
-         * <p>用 {@code writeResourceLocation} / {@code writeVarInt}，空槽只占 1 字节。
+         * <p>用 {@code writeIdentifier} / {@code writeVarInt}，空槽只占 1 字节。
          */
         public static void writePart(FriendlyByteBuf buf, ItemStack stack) {
             if (stack == null || stack.isEmpty()) {
@@ -207,7 +207,7 @@ public final class ModDataComponents {
                 return;
             }
             buf.writeBoolean(true);
-            buf.writeResourceLocation(
+            buf.writeIdentifier(
                     net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(stack.getItem()));
             buf.writeVarInt(stack.getDamageValue());
         }
@@ -216,7 +216,7 @@ public final class ModDataComponents {
             if (!buf.readBoolean()) {
                 return ItemStack.EMPTY;
             }
-            net.minecraft.resources.ResourceLocation rl = buf.readResourceLocation();
+            net.minecraft.resources.Identifier rl = buf.readIdentifier();
             int dmg = buf.readVarInt();
             net.minecraft.world.item.Item item =
                     net.minecraft.core.registries.BuiltInRegistries.ITEM.get(rl);

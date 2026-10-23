@@ -1338,7 +1338,7 @@ public final class AnglerCommands {
         if (id == null || id.isEmpty()) {
             return 0;
         }
-        var rl = net.minecraft.resources.ResourceLocation.tryParse(id);
+        var rl = net.minecraft.resources.Identifier.tryParse(id);
         if (rl == null) {
             return 0;
         }

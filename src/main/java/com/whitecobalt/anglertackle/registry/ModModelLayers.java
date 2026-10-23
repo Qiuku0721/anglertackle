@@ -9,7 +9,7 @@ import com.whitecobalt.anglertackle.AnglersTackle;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import net.minecraft.client.model.geom.ModelLayerLocation;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 /**
  * 模型层（LayerDefinition）的声明。
@@ -31,7 +31,7 @@ public final class ModModelLayers {
         Map<String, ModelLayerLocation> map = new LinkedHashMap<>();
         for (String s : species) {
             map.put(s, new ModelLayerLocation(
-                    ResourceLocation.fromNamespaceAndPath(AnglersTackle.MOD_ID, "fish_" + s), "main"));
+                    Identifier.fromNamespaceAndPath(AnglersTackle.MOD_ID, "fish_" + s), "main"));
         }
         return Map.copyOf(map);
     }

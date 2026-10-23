@@ -8,7 +8,7 @@ import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.entity.MobRenderer;
 import net.minecraft.client.renderer.entity.layers.CrossedArmsItemLayer;
 import net.minecraft.client.renderer.entity.layers.CustomHeadLayer;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 /**
  * 老柯的渲染器 —— **复用原版村民模型**。
@@ -32,8 +32,8 @@ import net.minecraft.resources.ResourceLocation;
  */
 public class FishermanRenderer extends MobRenderer<FishermanEntity, VillagerModel<FishermanEntity>> {
 
-    private static final ResourceLocation TEX =
-            ResourceLocation.withDefaultNamespace("textures/entity/villager/villager.png");
+    private static final Identifier TEX =
+            Identifier.withDefaultNamespace("textures/entity/villager/villager.png");
 
     public FishermanRenderer(EntityRendererProvider.Context ctx) {
         // 用 ModelLayers.VILLAGER —— 那是原版已经烘焙好的村民模型层，
@@ -45,7 +45,7 @@ public class FishermanRenderer extends MobRenderer<FishermanEntity, VillagerMode
     }
 
     @Override
-    public ResourceLocation getTextureLocation(FishermanEntity entity) {
+    public Identifier getTextureLocation(FishermanEntity entity) {
         return TEX;
     }
 }

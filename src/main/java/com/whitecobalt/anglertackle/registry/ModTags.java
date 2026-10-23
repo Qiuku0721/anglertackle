@@ -2,7 +2,7 @@ package com.whitecobalt.anglertackle.registry;
 
 import com.whitecobalt.anglertackle.AnglersTackle;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.levelgen.structure.Structure;
@@ -25,7 +25,7 @@ public final class ModTags {
     /** 渔人小屋。内容：{@code anglertackle:fisherman_hut}。 */
     public static final TagKey<Structure> FISHERMAN_HUT = TagKey.create(
             Registries.STRUCTURE,
-            ResourceLocation.fromNamespaceAndPath(AnglersTackle.MOD_ID, "fisherman_hut"));
+            Identifier.fromNamespaceAndPath(AnglersTackle.MOD_ID, "fisherman_hut"));
 
     // ------------------------------------------------------------------ 物品标签（docs/30：联动用）
     //
@@ -54,7 +54,7 @@ public final class ModTags {
 
     private static TagKey<Item> itemTag(String path) {
         return TagKey.create(Registries.ITEM,
-                ResourceLocation.fromNamespaceAndPath(AnglersTackle.MOD_ID, path));
+                Identifier.fromNamespaceAndPath(AnglersTackle.MOD_ID, path));
     }
 
     private ModTags() {

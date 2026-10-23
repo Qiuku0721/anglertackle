@@ -4,7 +4,7 @@ import com.whitecobalt.anglertackle.AnglersTackle;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 /**
  * 客户端 → 服务端：**邮件动作**（`docs/36` §5）。
@@ -38,7 +38,7 @@ public record MailActionPayload(int action, int mailId) implements CustomPacketP
     public static final int READALL = 3;
 
     public static final CustomPacketPayload.Type<MailActionPayload> TYPE =
-            new CustomPacketPayload.Type<>(ResourceLocation.fromNamespaceAndPath(
+            new CustomPacketPayload.Type<>(Identifier.fromNamespaceAndPath(
                     AnglersTackle.MOD_ID, "mail_action"));
 
     public static final StreamCodec<FriendlyByteBuf, MailActionPayload> STREAM_CODEC = StreamCodec.of(

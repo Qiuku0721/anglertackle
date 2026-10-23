@@ -9,7 +9,7 @@ import com.whitecobalt.anglertackle.registry.ModDataComponents;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
@@ -757,7 +757,7 @@ public final class FishingSession {
         if (id == null || id.isEmpty()) {
             return 0;
         }
-        ResourceLocation rl = ResourceLocation.tryParse(id);
+        Identifier rl = Identifier.tryParse(id);
         if (rl == null) {
             return 0;
         }

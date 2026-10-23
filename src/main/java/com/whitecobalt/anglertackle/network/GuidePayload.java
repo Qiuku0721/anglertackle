@@ -5,7 +5,7 @@ import com.whitecobalt.anglertackle.guide.GuideData;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -30,7 +30,7 @@ public record GuidePayload(
 
     public static final CustomPacketPayload.Type<GuidePayload> TYPE =
             new CustomPacketPayload.Type<>(
-                    ResourceLocation.fromNamespaceAndPath(AnglersTackle.MOD_ID, "guide"));
+                    Identifier.fromNamespaceAndPath(AnglersTackle.MOD_ID, "guide"));
 
     public static final StreamCodec<FriendlyByteBuf, GuidePayload> STREAM_CODEC = StreamCodec.of(
             (buf, p) -> {

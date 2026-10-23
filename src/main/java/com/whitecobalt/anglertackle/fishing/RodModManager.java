@@ -11,7 +11,7 @@ import com.whitecobalt.anglertackle.network.RodModPayload;
 import com.whitecobalt.anglertackle.registry.ModDataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -383,7 +383,7 @@ public final class RodModManager {
     private static ItemStack findInInventory(ServerPlayer player, RodItem.RodType type,
                                             int slot, String wantedId) {
         Item wantItem = wantedId == null || wantedId.isEmpty() ? null
-                : BuiltInRegistries.ITEM.get(ResourceLocation.tryParse(wantedId));
+                : BuiltInRegistries.ITEM.get(Identifier.tryParse(wantedId));
 
         for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
             ItemStack stack = player.getInventory().getItem(i);
@@ -532,7 +532,7 @@ public final class RodModManager {
     }
 
     private static String displayNameOf(String itemId) {
-        ResourceLocation rl = ResourceLocation.tryParse(itemId);
+        Identifier rl = Identifier.tryParse(itemId);
         if (rl == null) {
             return itemId;
         }

@@ -4,7 +4,7 @@ import com.whitecobalt.anglertackle.AnglersTackle;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 /**
  * 服务端 → 客户端：**打开垂纶终端**（统合界面；`docs/40` §10 / `docs/41` §8 第 5 项）。
@@ -19,7 +19,7 @@ public record TerminalPayload(int moduleCount) implements CustomPacketPayload {
 
     public static final CustomPacketPayload.Type<TerminalPayload> TYPE =
             new CustomPacketPayload.Type<>(
-                    ResourceLocation.fromNamespaceAndPath(AnglersTackle.MOD_ID, "terminal"));
+                    Identifier.fromNamespaceAndPath(AnglersTackle.MOD_ID, "terminal"));
 
     public static final StreamCodec<FriendlyByteBuf, TerminalPayload> STREAM_CODEC = StreamCodec.of(
             (buf, p) -> buf.writeVarInt(p.moduleCount),

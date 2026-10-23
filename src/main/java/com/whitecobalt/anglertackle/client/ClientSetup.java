@@ -77,7 +77,7 @@ public final class ClientSetup {
                 com.whitecobalt.anglertackle.registry.ModItems.DIAMOND_FLOAT_ROD.get(),
                 com.whitecobalt.anglertackle.registry.ModItems.NETHERITE_FLOAT_ROD.get()}) {
             net.minecraft.client.renderer.item.ItemProperties.register(rod,
-                    net.minecraft.resources.ResourceLocation.fromNamespaceAndPath(
+                    net.minecraft.resources.Identifier.fromNamespaceAndPath(
                             com.whitecobalt.anglertackle.AnglersTackle.MOD_ID, "cast"),
                     (stack, level, entity, seed) -> {
                         if (entity == null

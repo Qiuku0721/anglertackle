@@ -4,7 +4,7 @@ import com.whitecobalt.anglertackle.AnglersTackle;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 /**
  * 客户端 → 服务端：玩家提竿。
@@ -17,7 +17,7 @@ public record HookPayload() implements CustomPacketPayload {
     public static final HookPayload INSTANCE = new HookPayload();
 
     public static final CustomPacketPayload.Type<HookPayload> TYPE =
-            new CustomPacketPayload.Type<>(ResourceLocation.fromNamespaceAndPath(AnglersTackle.MOD_ID, "hook"));
+            new CustomPacketPayload.Type<>(Identifier.fromNamespaceAndPath(AnglersTackle.MOD_ID, "hook"));
 
     public static final StreamCodec<FriendlyByteBuf, HookPayload> STREAM_CODEC = StreamCodec.unit(INSTANCE);
 

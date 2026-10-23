@@ -78,7 +78,7 @@ public class DishRecipe extends CustomRecipe {
     /** 能当"整鱼"用的输入：与切块同一套标签（全部模组鱼）。 */
     private static final net.minecraft.tags.TagKey<Item> FISHES =
             net.minecraft.tags.TagKey.create(net.minecraft.core.registries.Registries.ITEM,
-                    net.minecraft.resources.ResourceLocation.fromNamespaceAndPath(
+                    net.minecraft.resources.Identifier.fromNamespaceAndPath(
                             com.whitecobalt.anglertackle.AnglersTackle.MOD_ID, "fishes"));
 
     /** 主料类型。 */
@@ -108,7 +108,7 @@ public class DishRecipe extends CustomRecipe {
         public List<ItemStack> sampleStacks(String species) {
             if (this == WHOLE_FISH) {
                 Item fish = net.minecraft.core.registries.BuiltInRegistries.ITEM.get(
-                        net.minecraft.resources.ResourceLocation.fromNamespaceAndPath(
+                        net.minecraft.resources.Identifier.fromNamespaceAndPath(
                                 com.whitecobalt.anglertackle.AnglersTackle.MOD_ID, species));
                 return fish == null ? List.of() : List.of(new ItemStack(fish));
             }

@@ -5,7 +5,7 @@ import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 /**
  * 客户端 → 服务端：商店操作。
@@ -71,7 +71,7 @@ public record ShopActionPayload(String entryId) implements CustomPacketPayload {
     }
 
     public static final Type<ShopActionPayload> TYPE = new Type<>(
-            ResourceLocation.fromNamespaceAndPath(AnglersTackle.MOD_ID, "shop_action"));
+            Identifier.fromNamespaceAndPath(AnglersTackle.MOD_ID, "shop_action"));
 
     public static final StreamCodec<RegistryFriendlyByteBuf, ShopActionPayload> STREAM_CODEC =
             StreamCodec.composite(

@@ -4,7 +4,7 @@ import com.whitecobalt.anglertackle.AnglersTackle;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 /**
  * 客户端 → 服务端：改装请求。
@@ -23,7 +23,7 @@ public record RodModActionPayload(byte action, byte slot, String itemId) impleme
 
     public static final CustomPacketPayload.Type<RodModActionPayload> TYPE =
             new CustomPacketPayload.Type<>(
-                    ResourceLocation.fromNamespaceAndPath(AnglersTackle.MOD_ID, "rod_mod_action"));
+                    Identifier.fromNamespaceAndPath(AnglersTackle.MOD_ID, "rod_mod_action"));
 
     public static final StreamCodec<FriendlyByteBuf, RodModActionPayload> STREAM_CODEC = StreamCodec.of(
             (buf, p) -> {

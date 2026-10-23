@@ -8,7 +8,7 @@ import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import org.joml.Matrix4f;
 
 /**
@@ -39,8 +39,8 @@ public class ChumRenderer extends EntityRenderer<ChumEntity> {
     /** 圆离水面的高度，避免和水面 z-fighting。 */
     private static final double RING_Y = 0.02;
 
-    private static final ResourceLocation TEX =
-            ResourceLocation.fromNamespaceAndPath("minecraft", "textures/misc/white.png");
+    private static final Identifier TEX =
+            Identifier.fromNamespaceAndPath("minecraft", "textures/misc/white.png");
 
     /** 窝料团的颜色（黄褐色）。 */
     private static final int CR = 226, CG = 196, CB = 120;
@@ -59,7 +59,7 @@ public class ChumRenderer extends EntityRenderer<ChumEntity> {
      * 编一个不存在的路径会在每次构建时留一条无意义的 WARN。
      */
     @Override
-    public ResourceLocation getTextureLocation(ChumEntity entity) {
+    public Identifier getTextureLocation(ChumEntity entity) {
         return TEX;
     }
 

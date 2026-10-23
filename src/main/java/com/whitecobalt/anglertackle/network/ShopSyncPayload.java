@@ -5,7 +5,7 @@ import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 /**
  * 服务端 → 客户端：商店状态（打开界面 / 每次交易后都会重发一份）。
@@ -33,7 +33,7 @@ public record ShopSyncPayload(int stage, int level, int xp, boolean talked, Stri
         implements CustomPacketPayload {
 
     public static final Type<ShopSyncPayload> TYPE = new Type<>(
-            ResourceLocation.fromNamespaceAndPath(AnglersTackle.MOD_ID, "shop_sync"));
+            Identifier.fromNamespaceAndPath(AnglersTackle.MOD_ID, "shop_sync"));
 
     public static final StreamCodec<RegistryFriendlyByteBuf, ShopSyncPayload> STREAM_CODEC =
             StreamCodec.composite(

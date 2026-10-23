@@ -10,7 +10,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
@@ -70,7 +70,7 @@ public class FermentingData extends SavedData {
         ListTag list = tag.getList("pending", Tag.TAG_COMPOUND);
         for (int i = 0; i < list.size(); i++) {
             CompoundTag e = list.getCompound(i);
-            ResourceLocation dim = ResourceLocation.tryParse(e.getString("dim"));
+            Identifier dim = Identifier.tryParse(e.getString("dim"));
             if (dim == null) {
                 continue;   // 老/坏数据：跳过这一条，读档绝不因为这里崩
             }

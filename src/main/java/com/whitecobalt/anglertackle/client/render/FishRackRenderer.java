@@ -15,7 +15,7 @@ import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
 import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
 import net.minecraft.core.Direction;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
 
 /**
@@ -88,7 +88,7 @@ public class FishRackRenderer implements BlockEntityRenderer<FishRackBlockEntity
         pose.scale(variant.sx(), variant.sy(), variant.sz());
 
         ModFishModel model = new ModFishModel(this.models().bakeLayer(layer), species);
-        ResourceLocation tex = ResourceLocation.fromNamespaceAndPath(AnglersTackle.MOD_ID,
+        Identifier tex = Identifier.fromNamespaceAndPath(AnglersTackle.MOD_ID,
                 "textures/entity/fish/" + species + ".png");
         model.root().render(pose, buffer.getBuffer(RenderType.entityCutoutNoCull(tex)),
                 light, overlay);

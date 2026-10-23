@@ -43,7 +43,7 @@ public final class FishingHud {
     @SubscribeEvent
     public static void register(RegisterGuiLayersEvent event) {
         event.registerAbove(VanillaGuiLayers.EXPERIENCE_BAR,
-                net.minecraft.resources.ResourceLocation.fromNamespaceAndPath(AnglersTackle.MOD_ID, "fishing_hud"),
+                net.minecraft.resources.Identifier.fromNamespaceAndPath(AnglersTackle.MOD_ID, "fishing_hud"),
                 FishingHud::render);
     }
 

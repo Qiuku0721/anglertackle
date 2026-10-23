@@ -85,7 +85,7 @@ public final class RecipeAudit {
         LOGGER.info("[垂纶/体检] === 食物数值表（饥饿 = 饱食度点数；饱和 = 最终饱和度）===");
         List<String> rows = new ArrayList<>();
         for (net.minecraft.world.item.Item item : net.minecraft.core.registries.BuiltInRegistries.ITEM) {
-            net.minecraft.resources.ResourceLocation id =
+            net.minecraft.resources.Identifier id =
                     net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(item);
             if (!id.getNamespace().equals(AnglersTackle.MOD_ID)) {
                 continue;

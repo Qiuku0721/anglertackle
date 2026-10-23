@@ -4,7 +4,7 @@ import com.whitecobalt.anglertackle.AnglersTackle;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 /**
  * 客户端 → 服务端：请求一本图鉴快照。
@@ -22,7 +22,7 @@ public record CodexRequestPayload() implements CustomPacketPayload {
     public static final CodexRequestPayload INSTANCE = new CodexRequestPayload();
 
     public static final CustomPacketPayload.Type<CodexRequestPayload> TYPE =
-            new CustomPacketPayload.Type<>(ResourceLocation.fromNamespaceAndPath(
+            new CustomPacketPayload.Type<>(Identifier.fromNamespaceAndPath(
                     AnglersTackle.MOD_ID, "codex_request"));
 
     public static final StreamCodec<FriendlyByteBuf, CodexRequestPayload> STREAM_CODEC =

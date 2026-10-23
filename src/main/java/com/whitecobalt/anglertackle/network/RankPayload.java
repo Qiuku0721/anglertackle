@@ -7,7 +7,7 @@ import com.whitecobalt.anglertackle.AnglersTackle;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 /**
  * 服务端 → 客户端：**全部榜单**的快照（2026-10-10 M1 ✓，用户要求"像老柯界面那样能切板块"✓）。
@@ -30,7 +30,7 @@ import net.minecraft.resources.ResourceLocation;
 public record RankPayload(String blob, String prefer) implements CustomPacketPayload {
 
     public static final CustomPacketPayload.Type<RankPayload> TYPE =
-            new CustomPacketPayload.Type<>(ResourceLocation.fromNamespaceAndPath(AnglersTackle.MOD_ID, "rank_sync"));
+            new CustomPacketPayload.Type<>(Identifier.fromNamespaceAndPath(AnglersTackle.MOD_ID, "rank_sync"));
 
     public static final StreamCodec<FriendlyByteBuf, RankPayload> STREAM_CODEC = StreamCodec.of(
             (buf, p) -> {

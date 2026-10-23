@@ -4,7 +4,7 @@ import com.whitecobalt.anglertackle.AnglersTackle;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 /**
  * 客户端 → 服务端：玩家松开了右键，请求抛投。
@@ -24,7 +24,7 @@ import net.minecraft.resources.ResourceLocation;
 public record CastPayload(float pitch) implements CustomPacketPayload {
 
     public static final CustomPacketPayload.Type<CastPayload> TYPE =
-            new CustomPacketPayload.Type<>(ResourceLocation.fromNamespaceAndPath(AnglersTackle.MOD_ID, "cast"));
+            new CustomPacketPayload.Type<>(Identifier.fromNamespaceAndPath(AnglersTackle.MOD_ID, "cast"));
 
     public static final StreamCodec<FriendlyByteBuf, CastPayload> STREAM_CODEC = StreamCodec.of(
             (buf, payload) -> buf.writeFloat(payload.pitch()),

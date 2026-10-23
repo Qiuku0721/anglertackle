@@ -7,7 +7,7 @@ import com.whitecobalt.anglertackle.network.ModNetwork;
 import com.whitecobalt.anglertackle.network.OreSightPayload;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.damagesource.DamageSource;
@@ -140,15 +140,15 @@ public final class DishEffectHooks {
 
     // ------------------------------------------------------------------ 修饰符 id
 
-    private static final ResourceLocation OCEAN_SPEED_ID =
-            ResourceLocation.fromNamespaceAndPath(AnglersTackle.MOD_ID, "dish_ocean_affinity_speed");
+    private static final Identifier OCEAN_SPEED_ID =
+            Identifier.fromNamespaceAndPath(AnglersTackle.MOD_ID, "dish_ocean_affinity_speed");
     /** 水中的那一条（见 {@link #tickMovementEffects} 里为什么海洋亲和必须走 SWIM_SPEED）。 */
-    private static final ResourceLocation OCEAN_SWIM_ID =
-            ResourceLocation.fromNamespaceAndPath(AnglersTackle.MOD_ID, "dish_ocean_affinity_swim");
-    private static final ResourceLocation STORM_SPEED_ID =
-            ResourceLocation.fromNamespaceAndPath(AnglersTackle.MOD_ID, "dish_storm_walker_speed");
-    private static final ResourceLocation AMPHIBIOUS_SPEED_ID =
-            ResourceLocation.fromNamespaceAndPath(AnglersTackle.MOD_ID, "dish_amphibious_land_speed");
+    private static final Identifier OCEAN_SWIM_ID =
+            Identifier.fromNamespaceAndPath(AnglersTackle.MOD_ID, "dish_ocean_affinity_swim");
+    private static final Identifier STORM_SPEED_ID =
+            Identifier.fromNamespaceAndPath(AnglersTackle.MOD_ID, "dish_storm_walker_speed");
+    private static final Identifier AMPHIBIOUS_SPEED_ID =
+            Identifier.fromNamespaceAndPath(AnglersTackle.MOD_ID, "dish_amphibious_land_speed");
 
     // ------------------------------------------------------------------ 查询入口（给钓鱼链读）
 
@@ -634,7 +634,7 @@ public final class DishEffectHooks {
      * </ol>
      */
     private static void setModifier(LivingEntity entity, Holder<Attribute> attribute,
-                                    ResourceLocation id, double amount) {
+                                    Identifier id, double amount) {
         AttributeInstance inst = entity.getAttribute(attribute);
         if (inst == null) {
             return;

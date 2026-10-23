@@ -4,7 +4,7 @@ import com.whitecobalt.anglertackle.AnglersTackle;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -45,7 +45,7 @@ public record MailPayload(List<String> rows, int unread, int claimable, int maxM
                           String lastError, boolean autoOpen) implements CustomPacketPayload {
 
     public static final CustomPacketPayload.Type<MailPayload> TYPE =
-            new CustomPacketPayload.Type<>(ResourceLocation.fromNamespaceAndPath(
+            new CustomPacketPayload.Type<>(Identifier.fromNamespaceAndPath(
                     AnglersTackle.MOD_ID, "mail"));
 
     public static final StreamCodec<FriendlyByteBuf, MailPayload> STREAM_CODEC = StreamCodec.of(

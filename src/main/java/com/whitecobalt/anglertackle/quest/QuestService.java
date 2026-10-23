@@ -11,7 +11,7 @@ import com.whitecobalt.anglertackle.player.MailEntry;
 import com.whitecobalt.anglertackle.player.PlayerData;
 import com.whitecobalt.anglertackle.player.QuestData;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -461,7 +461,7 @@ public final class QuestService {
             return List.of();
         }
         try {
-            ResourceLocation rl = ResourceLocation.tryParse(itemId);
+            Identifier rl = Identifier.tryParse(itemId);
             if (rl == null) {
                 return List.of();
             }

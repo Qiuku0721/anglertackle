@@ -4,7 +4,7 @@ import com.whitecobalt.anglertackle.item.PartStats;
 import com.whitecobalt.anglertackle.item.RodItem;
 import com.whitecobalt.anglertackle.registry.ModDataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 

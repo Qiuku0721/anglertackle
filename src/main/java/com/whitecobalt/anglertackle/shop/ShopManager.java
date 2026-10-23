@@ -11,7 +11,7 @@ import com.whitecobalt.anglertackle.registry.ModItems;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -393,7 +393,7 @@ public final class ShopManager {
             return false;
         }
         if (fishId != null) {
-            ResourceLocation key = BuiltInRegistries.ITEM.getKey(s.getItem());
+            Identifier key = BuiltInRegistries.ITEM.getKey(s.getItem());
             if (!key.getPath().equals(fishId)) {
                 return false;
             }
@@ -403,7 +403,7 @@ public final class ShopManager {
 
     private static void give(ServerPlayer player, ShopCatalog.Entry e) {
         Item item = BuiltInRegistries.ITEM.get(
-                ResourceLocation.fromNamespaceAndPath("anglertackle", e.id()));
+                Identifier.fromNamespaceAndPath("anglertackle", e.id()));
         if (item == null || item == net.minecraft.world.item.Items.AIR) {
             msg(player, "§c商品注册表里找不到 " + e.id() + "（这是 bug，请反馈）", false);
             return;
@@ -615,7 +615,7 @@ public final class ShopManager {
         if (stack.getDamageValue() <= 0) {
             return -1;
         }
-        net.minecraft.resources.ResourceLocation id =
+        net.minecraft.resources.Identifier id =
                 net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(stack.getItem());
         for (ShopCatalog.Entry e : ShopCatalog.ENTRIES) {
             if (e.id().equals(id.getPath())) {

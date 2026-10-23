@@ -10,7 +10,7 @@ import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.network.PacketDistributor;
 
@@ -282,7 +282,7 @@ public class MailScreen extends Screen {
             if (p.length < 2) {
                 continue;
             }
-            ResourceLocation rl = ResourceLocation.tryParse(p[0]);
+            Identifier rl = Identifier.tryParse(p[0]);
             if (rl == null) {
                 continue;
             }

@@ -4,7 +4,7 @@ import com.whitecobalt.anglertackle.AnglersTackle;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 /**
  * 服务端 → **全体客户端**：在线玩家的「已佩戴称号」整表（`docs/38` §2.1）。
@@ -32,7 +32,7 @@ import net.minecraft.resources.ResourceLocation;
 public record TitleNameplatePayload(String blob) implements CustomPacketPayload {
 
     public static final CustomPacketPayload.Type<TitleNameplatePayload> TYPE =
-            new CustomPacketPayload.Type<>(ResourceLocation.fromNamespaceAndPath(
+            new CustomPacketPayload.Type<>(Identifier.fromNamespaceAndPath(
                     AnglersTackle.MOD_ID, "title_nameplates"));
 
     /** 行分隔符：一条 = 一个玩家。 */

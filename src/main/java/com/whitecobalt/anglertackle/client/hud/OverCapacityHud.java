@@ -43,7 +43,7 @@ public final class OverCapacityHud {
     @SubscribeEvent
     public static void register(RegisterGuiLayersEvent event) {
         event.registerAbove(VanillaGuiLayers.EXPERIENCE_BAR,
-                net.minecraft.resources.ResourceLocation.fromNamespaceAndPath(
+                net.minecraft.resources.Identifier.fromNamespaceAndPath(
                         AnglersTackle.MOD_ID, "over_capacity_hud"),
                 OverCapacityHud::render);
     }

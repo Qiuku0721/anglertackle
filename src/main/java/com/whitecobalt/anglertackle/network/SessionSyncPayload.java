@@ -4,7 +4,7 @@ import com.whitecobalt.anglertackle.AnglersTackle;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 /**
  * 服务端 → 客户端：一次钓鱼会话的完整快照（每 2 tick 一次）。
@@ -83,7 +83,7 @@ public record SessionSyncPayload(
 ) implements CustomPacketPayload {
 
     public static final CustomPacketPayload.Type<SessionSyncPayload> TYPE =
-            new CustomPacketPayload.Type<>(ResourceLocation.fromNamespaceAndPath(AnglersTackle.MOD_ID, "session_sync"));
+            new CustomPacketPayload.Type<>(Identifier.fromNamespaceAndPath(AnglersTackle.MOD_ID, "session_sync"));
 
     public static final StreamCodec<FriendlyByteBuf, SessionSyncPayload> STREAM_CODEC = StreamCodec.of(
             (buf, p) -> {

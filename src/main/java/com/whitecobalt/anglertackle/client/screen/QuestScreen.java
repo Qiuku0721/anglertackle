@@ -13,7 +13,7 @@ import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -405,7 +405,7 @@ public class QuestScreen extends Screen {
      */
     private static ItemStack stackOf(String itemId, int count) {
         try {
-            ResourceLocation rl = ResourceLocation.tryParse(itemId);
+            Identifier rl = Identifier.tryParse(itemId);
             Item item = rl == null ? null : BuiltInRegistries.ITEM.get(rl);
             if (item != null && item != Items.AIR) {
                 return new ItemStack(item, Math.max(1, count));

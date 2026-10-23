@@ -9,7 +9,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.network.PacketDistributor;
@@ -427,7 +427,7 @@ public class ShopScreen extends Screen {
         if (o.resultId().isEmpty()) {
             return ItemStack.EMPTY;
         }
-        var rl = net.minecraft.resources.ResourceLocation.tryParse(o.resultId());
+        var rl = net.minecraft.resources.Identifier.tryParse(o.resultId());
         if (rl == null) {
             return ItemStack.EMPTY;
         }
@@ -926,7 +926,7 @@ public class ShopScreen extends Screen {
 
     private Item itemOf(ShopCatalog.Entry e) {
         return BuiltInRegistries.ITEM.get(
-                ResourceLocation.fromNamespaceAndPath("anglertackle", e.id()));
+                Identifier.fromNamespaceAndPath("anglertackle", e.id()));
     }
 
     @Override

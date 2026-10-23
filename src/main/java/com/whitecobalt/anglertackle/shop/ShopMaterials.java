@@ -226,7 +226,7 @@ public final class ShopMaterials {
      */
     public static ItemStack resultStack(net.minecraft.world.entity.player.Player player,
                                         ShopCatalog.Exchange x) {
-        var id = net.minecraft.resources.ResourceLocation.tryParse(x.resultId());
+        var id = net.minecraft.resources.Identifier.tryParse(x.resultId());
         if (id == null) {
             return ItemStack.EMPTY;
         }
@@ -245,7 +245,7 @@ public final class ShopMaterials {
                             x.fixedSpecies(), x.fixedTier(), x.fixedWeightKg()));
         }
         if (x.enchanted()) {
-            var eid = net.minecraft.resources.ResourceLocation.tryParse(x.enchant());
+            var eid = net.minecraft.resources.Identifier.tryParse(x.enchant());
             if (eid == null || player == null) {
                 return ItemStack.EMPTY;
             }

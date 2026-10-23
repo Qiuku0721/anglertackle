@@ -3,7 +3,7 @@ package com.whitecobalt.anglertackle.fishing;
 import com.whitecobalt.anglertackle.item.RodItem;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.enchantment.Enchantment;
 
@@ -55,7 +55,7 @@ public final class RodEnchants {
     }
 
     private static ResourceKey<Enchantment> key(String path) {
-        return ResourceKey.create(Registries.ENCHANTMENT, ResourceLocation.fromNamespaceAndPath(NS, path));
+        return ResourceKey.create(Registries.ENCHANTMENT, Identifier.fromNamespaceAndPath(NS, path));
     }
 
     /** 这个物品栈上某个模组附魔的等级（0 = 没有）。非鱼竿一律 0。 */

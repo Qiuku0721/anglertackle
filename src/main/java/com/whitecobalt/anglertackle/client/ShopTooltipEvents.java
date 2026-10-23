@@ -5,7 +5,7 @@ import com.whitecobalt.anglertackle.shop.ShopCatalog;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -95,7 +95,7 @@ public final class ShopTooltipEvents {
 
     /** 按物品 id 在商店目录里找这一条。找不到返回 null（大多数物品都不在商店里）。 */
     private static ShopCatalog.Entry find(ItemStack stack) {
-        ResourceLocation id = net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(stack.getItem());
+        Identifier id = net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(stack.getItem());
         if (!AnglersTackle.MOD_ID.equals(id.getNamespace())) {
             return null;   // 原版物品不查（省掉 39 次字符串比较）
         }

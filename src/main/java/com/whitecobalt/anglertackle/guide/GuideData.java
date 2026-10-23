@@ -5,7 +5,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.whitecobalt.anglertackle.AnglersTackle;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.SimplePreparableReloadListener;
@@ -44,8 +44,8 @@ import java.util.Map;
  */
 public final class GuideData {
 
-    private static final ResourceLocation GUIDE_JSON =
-            ResourceLocation.fromNamespaceAndPath(AnglersTackle.MOD_ID, "guide/guide.json");
+    private static final Identifier GUIDE_JSON =
+            Identifier.fromNamespaceAndPath(AnglersTackle.MOD_ID, "guide/guide.json");
 
     /**
      * 内置副本在 classpath 上的绝对路径。
@@ -201,9 +201,9 @@ public final class GuideData {
         protected List<Chapter> prepare(ResourceManager manager, ProfilerFiller profiler) {
             List<Chapter> parsed = new ArrayList<>();
             try {
-                Map<ResourceLocation, Resource> found = manager.listResources(
+                Map<Identifier, Resource> found = manager.listResources(
                         "guide", rl -> rl.getPath().endsWith("guide.json"));
-                for (Map.Entry<ResourceLocation, Resource> entry : found.entrySet()) {
+                for (Map.Entry<Identifier, Resource> entry : found.entrySet()) {
                     try (BufferedReader reader = entry.getValue().openAsReader()) {
                         // 解析共用 GuideData.parse —— 数据包版能读的形式，内置副本必然也能读
                         parsed.addAll(parse(JsonParser.parseReader(reader).getAsJsonObject()));

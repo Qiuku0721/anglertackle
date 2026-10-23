@@ -11,7 +11,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
@@ -331,7 +331,7 @@ public class LeaderboardScreen extends Screen {
         }
         try {
             var item = BuiltInRegistries.ITEM.get(
-                    ResourceLocation.fromNamespaceAndPath(AnglersTackle.MOD_ID, id));
+                    Identifier.fromNamespaceAndPath(AnglersTackle.MOD_ID, id));
             if (item != null && item != Items.AIR) {
                 return new ItemStack(item).getHoverName().getString();
             }

@@ -4,7 +4,7 @@ import com.whitecobalt.anglertackle.AnglersTackle;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -34,7 +34,7 @@ public record TitlePayload(List<String> rows, int ownedCount, int total, String 
         implements CustomPacketPayload {
 
     public static final CustomPacketPayload.Type<TitlePayload> TYPE =
-            new CustomPacketPayload.Type<>(ResourceLocation.fromNamespaceAndPath(
+            new CustomPacketPayload.Type<>(Identifier.fromNamespaceAndPath(
                     AnglersTackle.MOD_ID, "titles"));
 
     public static final StreamCodec<FriendlyByteBuf, TitlePayload> STREAM_CODEC = StreamCodec.of(

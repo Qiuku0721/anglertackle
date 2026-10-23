@@ -4,7 +4,7 @@ import com.whitecobalt.anglertackle.AnglersTackle;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -31,7 +31,7 @@ public record RodModPayload(
 
     public static final CustomPacketPayload.Type<RodModPayload> TYPE =
             new CustomPacketPayload.Type<>(
-                    ResourceLocation.fromNamespaceAndPath(AnglersTackle.MOD_ID, "rod_mod"));
+                    Identifier.fromNamespaceAndPath(AnglersTackle.MOD_ID, "rod_mod"));
 
     public static final StreamCodec<FriendlyByteBuf, RodModPayload> STREAM_CODEC = StreamCodec.of(
             (buf, p) -> {

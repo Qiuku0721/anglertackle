@@ -16,7 +16,7 @@ import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.texture.OverlayTexture;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
 
 /**
@@ -37,10 +37,10 @@ public class BobberRenderer extends EntityRenderer<BobberEntity> {
 
     /** 模型层：注册在 {@code EntityRenderersEvent.RegisterLayerDefinitions}。 */
     public static final ModelLayerLocation LAYER =
-            new ModelLayerLocation(ResourceLocation.fromNamespaceAndPath(AnglersTackle.MOD_ID, "bobber"), "main");
+            new ModelLayerLocation(Identifier.fromNamespaceAndPath(AnglersTackle.MOD_ID, "bobber"), "main");
 
-    private static final ResourceLocation TEXTURE =
-            ResourceLocation.fromNamespaceAndPath(AnglersTackle.MOD_ID, "textures/entity/bobber.png");
+    private static final Identifier TEXTURE =
+            Identifier.fromNamespaceAndPath(AnglersTackle.MOD_ID, "textures/entity/bobber.png");
 
     private final ModelPart root;
 
@@ -83,7 +83,7 @@ public class BobberRenderer extends EntityRenderer<BobberEntity> {
     }
 
     @Override
-    public ResourceLocation getTextureLocation(BobberEntity entity) {
+    public Identifier getTextureLocation(BobberEntity entity) {
         return TEXTURE;
     }
 

@@ -3,7 +3,7 @@ package com.whitecobalt.anglertackle.fishing;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.level.biome.Biome;
@@ -131,7 +131,7 @@ public enum WaterBody {
     private static final TagKey<Biome> IS_BEACH = tag("is_beach");
 
     private static TagKey<Biome> tag(String path) {
-        return TagKey.create(Registries.BIOME, ResourceLocation.withDefaultNamespace(path));
+        return TagKey.create(Registries.BIOME, Identifier.withDefaultNamespace(path));
     }
 
     /**
@@ -223,10 +223,10 @@ public enum WaterBody {
     }
 
     /** 原版三个洞穴群系。见 {@link #CAVE} 的说明：1.21.1 没有 is_cave 标签。 */
-    private static final java.util.Set<ResourceLocation> CAVE_BIOMES = java.util.Set.of(
-            ResourceLocation.withDefaultNamespace("lush_caves"),      // 繁茂洞穴
-            ResourceLocation.withDefaultNamespace("dripstone_caves"), // 溶洞
-            ResourceLocation.withDefaultNamespace("deep_dark"));      // 深暗之域
+    private static final java.util.Set<Identifier> CAVE_BIOMES = java.util.Set.of(
+            Identifier.withDefaultNamespace("lush_caves"),      // 繁茂洞穴
+            Identifier.withDefaultNamespace("dripstone_caves"), // 溶洞
+            Identifier.withDefaultNamespace("deep_dark"));      // 深暗之域
 
     public static WaterBody detect(ServerLevel level, BlockPos pos) {        // ① 地下水域优先（用户 2026-10-02 定案）。
         //    必须放在群系判定**之前**：地下暗河的群系往往还是地表群系
@@ -276,7 +276,7 @@ public enum WaterBody {
     private static final TagKey<Biome> IS_COLD_STREAM = modTag("cold_streams");
 
     private static TagKey<Biome> modTag(String path) {
-        return TagKey.create(Registries.BIOME, ResourceLocation.parse("anglertackle:" + path));
+        return TagKey.create(Registries.BIOME, Identifier.parse("anglertackle:" + path));
     }
 
     /**

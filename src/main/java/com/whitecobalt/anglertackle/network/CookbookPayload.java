@@ -4,7 +4,7 @@ import com.whitecobalt.anglertackle.AnglersTackle;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 /**
  * 服务端 → 客户端：可以开菜谱了（空载包）。
@@ -24,7 +24,7 @@ public record CookbookPayload() implements CustomPacketPayload {
     public static final CookbookPayload INSTANCE = new CookbookPayload();
 
     public static final CustomPacketPayload.Type<CookbookPayload> TYPE =
-            new CustomPacketPayload.Type<>(ResourceLocation.fromNamespaceAndPath(
+            new CustomPacketPayload.Type<>(Identifier.fromNamespaceAndPath(
                     AnglersTackle.MOD_ID, "cookbook"));
 
     public static final StreamCodec<FriendlyByteBuf, CookbookPayload> STREAM_CODEC =

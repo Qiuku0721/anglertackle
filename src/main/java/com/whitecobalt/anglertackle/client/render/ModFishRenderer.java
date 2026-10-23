@@ -9,7 +9,7 @@ import com.whitecobalt.anglertackle.entity.ModFish;
 import com.whitecobalt.anglertackle.registry.ModModelLayers;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.entity.MobRenderer;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
 
 /**
@@ -45,8 +45,8 @@ public class ModFishRenderer extends MobRenderer<ModFish, ModFishModel> {
     }
 
     @Override
-    public ResourceLocation getTextureLocation(ModFish entity) {
-        return ResourceLocation.fromNamespaceAndPath(AnglersTackle.MOD_ID,
+    public Identifier getTextureLocation(ModFish entity) {
+        return Identifier.fromNamespaceAndPath(AnglersTackle.MOD_ID,
                 "textures/entity/fish/" + entity.speciesId() + ".png");
     }
 

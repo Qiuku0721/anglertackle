@@ -4,7 +4,7 @@ import com.whitecobalt.anglertackle.AnglersTackle;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -32,7 +32,7 @@ public record AchievementPayload(List<String> rows, int total) implements Custom
 
     public static final CustomPacketPayload.Type<AchievementPayload> TYPE =
             new CustomPacketPayload.Type<>(
-                    ResourceLocation.fromNamespaceAndPath(AnglersTackle.MOD_ID, "achievements"));
+                    Identifier.fromNamespaceAndPath(AnglersTackle.MOD_ID, "achievements"));
 
     public static final StreamCodec<FriendlyByteBuf, AchievementPayload> STREAM_CODEC = StreamCodec.of(
             (buf, p) -> {

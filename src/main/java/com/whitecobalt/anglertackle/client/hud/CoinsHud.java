@@ -69,7 +69,7 @@ public final class CoinsHud {
         // 挂在经验条之上：这样它和原版 HUD 的层级关系是明确的，
         // 不会出现"被血量盖住"这种取决于注册顺序的玄学。
         event.registerAbove(VanillaGuiLayers.EXPERIENCE_BAR,
-                net.minecraft.resources.ResourceLocation.fromNamespaceAndPath(
+                net.minecraft.resources.Identifier.fromNamespaceAndPath(
                         AnglersTackle.MOD_ID, "coins_hud"),
                 CoinsHud::render);
     }

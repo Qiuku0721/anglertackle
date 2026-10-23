@@ -9,7 +9,7 @@ import com.whitecobalt.anglertackle.registry.ModRecipes;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.NonNullList;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -63,7 +63,7 @@ public class CuttingRecipe extends CustomRecipe {
      * 由 {@code check-fish-species} 一类的检查器与 {@code ModEntities.FISHES} 对齐。
      */
     private static final TagKey<Item> FISHES = TagKey.create(Registries.ITEM,
-            ResourceLocation.fromNamespaceAndPath(com.whitecobalt.anglertackle.AnglersTackle.MOD_ID, "fishes"));
+            Identifier.fromNamespaceAndPath(com.whitecobalt.anglertackle.AnglersTackle.MOD_ID, "fishes"));
 
     public CuttingRecipe(CraftingBookCategory category) {
         super(category);

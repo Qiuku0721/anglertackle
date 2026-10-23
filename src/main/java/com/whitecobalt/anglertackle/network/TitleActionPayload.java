@@ -4,7 +4,7 @@ import com.whitecobalt.anglertackle.AnglersTackle;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 /**
  * 客户端 → 服务端：**称号动作**。
@@ -28,7 +28,7 @@ public record TitleActionPayload(int action, String titleId) implements CustomPa
     public static final int UNEQUIP = 2;
 
     public static final CustomPacketPayload.Type<TitleActionPayload> TYPE =
-            new CustomPacketPayload.Type<>(ResourceLocation.fromNamespaceAndPath(
+            new CustomPacketPayload.Type<>(Identifier.fromNamespaceAndPath(
                     AnglersTackle.MOD_ID, "title_action"));
 
     public static final StreamCodec<FriendlyByteBuf, TitleActionPayload> STREAM_CODEC = StreamCodec.of(

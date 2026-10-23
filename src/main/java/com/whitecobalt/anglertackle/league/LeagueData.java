@@ -5,7 +5,7 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.item.Item;
@@ -302,7 +302,7 @@ public class LeagueData extends SavedData {
     }
 
     private static ItemStack tagToItem(CompoundTag t) {
-        ResourceLocation rl = ResourceLocation.tryParse(t.getString("id"));
+        Identifier rl = Identifier.tryParse(t.getString("id"));
         if (rl == null) {
             return ItemStack.EMPTY;
         }

@@ -5,7 +5,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 /**
  * 服务端 → 客户端：【明目】要指的那一块矿物在哪。
@@ -27,7 +27,7 @@ public record OreSightPayload(BlockPos pos, boolean active) implements CustomPac
 
     public static final CustomPacketPayload.Type<OreSightPayload> TYPE =
             new CustomPacketPayload.Type<>(
-                    ResourceLocation.fromNamespaceAndPath(AnglersTackle.MOD_ID, "ore_sight"));
+                    Identifier.fromNamespaceAndPath(AnglersTackle.MOD_ID, "ore_sight"));
 
     public static final StreamCodec<FriendlyByteBuf, OreSightPayload> STREAM_CODEC = StreamCodec.of(
             (buf, p) -> {

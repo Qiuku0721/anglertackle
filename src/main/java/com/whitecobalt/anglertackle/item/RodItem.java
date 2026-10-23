@@ -349,7 +349,7 @@ public class RodItem extends Item implements HasQuality {
     /** 物品 id → 显示名。 */
     private static Component itemNameOf(String itemId) {
         try {
-            var rl = net.minecraft.resources.ResourceLocation.parse(itemId);
+            var rl = net.minecraft.resources.Identifier.parse(itemId);
             return new ItemStack(net.minecraft.core.registries.BuiltInRegistries.ITEM.get(rl))
                     .getHoverName();
         } catch (Exception e) {
