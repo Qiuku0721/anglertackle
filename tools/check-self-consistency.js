@@ -93,7 +93,24 @@ head('三、关键文件存在性');
 // ------------------------------------------------------------------ 参考图
 head('四、参考图与贴图基线');
 {
-  const base = list('参考资料/鱼图/_baseline').filter(f => f.endsWith('.json'));
+  // ⚠ 26.1.2 (P4b)：参考资料/鱼图/_baseline 是**本机参考图**，被 .gitignore 排除
+  //   （`.gitignore` 的 `参考资料/*`），克隆后本来就不存在。
+  //   原来这里直接 readdirSync —— 缺目录时抛 ENOENT 崩栈，看起来像"检查器坏了"，
+  //   其实只是这台机器没有那份图。
+  //
+  //   处理方式：干净地报「环境不可用（缺 X）」并 exit 2。
+  //     · 不 exit 0：这一节**根本没验证**，说"全部通过"就是本仓库最忌讳的
+  //       "永远绿的检查器比没有检查器更坏"。
+  //     · 不 exit 1：1 在本脚本里表示"发现不一致"，而这是缺输入、无法判断。
+  //     · exit 2 是仓库里"缺输入/跑不了"的既有约定（check-item-icons 缺指纹表、
+  //       check-checkers 缺 _negtest.js 都 exit 2）。
+  const BASE_REL = '参考资料/鱼图/_baseline';
+  if (!fs.existsSync(path.join(ROOT, BASE_REL))) {
+    console.log('  ⚠ 环境不可用（缺 ' + BASE_REL + '）—— 该目录被 .gitignore 排除，克隆后不存在。');
+    console.log('    "每种鱼都有比例基线"这一节无法验证；恢复本机参考图后重跑本脚本。');
+    process.exit(2);
+  }
+  const base = list(BASE_REL).filter(f => f.endsWith('.json'));
   const src = read('src/main/java/com/whitecobalt/anglertackle/fishing/FishSpecies.java');
   const species = [...src.matchAll(/new FishSpecies\("([a-z_]+)"/g)].map(m => m[1]);
   const missBase = species.filter(s => !base.includes(s + '.json'));
