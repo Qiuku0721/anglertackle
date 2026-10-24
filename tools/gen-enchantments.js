@@ -19,6 +19,10 @@ const path = require('path');
 
 const ROOT = path.resolve(__dirname, '..');
 const NS = 'anglertackle';
+// 比较前归一换行：仓库存 LF，`core.autocrlf=true` 的 Windows 检出是 CRLF —— 那是检出方式，
+// 不是内容漂移。不归一的话，--write 会把 12 个文件的行尾全改成 LF（git diff 里看不见，
+// 但工作区确实被重写了一遍）。check-enchantments.js 用的是同一个归一规则。
+const norm = (s) => (s == null ? null : String(s).replace(/\r\n/g, '\n'));
 const ENCH_DIR = path.join(ROOT, 'src/main/resources/data', NS, 'enchantment');
 const ROD_TAG = path.join(ROOT, 'src/main/resources/data', NS, 'tags/item/enchantable/rod.json');
 const MC_TAGS = path.join(ROOT, 'src/main/resources/data/minecraft/tags/enchantment');
@@ -318,7 +322,8 @@ if (require.main === module) {
     for (const [file, text] of files) {
       fs.mkdirSync(path.dirname(file), { recursive: true });
       const old = fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : null;
-      if (old !== text) fs.writeFileSync(file, text);
+      // 只差行尾 ⇒ 不重写（见 norm 的说明）。
+      if (norm(old) !== norm(text)) fs.writeFileSync(file, text);
     }
     console.log('\n✅ 已写出 ' + files.size + ' 个文件（附魔 JSON + 竿标签 + 两张原版标签）');
   }
