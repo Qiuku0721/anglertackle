@@ -211,8 +211,11 @@ public enum WaterBody {
         if (pos.getY() >= CAVE_MAX_Y) {
             return false;
         }
-        int from = Math.max(level.getMinBuildHeight(), pos.getY() - CAVE_SCAN);
-        int to = Math.min(level.getMaxBuildHeight() - 1, pos.getY() + CAVE_SCAN);
+        // 26.1.2：getMinBuildHeight()/getMaxBuildHeight() → getMinY()/getMaxY()。
+        // ⚠ 语义变了：getMaxY() 是**闭区间**上界，旧的 getMaxBuildHeight() 是开区间，
+        //   所以原来的 "- 1" 必须去掉，否则会少扫最顶上那一格。
+        int from = Math.max(level.getMinY(), pos.getY() - CAVE_SCAN);
+        int to = Math.min(level.getMaxY(), pos.getY() + CAVE_SCAN);
         BlockPos.MutableBlockPos p = new BlockPos.MutableBlockPos();
         for (int y = from; y <= to; y++) {
             if (CAVE_BLOCKS.contains(level.getBlockState(p.set(pos.getX(), y, pos.getZ())).getBlock())) {
@@ -239,7 +242,7 @@ public enum WaterBody {
         //    注意这里**只是查群系 id**，不碰天光也不碰水深 ——
         //    早先那版用 canSeeSky 判洞穴，而水面方块自己就"看不见天"，
         //    结果所有深水都被判成洞穴（海洋里出绿鲫鱼那个事故）。
-        if (biome.unwrapKey().map(k -> CAVE_BIOMES.contains(k.location())).orElse(false)) {
+        if (biome.unwrapKey().map(k -> CAVE_BIOMES.contains(k.identifier())).orElse(false)) {
             return CAVE;
         }
         if (biome.is(IS_DEEP_OCEAN)) {

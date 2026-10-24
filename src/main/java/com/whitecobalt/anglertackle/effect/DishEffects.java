@@ -79,10 +79,10 @@ public final class DishEffects {
         // ---- 旧效果（普通/优质；顶级也保留，用户允许一道菜多个效果）----
         if (DishRecipe.Dish.SASHIMI.id().equals(dishId)) {
             if (supreme) {
-                out.add(new Grant(MobEffects.MOVEMENT_SPEED, 2, 20 * 30));      // 速度 II 30s
+                out.add(new Grant(MobEffects.SPEED, 2, 20 * 30));      // 速度 II 30s
                 out.add(new Grant(MobEffects.WATER_BREATHING, 1, 20 * 30));     // 水下呼吸 30s
             } else if (t == 3) {
-                out.add(new Grant(MobEffects.MOVEMENT_SPEED, 1, LEGACY_SPEED_TICKS));
+                out.add(new Grant(MobEffects.SPEED, 1, LEGACY_SPEED_TICKS));
             }
         } else if (DishRecipe.Dish.STEAMED.id().equals(dishId)) {
             out.add(new Grant(MobEffects.REGENERATION, 1, LEGACY_REGEN_TICKS));

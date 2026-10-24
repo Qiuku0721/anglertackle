@@ -1,6 +1,7 @@
 package com.whitecobalt.anglertackle.fishing;
 
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.MoonPhase;
 
 /**
  * 一次"此刻此地"的环境快照：时段 / 天气 / 月相。
@@ -53,7 +54,7 @@ public record Environment(int timeSlot, int weather, int moonPhase) {
     /** 原版月相 4 = 新月。 */
     public static final int MOON_NEW = 4;
 
-    /** 一天的长度（原版刻度）。用 {@code getDayTime() % 24000} 取"当天时刻"。 */
+    /** 一天的长度（原版刻度）。用 {@code getOverworldClockTime() % 24000} 取"当天时刻"。 */
     public static final long DAY_LENGTH = 24000L;
 
     // 边界（用户定案，见 docs/24 §6.1）：取"日出/日落前后"，玩家靠天色就能判断。
@@ -69,16 +70,34 @@ public record Environment(int timeSlot, int weather, int moonPhase) {
      *
      * <p><b>判定只在服务端做</b>：服务端用 {@link ServerLevel} 取一次、整段会话复用，
      * 决定抽签权重。客户端**不参与判定**，但可以调本方法读自己世界的天色来显示 ——
-     * 两边读的是同一份 {@code getDayTime()} 与同一个天气标志，所以天然一致，不需要同步。
+     * 两边读的是同一份 {@code getOverworldClockTime()} 与同一个天气标志，所以天然一致，不需要同步。
      *
      * <p>⚠ 服务端一段会话只取一次（见 {@code FishingSession.beginWaiting}）：
      * 每 tick 重算的话，跨过时段边界时同一竿的判定会变。
      */
     public static Environment now(Level level) {
-        long dayTime = Math.floorMod(level.getDayTime(), DAY_LENGTH);
+        // 26.1.2：Level#getDayTime() 已并入世界时钟（Level#getOverworldClockTime()）。
+        // 证据是原版自己就把这个值叫 "day time"（Level.java:970 的调试串），
+        // 难度计算也用 getOverworldClockTime() 顶替旧的 getDayTime()（ServerLevel.java:702）。
+        long clockTime = level.getOverworldClockTime();
+        long dayTime = Math.floorMod(clockTime, DAY_LENGTH);
         // 雷暴必须先判：isThundering() 为真时 isRaining() 也是真。
         int w = level.isThundering() ? THUNDER : (level.isRaining() ? RAIN : CLEAR);
-        return new Environment(slotOf(dayTime), w, level.getMoonPhase());
+        return new Environment(slotOf(dayTime), w, moonPhaseOf(clockTime));
+    }
+
+    /**
+     * 月相（原版 0~7；0 = 满月、4 = 新月）。
+     *
+     * <p>26.1.2 的 {@code Level} 已经没有 {@code getMoonPhase()}：月相成了 {@code MOON}
+     * 时间线挂在主世界时钟上的属性（{@code Timelines.java:168-173}，周期
+     * {@code 24000 * MoonPhase.COUNT}，每个 {@link MoonPhase#startTick()} 换一相）。
+     * 旧版 {@code getMoonPhase()} 就是 {@code (int)(dayTime / 24000 % 8 + 8) % 8}
+     * —— 与这条时间线是同一个函数，所以这里直接按时钟算：逐值等价，
+     * 也不需要 {@link #now(Level)} 里根本没有的位置参数。
+     */
+    private static int moonPhaseOf(long clockTime) {
+        return (int) Math.floorMod(clockTime / MoonPhase.PHASE_LENGTH, (long) MoonPhase.COUNT);
     }
 
     // ------------------------------------------------------------------ 纯函数（离线可测）

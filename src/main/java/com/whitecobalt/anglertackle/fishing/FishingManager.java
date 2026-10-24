@@ -404,7 +404,7 @@ public final class FishingManager {
                     // 和咬钩扣耐久同理：主手物品的服务端改动不会自动推给客户端，
                     // 不显式同步的话玩家开背包会看到"耐久回滚"。
                     try {
-                        int slot = 36 + player.getInventory().selected;
+                        int slot = 36 + player.getInventory().getSelectedSlot();
                         player.connection.send(
                                 new net.minecraft.network.protocol.game.ClientboundContainerSetSlotPacket(
                                         player.inventoryMenu.containerId,
@@ -417,7 +417,9 @@ public final class FishingManager {
                 }
             }
         }
-        player.getCooldowns().addCooldown(ModItems.WOOD_FLOAT_ROD.get(), 160);   // 8s
+        // 26.1.2：addCooldown(Item,int) → addCooldown(ItemStack,int)。冷却组由 getCooldownGroup(stack)
+        // 算出（无 USE_COOLDOWN 组件时 = 物品 id），所以传木浮竿的默认实例与旧版按 Item 记完全等价。
+        player.getCooldowns().addCooldown(ModItems.WOOD_FLOAT_ROD.get().getDefaultInstance(), 160);   // 8s
         end(session);
     }
 
@@ -425,7 +427,7 @@ public final class FishingManager {
     public void onEscaped(FishingSession session, ServerLevel level) {
         session.player().sendOverlayMessage(
                 Component.translatable("message.anglertackle.escaped").withStyle(ChatFormatting.YELLOW));
-        session.player().getCooldowns().addCooldown(ModItems.WOOD_FLOAT_ROD.get(), 80);   // 4s
+        session.player().getCooldowns().addCooldown(ModItems.WOOD_FLOAT_ROD.get().getDefaultInstance(), 80);   // 4s
         end(session);
     }
 
@@ -458,7 +460,7 @@ public final class FishingManager {
                     null,
                     session.equippedLureHabitMask());
             data = species.rollIndividual(r, player.level().getGameTime(),
-                    player.getGameProfile().getName(),
+                    player.getGameProfile().name(),
                     session.baitMinTier());   // ★ 同 FishingSession：个体品质卡饵料下限
         }
         ItemStack reward = new ItemStack(species.item().get());

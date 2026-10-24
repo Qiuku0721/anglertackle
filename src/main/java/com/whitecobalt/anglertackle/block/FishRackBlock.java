@@ -5,7 +5,6 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
-import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
@@ -19,11 +18,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.block.state.properties.EnumProperty;
-import net.minecraft.world.level.storage.loot.LootParams;
-import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
 import net.minecraft.world.phys.BlockHitResult;
-import java.util.ArrayList;
-import java.util.List;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -119,54 +114,9 @@ public class FishRackBlock extends BaseEntityBlock {
         return InteractionResult.PASS;
     }
 
-    /**
-     * 创造模式拆除的补偿：{@code preventsBlockDrops()}（= instabuild）时原版走的是
-     * 「不调 {@code playerDestroy}、不产生掉落」的路径，鱼会跟着方块实体一起消失。
-     * 旧实现的 {@code onRemove} 是「服务端每次方块变更都调用」的通用回调
-     * （1.21.1 反编译可证：{@code LevelChunk.setBlockState} 里先 {@code onRemove}、
-     * 之后才 {@code removeBlockEntity}），所以创造模式拆架子也会吐鱼；
-     * 为了不改变可见行为，这里按原版 {@code ShulkerBoxBlock.playerWillDestroy}
-     * 的同款写法补一次（{@code ShulkerBoxBlock.java:106-121}）。
-     *
-     * <p>生存模式不走这里（{@code preventsBlockDrops()} 为 false），掉落在
-     * {@link #getDrops} 里；两条路互斥，不会双吐。
-     */
-    @Override
-    public BlockState playerWillDestroy(Level level, BlockPos pos, BlockState state, Player player) {
-        if (!level.isClientSide() && player.preventsBlockDrops()
-                && level.getBlockEntity(pos) instanceof FishRackBlockEntity rack
-                && !rack.fish().isEmpty()) {
-            ItemEntity drop = new ItemEntity(level, pos.getX() + 0.5D, pos.getY() + 0.5D,
-                    pos.getZ() + 0.5D, rack.fish().copy());
-            drop.setDefaultPickUpDelay();
-            level.addFreshEntity(drop);
-        }
-        return super.playerWillDestroy(level, pos, state, player);
-    }
-
-    /**
-     * 拆掉/炸掉架子时，把架子上那条鱼原样吐出来（<b>不</b>走方块实体的默认掉落）。
-     *
-     * <p>⚠ 26.1.2 起这个动作**不能再放在 {@code affectNeighborsAfterRemoval} 里**：
-     * 那个钩子在方块实体已经被移除**之后**才调用（{@code LevelChunk.java:305-321}），
-     * 到那时 {@code level.getBlockEntity(pos)} 已经是 {@code null}，鱼会被静默吞掉。
-     * 现行口径是「方块实体里的东西由 {@code preRemoveSideEffects} 或掉落表负责」，
-     * 这里走掉落表：{@code Block.dropResources} 在移除方块**之前**就把方块实体塞进
-     * {@code LootContextParams.BLOCK_ENTITY}（{@code Level.java:312-315}），
-     * 原版 {@code DecoratedPotBlock} 正是用同样的办法把方块实体内容带进掉落的。
-     *
-     * <p>覆盖「生存破坏」和「爆炸」两条会产生掉落的路径；创造模式由
-     * {@link #playerWillDestroy} 补。仍有一处差异：{@code /setblock} 这类
-     * 不产生掉落的替换不会吐鱼（旧版 {@code onRemove} 会）—— 要做到逐路径一致，
-     * 得把逻辑放进 {@code FishRackBlockEntity.preRemoveSideEffects}，那是方块实体的事。
-     */
-    @Override
-    protected List<ItemStack> getDrops(BlockState state, LootParams.Builder params) {
-        List<ItemStack> drops = new ArrayList<>(super.getDrops(state, params));
-        if (params.getOptionalParameter(LootContextParams.BLOCK_ENTITY) instanceof FishRackBlockEntity rack
-                && !rack.fish().isEmpty()) {
-            drops.add(rack.fish().copy());
-        }
-        return drops;
-    }
+    // 「拆掉/炸掉/被替换时把架上那条鱼吐出来」**不在方块类里做**：
+    // 落点是 FishRackBlockEntity 的两个钩子（见那边的说明）：
+    //   · preRemoveSideEffects —— 生存挖掘 / 爆炸 / 创造拆除；
+    //   · setRemoved（区块卸载除外）—— /setblock、/fill 这类带 flag 256 的替换。
+    // 在这里再补一份 getDrops / playerWillDestroy 只会让前三条路径吐两份。
 }

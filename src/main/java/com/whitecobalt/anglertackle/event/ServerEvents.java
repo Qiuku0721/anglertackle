@@ -72,7 +72,10 @@ public final class ServerEvents {
 
     /** 注册数据包重载监听：教程书内容支持 /reload 热更新。 */
     @SubscribeEvent
-    public static void onAddReloadListener(net.neoforged.neoforge.event.AddReloadListenerEvent event) {
-        event.addListener(new com.whitecobalt.anglertackle.guide.GuideData.ReloadListener());
+    public static void onAddReloadListener(net.neoforged.neoforge.event.AddServerReloadListenersEvent event) {
+        // 26.1.2：监听器必须带一个唯一 id（用于依赖排序），旧的 addListener(listener) 没有了。
+        event.addListener(
+                net.minecraft.resources.Identifier.fromNamespaceAndPath(AnglersTackle.MOD_ID, "guide"),
+                new com.whitecobalt.anglertackle.guide.GuideData.ReloadListener());
     }
 }

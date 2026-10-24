@@ -1571,7 +1571,7 @@ public final class FishingSession {
             int floor = testLure ? 5 : mn;
             this.hookedData = this.hookedSpecies.rollIndividual(
                     this.player.getRandom(), this.player.level().getGameTime(),
-                    this.player.getGameProfile().getName(),
+                    this.player.getGameProfile().name(),
                     floor);   // ★ 个体品质也要卡饵料下限，否则金饵仍会出绿鱼
             FishingManager.LOGGER.info(
                     "[垂纶] 抽取结果：鱼种={} 档位表={} 个体下限={} 体重={} 实得档位={}",
@@ -1954,7 +1954,7 @@ public final class FishingSession {
             return;
         }
         try {
-            int slot = 36 + sp.getInventory().selected;
+            int slot = 36 + sp.getInventory().getSelectedSlot();
             sp.connection.send(new net.minecraft.network.protocol.game.ClientboundContainerSetSlotPacket(
                     sp.inventoryMenu.containerId, sp.inventoryMenu.incrementStateId(), slot,
                     sp.getMainHandItem().copy()));

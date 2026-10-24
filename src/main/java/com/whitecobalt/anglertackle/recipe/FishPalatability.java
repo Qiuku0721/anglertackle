@@ -174,7 +174,7 @@ public final class FishPalatability {
             switch (bite) {
                 case NAUSEA_CHANCE:
                 case NAUSEA:
-                    player.addEffect(new MobEffectInstance(MobEffects.CONFUSION, NAUSEA_TICKS, 0));
+                    player.addEffect(new MobEffectInstance(MobEffects.NAUSEA, NAUSEA_TICKS, 0));
                     break;
                 case WITHER:
                     player.addEffect(new MobEffectInstance(MobEffects.WITHER, WITHER_TICKS, 0));
@@ -273,7 +273,7 @@ public final class FishPalatability {
                 player.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, CHRONIC_TICKS, 0));
                 break;
             case "ciguatera":
-                player.addEffect(new MobEffectInstance(MobEffects.CONFUSION, CHRONIC_TICKS, 0));
+                player.addEffect(new MobEffectInstance(MobEffects.NAUSEA, CHRONIC_TICKS, 0));
                 break;
             case "dioxin":
                 player.addEffect(new MobEffectInstance(MobEffects.POISON, CHRONIC_POISON_TICKS, 0));

@@ -155,8 +155,9 @@ public final class ChumManager {
      */
     private List<ChumEntity> chumsNear(ServerLevel level, BlockPos center) {
         AABB area = new AABB(
-                center.getX() - radius(), level.getMinBuildHeight(), center.getZ() - radius(),
-                center.getX() + radius(), level.getMaxBuildHeight(), center.getZ() + radius());
+                center.getX() - radius(), level.getMinY(), center.getZ() - radius(),
+                // getMaxY() 是闭区间上界；旧 getMaxBuildHeight() 是开区间，故 +1 保持原盒完全一致
+                center.getX() + radius(), level.getMaxY() + 1, center.getZ() + radius());
         return level.getEntitiesOfClass(ChumEntity.class, area,
                 e -> e.isActive() && e.isAlive());
     }

@@ -253,8 +253,10 @@ public final class ShopMaterials {
             var key = net.minecraft.resources.ResourceKey.create(
                     net.minecraft.core.registries.Registries.ENCHANTMENT, eid);
             var holder = player.level().registryAccess()
-                    .registryOrThrow(net.minecraft.core.registries.Registries.ENCHANTMENT)
-                    .getHolder(key);
+                    .lookupOrThrow(net.minecraft.core.registries.Registries.ENCHANTMENT)
+                    // 26.1.2：Registry#getHolder(ResourceKey) 没了；Registry 本身实现 HolderLookup.RegistryLookup，
+                    // 它的 get(ResourceKey) 返回 Optional<Holder.Reference<Enchantment>>（与旧 getHolder 同型）。
+                    .get(key);
             if (holder.isEmpty()) {
                 return ItemStack.EMPTY;
             }

@@ -8,7 +8,7 @@ import net.minecraft.world.item.ItemStack;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.AnvilUpdateEvent;
-import net.neoforged.neoforge.event.entity.player.AnvilRepairEvent;
+import net.neoforged.neoforge.event.entity.player.AnvilCraftEvent;
 
 /**
  * 铁砧装配：左槽放竿、右槽放配件 → 合成出"装好这个配件"的竿。
@@ -31,14 +31,12 @@ import net.neoforged.neoforge.event.entity.player.AnvilRepairEvent;
  * （换件、改名字、取出再放回…）。在那里发货 = 每次预览都刷一个旧配件出来。
  * 这和砂轮是同一课：**给东西只能发生在"取走产出物"这一刻**。
  *
- * <p>{@code AnvilRepairEvent} 正是那一刻 —— NeoForge 从
- * {@code AnvilMenu.onTake} 里发出来（原文）：
- * <pre>
- *   float breakChance = CommonHooks.onAnvilRepair(player, taken,
- *           inputSlots.getItem(0), inputSlots.getItem(1));   // ← 左槽还是**原来那根竿**
- *   this.inputSlots.setItem(0, ItemStack.EMPTY);             // ← 钩子返回之后才清
- * </pre>
- * 所以旧配件在事件里还读得到；读它用 {@link RodModManager#partAt}（带耐久的那一份）。
+ * <p>26.1.2 起那一刻对应 {@link AnvilCraftEvent.Post}：NeoForge 把它放在
+ * {@code AnvilMenu.onTake} 的**最后**（{@code AnvilMenu.java:128}），
+ * 并把**加工前**的左/右槽快照一起传进来（{@code leftInputSnapshot} /
+ * {@code rightInputSnapshot}，{@code AnvilMenu.java:83-84}）——
+ * 所以左槽那根**原来那根竿**在 Post 里照样读得到，语义与旧的
+ * {@code AnvilRepairEvent} 一致。读旧件用 {@link RodModManager#partAt}（带耐久的那一份）。
  */
 @EventBusSubscriber(modid = AnglersTackle.MOD_ID)
 public final class AnvilEvents {
@@ -77,7 +75,7 @@ public final class AnvilEvents {
 
         // 提示玩家装到了哪个槽位（聊天栏 + 物品名后缀）
         event.setOutput(result);
-        event.setCost(1);
+        event.setXpCost(1);
         event.setMaterialCost(1);
 
         String slotKey = RodModManager.slotNameOf(right, rodItem.rodType());
@@ -97,8 +95,8 @@ public final class AnvilEvents {
      * 产出物是换好之后的竿，旧件在上面已经没有了。
      */
     @SubscribeEvent
-    public static void onAnvilRepair(AnvilRepairEvent event) {
-        // ⚠ 这个事件的取玩家方法是 getEntity()（AnvilRepairEvent → PlayerEvent → LivingEvent），
+    public static void onAnvilRepair(AnvilCraftEvent.Post event) {
+        // ⚠ 这个事件的取玩家方法仍是 getEntity()（AnvilCraftEvent → PlayerEvent → LivingEvent），
         //   没有 getPlayer()。写成 getPlayer() 编译器直接报"找不到符号"。
         Player player = event.getEntity();
         // 客户端也会跑一遍容器点击（预测），只有服务端能真给东西

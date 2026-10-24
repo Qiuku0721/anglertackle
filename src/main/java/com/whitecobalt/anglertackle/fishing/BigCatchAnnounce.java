@@ -55,7 +55,9 @@ public final class BigCatchAnnounce {
      */
     public static void maybeAnnounce(ServerPlayer player, Component fishName, float kg, long value) {
         try {
-            MinecraftServer server = player.getServer();
+            // 26.1.2 的 ServerPlayer 不再有 getServer()（字段是私有的）；
+            // 必须走 ServerPlayer#level()（协变返回 ServerLevel）→ ServerLevel#getServer()。
+            MinecraftServer server = player.level().getServer();
             if (server == null) {
                 return;
             }

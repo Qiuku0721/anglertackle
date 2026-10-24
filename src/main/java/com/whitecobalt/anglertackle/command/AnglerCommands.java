@@ -14,6 +14,7 @@ import net.minecraft.core.Holder;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.permissions.Permissions;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.biome.Biome;
@@ -75,7 +76,8 @@ public final class AnglerCommands {
      * 一律不加门槛 ✓ —— 它们既不改数也不发东西，加门槛只会让玩家查不了自己的问题
      * （{@code /atl rod} 存在的全部意义就是"玩家自己敲一下把输出贴给我"）。
      *
-     * <p>⚠ 这个集合是权限的**唯一真源**：{@link #lit(String)} 按它决定挂不挂 {@code hasPermission(2)}。
+     * <p>⚠ 这个集合是权限的**唯一真源**：{@link #lit(String)} 按它决定挂不挂 2 级权限
+     * （26.1.2 的 {@code Permissions.COMMANDS_GAMEMASTER}）。
      * 别在某个 {@code .then(...)} 上再手写 {@code .requires(...)} —— 那样就会出现
      * "某条指令忽然要 OP"而没人知道为什么。守着这条的是
      * {@code tools/check-command-permissions.js}（往集合里加 / 从集合里删，都必须红）。
@@ -124,7 +126,10 @@ public final class AnglerCommands {
      * 加指令想清楚一次、检查器一眼看全。
      */
     private static com.mojang.brigadier.builder.LiteralArgumentBuilder<CommandSourceStack> lit(String name) {
-        return Commands.literal(name).requires(src -> !OP_ONLY.contains(name) || src.hasPermission(2));
+        // 26.1.2 的权限系统：CommandSourceStack 持有 PermissionSet，旧的 hasPermission(int) 没了。
+        // 旧的 2 级 = GAMEMASTER（Permissions.COMMANDS_GAMEMASTER，server/permissions/Permissions.java:7）。
+        return Commands.literal(name).requires(src -> !OP_ONLY.contains(name)
+                || src.permissions().hasPermission(Permissions.COMMANDS_GAMEMASTER));
     }
 
     /**
@@ -1228,7 +1233,7 @@ public final class AnglerCommands {
         out.add(Component.literal("§7取样点：§f" + pos.getX() + " " + pos.getY() + " " + pos.getZ()
                 + "§8（" + (onBobber ? "浮漂落点 = 判定真正用的位置" : "视线/脚下") + "）"));
         out.add(Component.literal("§7群系：§f"
-                + biome.unwrapKey().map(k -> k.location().toString()).orElse("（未注册）")
+                + biome.unwrapKey().map(k -> k.identifier().toString()).orElse("（未注册）")
                 + "§7  基础温度 §f" + String.format("%.2f", biome.value().getBaseTemperature())));
         out.add(Component.literal("§7水体：§f" + body.cn() + "§7（" + body.name() + "）"));
         out.add(Component.literal("§7修饰：§f" + WaterBody.describeModifiers(mods)));

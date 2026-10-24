@@ -28,8 +28,9 @@ import java.util.Map;
  *
  * <h2>刷新的两条纪律（`docs/40` §3，用户原话："不然如果有一天睡觉一天不睡就乱套了"）</h2>
  * <ol>
- *   <li><b>按游戏内时刻</b>：日序号 = {@code floor(getDayTime() / 24000)}
- *       ⇒ 日界落在**游戏内天明**，玩家感知是"天亮了老柯派新活" ✓。
+ *   <li><b>按游戏内时刻</b>：日序号 = {@code floor(getOverworldClockTime() / 24000)}
+ *       （26.1.2 起旧的 {@code getDayTime()} 由世界时钟 {@code Level#getOverworldClockTime()}
+ *       取代，两者同值）⇒ 日界落在**游戏内天明**，玩家感知是"天亮了老柯派新活" ✓。
  *       ⚠ **不用 {@code getGameTime()}** —— 那只是纯 tick 计数、与昼夜无关，
  *       它的"一天"边界会落在半夜，正是用户说的"乱套" ✗；</li>
  *   <li><b>幂等</b>：每位玩家的 {@code QuestData.lastDailyDay} / {@code lastWeeklyWeek} 是刷新位
@@ -82,7 +83,7 @@ public final class QuestService {
     // ---------------------------------------------------------------- 日 / 周序号
     /** 游戏日序号（**按游戏内时刻**，见类注释）。 */
     public static long dayOf(ServerLevel level) {
-        return Math.floorDiv(level.getDayTime(), Environment.DAY_LENGTH);
+        return Math.floorDiv(level.getOverworldClockTime(), Environment.DAY_LENGTH);
     }
 
     /** 游戏周序号。 */
@@ -96,7 +97,7 @@ public final class QuestService {
      * <p>向上取整：还剩 1 秒也该显示"1 分钟"，显示"0 分钟"看着像已经过期了 ✓。
      */
     public static int dailyLeftMinutes(ServerLevel level) {
-        long t = Math.floorMod(level.getDayTime(), Environment.DAY_LENGTH);
+        long t = Math.floorMod(level.getOverworldClockTime(), Environment.DAY_LENGTH);
         return (int) ((Environment.DAY_LENGTH - t + 1199L) / 1200L);
     }
 
