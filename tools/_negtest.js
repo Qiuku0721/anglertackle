@@ -803,10 +803,32 @@ const BIN_FILES = [
  *   之后，compass-radius-blocks 这个负例就不再修改任何东西了。
  */
 function mustReplace(src, from, to, label) {
-  if (!src.includes(from)) {
-    throw new Error('负例构造失败「' + label + '」：锚点没匹配上 → ' + from.slice(0, 70));
+  // ⚠ 锚点与源文本**一律按 LF 比**：src 由 readTextLF() 读进来（已归一），
+  //   这里再把 from 归一一次 —— 有人真把 '\r\n' 写进锚点时也能匹配上（而不是静默失配）。
+  //   `to` **不归一**：用例要是真想写 CRLF 就该写 CRLF。
+  const F = from.replace(/\r\n/g, '\n');
+  if (!src.includes(F)) {
+    throw new Error('负例构造失败「' + label + '」：锚点没匹配上 → ' + F.slice(0, 70));
   }
-  return src.split(from).join(to);
+  return src.split(F).join(to);
+}
+
+/**
+ * 读文本 + **CRLF → LF 归一**（只在内存里归一，磁盘一个字节都不改）。
+ *
+ * <p>为什么需要（2026-10-24 P5a-1）：仓库里存的是 LF，而本机 core.autocrlf=true
+ * 把工作区检出成 CRLF；负例的锚点却是**按 LF 写在 JS 源码里**的（模板字符串的
+ * cooked 值按 ECMAScript 规范会把 CRLF 归一成 LF）。于是**只要锚点跨行**，
+ * mustReplace 逐字比就必然失配 —— 预检 142 条失败里绝大多数是这一个单一根因，
+ * 跟"26.1.2 移植改过源码文本"毫无关系 ✗。
+ *
+ * ⚠ 只在**读取**这一层归一：
+ *   · sourceFingerprint()（真源码指纹）**故意**不经过它 —— 它要按字节证明真仓库没被改；
+ *   · writeInCopy()（写回副本）也不经过它 —— 用例读进来是 LF，写回去自然也是 LF，
+ *     副本本来就是"给检查器读的一份"，不要求保留检出时的行尾。
+ */
+function readTextLF(abs) {
+  return fs.readFileSync(abs, 'utf8').replace(/\r\n/g, '\n');
 }
 
 /**
@@ -917,7 +939,9 @@ function makeAccessor(files, dirty, dest) {
   // 按需读：第一次访问某个文件时才真读它（见文件顶部的"复制策略"那一段）
   const ensure = (rel) => {
     if (files[rel] === null || files[rel] === undefined) {
-      files[rel] = fs.readFileSync(path.join(dest, rel), 'utf8');
+      // ⚠ 走 readTextLF：读进来就 CRLF→LF 归一（副本照样是硬链接/原样字节，磁盘不动）。
+      //   不归一的话，凡是跨行锚点都会在 CRLF 检出下失配（见 readTextLF 的说明）。
+      files[rel] = readTextLF(path.join(dest, rel));
     }
     return files[rel];
   };
@@ -6526,7 +6550,9 @@ function runAnchorPreflight() {
       (c.mutate || (() => {}))({
         get: (name) => {
           const rel = findKey(name);
-          if (!files.has(rel)) files.set(rel, fs.readFileSync(path.join(ROOT, rel), 'utf8'));
+          // ⚠ 与建副本时的 at.get **必须用同一个读法**（readTextLF，CRLF→LF）：
+          //   两处不一致的话，预检能过、真跑却失配（或反过来），预检就失去意义了。
+          if (!files.has(rel)) files.set(rel, readTextLF(path.join(ROOT, rel)));
           return files.get(rel);
         },
         set: (name, text) => { files.set(findKey(name), text); },
