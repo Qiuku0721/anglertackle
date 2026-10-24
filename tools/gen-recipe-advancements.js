@@ -31,6 +31,16 @@ const RECIPE_DIR = path.join(ROOT, 'src/main/resources/data', NS, 'recipe');
 const OUT_DIR = path.join(ROOT, 'src/main/resources/data', NS, 'advancement/recipes');
 
 /**
+ * 比较前归一换行。
+ *
+ * ⚠ 仓库存 LF，`core.autocrlf=true` 的 Windows 检出是 CRLF —— 那是**检出方式**，
+ *   不是内容漂移。不归一的话，`--write` 会把 105 个进度文件的**行尾**全改一遍
+ *   （git 里连 diff 都看不到），而两个检查器会永远报"生成物不一致"。
+ *   check-recipe-advancements / check-recipe-book 用的是同一个 norm。
+ */
+const norm = (s) => (s == null ? null : String(s).replace(/\r\n/g, '\n'));
+
+/**
  * **不进配方书**的配方（原版机制决定的，不是偷懒）。
  *
  * <p>`anglertackle:rod_assembly` 是 special 配方：JSON 里没有 ingredients，
@@ -85,8 +95,24 @@ function unlockItem(name, recipe) {
   return pickIngredient(recipe, name);
 }
 
-/** 把材料项归一成进度判据里的 items 值（原版：字符串，标签带 #）。 */
+/**
+ * 把材料项归一成进度判据里的 items 值（原版：字符串，标签带 #）。
+ *
+ * <p><b>26.1.2 的新写法：材料本身就是一个字符串</b>
+ * （`{"key":{"G":"minecraft:glass","F":"#anglertackle:fishes"}}`）——
+ * 原版把 Ingredient 收窄成"物品 id / #标签 id"两种字符串形态，1.21.1 的
+ * `{"item":…}` / `{"tag":…}` / `{"items":…}` 对象写法已经不再出现在新数据里。
+ * 字符串**原样**返回即可：进度判据的 `items` 值本来就只认"物品 id 或 #标签 id"，
+ * 带不带 # 都是它自己的语义，这里不做前缀转换。
+ *
+ * <p>旧对象写法仍然兼容读取（见下面三个分支）—— 万一以后还有 1.21.1 形态的数据，
+ * 不需要再改一遍生成器；也保证负例里"把配方改回旧写法"仍然能被解析。
+ */
 function normalizeIngredient(ing) {
+  if (typeof ing === 'string') {
+    // 新语法：纯字符串 / "#tag"。空串当"没有材料"处理，交给调用方继续找下一个槽位。
+    return ing.trim() || null;
+  }
   if (ing === null || typeof ing !== 'object') {
     return null;
   }
@@ -215,7 +241,7 @@ function build() {
   return out;
 }
 
-module.exports = { build, RECIPE_DIR, OUT_DIR, NS, RECIPE_BOOK_EXEMPT, BOOK_UNLOCK };
+module.exports = { build, norm, RECIPE_DIR, OUT_DIR, NS, RECIPE_BOOK_EXEMPT, BOOK_UNLOCK };
 
 if (require.main === module) {
   const generated = build();
@@ -243,7 +269,8 @@ if (require.main === module) {
       const file = path.join(OUT_DIR, name + '.json');
       fs.mkdirSync(path.dirname(file), { recursive: true });
       const old = fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : null;
-      if (old === text) continue;
+      // 只差行尾 ⇒ 不算漂移、也不重写（避免在 CRLF 检出上把 105 个文件的行尾全改一遍）。
+      if (norm(old) === norm(text)) continue;
       fs.writeFileSync(file, text);
       n++;
     }

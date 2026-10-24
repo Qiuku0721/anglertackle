@@ -62,14 +62,16 @@ for (const [name, text] of expected) {
     missing.push(name);
     continue;
   }
-  if (fs.readFileSync(file, 'utf8') !== text) {
+  // 只比内容、不比行尾：仓库存 LF、Windows 检出是 CRLF（core.autocrlf=true），
+  // 那是检出方式而不是漂移 —— 归一规则与生成器同一个 norm。
+  if (genMod.norm(fs.readFileSync(file, 'utf8')) !== genMod.norm(text)) {
     drift.push(name);
   }
 }
 if (missing.length === 0) ok('每条配方都有解锁进度（' + expected.size + ' 条）');
 else no('这些配方没有进度，玩家永远解锁不了：' + missing.join(', ') +
   '（重跑 node tools/gen-recipe-advancements.js --write）');
-if (drift.length === 0) ok('磁盘上的进度与生成器输出**逐字节一致**');
+if (drift.length === 0) ok('磁盘上的进度与生成器输出**内容一致**（只忽略 LF/CRLF 检出差异）');
 else no('这些进度与生成器输出不一致（手改过？）：' + drift.join(', ') +
   ' —— 生成物不许手改，改配方后重跑生成器');
 

@@ -110,7 +110,8 @@ function itemIdOf(expr) {
  *  ⚠ 源码里这两个类是**全限定名**（`net.minecraft.core.registries.Registries.ITEM`），
  *    所以前缀要写成 `[\w.]*` —— 第一次按短名写，正则一条都匹配不上。 */
 function tagOfFishConstant(src) {
-  const m = /TagKey\.create\([\w.]*Registries\.ITEM,\s*[\w.]*ResourceLocation\.fromNamespaceAndPath\(\s*[^,]+,\s*"([a-z_]+)"\)\)/.exec(src);
+  // 26.1.2 把 ResourceLocation 改名成 Identifier；两种都认（旧写法保留兼容）。
+  const m = /TagKey\.create\([\w.]*Registries\.ITEM,\s*[\w.]*(?:ResourceLocation|Identifier)\.fromNamespaceAndPath\(\s*[^,]+,\s*"([a-z_]+)"\)\)/.exec(src);
   return m ? '#' + NS + ':' + m[1] : null;
 }
 
@@ -197,19 +198,29 @@ console.log('  （逐鱼表展开：' + DISH_RECIPES.length + ' 条菜配方，'
 // ---------------------------------------------------------------- C 解锁材料
 {
   const wrong = [];
-  // 切块：`list.add(Ingredient.of(FISHES));`
+  // 26.1.2：Recipe 不再有 getIngredients()，配方书/JEI 看的是 placementInfo()。
+  // 两处都要认**两种写法**（1.21.1 的 list.add / Ingredient X = …，以及 26.1.2 的
+  // PlacementInfo.create / rawChunkIngredient()），否则下次再改一处又会静默失配。
+  //
+  // 切块：旧 `list.add(Ingredient.of(FISHES));` / 新
+  // `PlacementInfo.create(Ingredient.of(BuiltInRegistries.ITEM.getOrThrow(FISHES)))`
   const cutSrc = read(JAVA_DIR + '/CuttingRecipe.java');
   {
-    const want = /list\.add\(Ingredient\.of\(FISHES\)\);/.test(cutSrc) ? tagOfFishConstant(cutSrc) : null;
-    if (!want) wrong.push('cutting（CuttingRecipe.getIngredients() 里的整鱼标签解析不出来）');
+    const declares = /list\.add\(Ingredient\.of\(FISHES\)\);/.test(cutSrc)
+      || /PlacementInfo\.create\(Ingredient\.of\(BuiltInRegistries\.ITEM\.getOrThrow\(FISHES\)\)\)/.test(cutSrc);
+    const want = declares ? tagOfFishConstant(cutSrc) : null;
+    if (!want) wrong.push('cutting（CuttingRecipe 的 placementInfo() 里的整鱼标签解析不出来）');
     else if (BOOK_UNLOCK.cutting !== want) wrong.push('cutting：Java [' + want + '] vs 生成器 [' + BOOK_UNLOCK.cutting + ']');
   }
-  // 榨油：`Ingredient.of(ModItems.FISH_CHUNK.get(), …)` 的第一个
+  // 榨油：旧 `Ingredient X = Ingredient.of(ModItems.FISH_CHUNK.get(), …);` / 新
+  // `rawChunkIngredient()` 里的 `return Ingredient.of(ModItems.FISH_CHUNK.get(), …);`
   {
-    const m = /Ingredient \w+ = Ingredient\.of\(([\s\S]*?)\);/.exec(read(JAVA_DIR + '/OilPressingRecipe.java'));
+    const oilSrc = read(JAVA_DIR + '/OilPressingRecipe.java');
+    const m = /Ingredient \w+ = Ingredient\.of\(([\s\S]*?)\);/.exec(oilSrc)
+      || /rawChunkIngredient\(\)\s*\{[\s\S]*?Ingredient\.of\(([\s\S]*?)\);/.exec(oilSrc);
     const first = m && /ModItems\.([A-Z_0-9]+)\.get\(\)/.exec(m[1]);
     const want = first ? ITEM_ID.get(first[1]) : null;
-    if (!want) wrong.push('oil_pressing（OilPressingRecipe.getIngredients() 里的第一个生块解析不出来）');
+    if (!want) wrong.push('oil_pressing（OilPressingRecipe 的 placementInfo() 里的第一个生块解析不出来）');
     else if (BOOK_UNLOCK.oil_pressing !== want) wrong.push('oil_pressing：Java [' + want + '] vs 生成器 [' + BOOK_UNLOCK.oil_pressing + ']');
   }
   // 菜配方：解锁材料就是**那条鱼**（钓到它 → 解锁它的那道菜）
@@ -258,14 +269,16 @@ console.log('  （逐鱼表展开：' + DISH_RECIPES.length + ' 条菜配方，'
 // ---------------------------------------------------------------- F 生成器跑过了
 {
   const stale = [];
-  for (const [name, text] of genMod.build()) {
+  const generated = genMod.build();
+  for (const [name, text] of generated) {
     const rel = path.join('src/main/resources/data', NS, 'advancement/recipes', name + '.json');
     if (!exists(rel)) { stale.push(name + '（没有进度文件）'); continue; }
-    if (read(rel) !== text) stale.push(name + '（内容与生成器不一致）');
+    // 只比内容、不比行尾（LF/CRLF 是检出方式，不是漂移）—— 与生成器同一个 norm。
+    if (genMod.norm(read(rel)) !== genMod.norm(text)) stale.push(name + '（内容与生成器不一致）');
   }
   if (stale.length) {
     no('磁盘上的解锁进度与生成器不一致（改完配方忘了重跑生成器？）：\n       ' + stale.join('\n       '));
-  } else ok('磁盘上的 55 份解锁进度与生成器逐字节一致');
+  } else ok('磁盘上的 ' + generated.size + ' 份解锁进度与生成器内容一致（只忽略 LF/CRLF 检出差异）');
 }
 
 // ---------------------------------------------------------------- G 产物名字带鱼种
