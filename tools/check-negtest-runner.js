@@ -266,6 +266,10 @@ const buildCalls = neCalls.filter((l) => !/--check-anchors/.test(l));
     fs.closeSync(fd);
   }
   const log = fs.readFileSync(outFile, 'utf8');
+  // ⚠ 跳过行也带「←」，必须先摘出来：它们是**可选文件缺失**的说明，不是锚点失配。
+  //   （P4b 的规则：允许缺失的可选文件 —— 不静默、不判红；见下面那一节。）
+  const logLines = log.split('\n');
+  const skipLines = logLines.filter((l) => /⊘/.test(l));
   if (r.error) {
     bad('预检根本起不来（spawn 失败：' + r.error.message + '）—— 注意要抛出来，不许当成"跑过了"');
   } else if (r.status === 0) {
@@ -286,8 +290,8 @@ const buildCalls = neCalls.filter((l) => !/--check-anchors/.test(l));
     //   · "文件名 X 有歧义" —— 重复路径没去重（见负例 negrun-anchor-no-dedupe，实测 118 条）；
     //   · "找不到文件"     —— 键集合与建副本时不一致。
     //   所以判据是：**出现这两类就报红**，或者失败条数多到不可能是串扰（> 5 条）也报红。
-    const wrong = log.split('\n').filter((l) => /有歧义|找不到文件/.test(l));
-    const fails = log.split('\n').filter((l) => l.includes('←'));
+    const wrong = logLines.filter((l) => /有歧义|找不到文件/.test(l) && !/⊘/.test(l));
+    const fails = logLines.filter((l) => l.includes('←') && !/⊘/.test(l));
     if (wrong.length) {
       bad('预检在副本里报「' + wrong[0].trim().slice(0, 90) + '」等 ' + wrong.length
         + ' 条 —— 这是预检**自己**的解析错（重复路径没去重 / 路径找不到）✗');
@@ -299,6 +303,40 @@ const buildCalls = neCalls.filter((l) => !/--check-anchors/.test(l));
         + '造成的**预期内串扰**（其余锚点全解析）；没有"有歧义/找不到文件"这类预检自身的错 ✓');
     }
   }
+
+  // ---- 允许缺失的可选文件（2026-10-24 P4b）--------------------------------
+  //
+  // 规则（用户口径）：FILES 里可以列**本机才有的**夹具 —— .gitignore 的
+  // 工具/输入法锁定/*.bat、参考资料/鱼图/_baseline、fish_research/，以及构建产物 tuner.html。
+  // 缺失时：
+  //   · copier 跳过并打印「以下 FILES 在本机不存在…」；
+  //   · 用例用 at.skip() 主动声明"这条跑不了"，预检打「⊘ … 跳过」并**不计入失败**；
+  //   · 父进程按「清单 + 跳过 == 全部用例」核对，丢用例/分片崩掉仍然报错。
+  // 这里做行为判据：本机缺哪个夹具，预检日志里就必须有对应用例的「⊘ … 跳过」。
+  {
+    const OPTIONAL = [
+      ['工具/输入法锁定/编译.bat', 'ps1enc-bat-chinese'],
+      ['工具/输入法锁定/开机自启.bat', 'ps1enc-bat-bom'],
+      ['tuner.html', 'tuner-revert-broken'],
+      ['参考资料/鱼图/_baseline/arapaima.json', 'fishtex-baseline-drift'],
+      ['fish_research/jewel_cichlid.json', 'fishnames-jewel-old'],
+      ['fish_research/electric_eel.json', 'fishnames-electric-naked'],
+    ];
+    const missingHere = OPTIONAL.filter(([rel]) => !exists(rel));
+    if (missingHere.length === 0) {
+      ok('本机可选夹具齐全（' + OPTIONAL.length + ' 个）—— 这一节没有需要跳过的用例');
+    } else {
+      const notSkipped = missingHere.filter(([rel, dir]) => !skipLines.some((l) => l.includes(dir)));
+      if (notSkipped.length) {
+        bad('这些用例的夹具本机不存在，但预检没有报「跳过」：'
+          + notSkipped.map(([rel, dir]) => dir + '（缺 ' + rel + '）').join('、')
+          + ' —— 应当 at.skip() 跳过并说明，不许静默、也不许判红');
+      } else {
+        ok('可选文件缺失的 ' + missingHere.length + ' 条用例被**跳过并说明**'
+          + '（⊘ 行，不计入失败）');
+      }
+    }
+  }
 }
 
 
@@ -308,6 +346,31 @@ const buildCalls = neCalls.filter((l) => !/--check-anchors/.test(l));
     ok('执行器/脚本里写明了与 AGENTS.md §三 那条并发规则的关系');
   } else {
     bad('没写清它与"负例不许并发"那条规则的关系 —— 下一个人会以为规则被违反了 ✗');
+  }
+}
+
+// ---------------------------------------------------------------- H. "可选文件跳过"的实现（P4b）
+//
+// 只靠上面那条**行为**判据不够：本机夹具齐全时它是空转的（vacuously true）。
+// 这里再盯一遍实现本身，确保规则不是"这台机器恰好没触发"才通过的。
+{
+  const { stripComments } = require('./java-source.js');
+  const ne2 = stripComments(read('tools/_negtest.js'));
+  const parts = [
+    ['跳过信号 skipCase/caseSkipped', /function skipCase\(reason\)/.test(ne2) && /caseSkipped/.test(ne2)],
+    ['访问器暴露 at.skip', /skip:\s*\(reason\)\s*=>\s*skipCase\(reason\)/.test(ne2)],
+    ['预检把"跳过"与"构造失败"分开', /err\.caseSkipped\)\s*skipped\.push/.test(ne2)],
+    ['建副本把"跳过"与"构造失败"分开', /err\.caseSkipped\)\s*\{[\s\S]{0,800}?continue;/.test(ne2)],
+    ['父进程按「清单 + 跳过 == 全部用例」核对', /merged\.length \+ skipped\.length !== CASES\.length/.test(ne2)],
+    ['copier 缺文件时打印说明（不静默）', /以下 FILES 在本机不存在，建副本时跳过/.test(ne2)],
+    ['分片也写跳过清单', /skipped-shard-/.test(ne2)],
+  ];
+  const missingParts = parts.filter(([, present]) => !present).map(([name]) => name);
+  if (missingParts.length) {
+    bad('可选文件跳过机制缺了：' + missingParts.join('、')
+      + '（缺一样就会退回"静默跳过"或"缺文件就当失败"）');
+  } else {
+    ok('可选文件跳过机制完整（' + parts.length + ' 项：信号/访问器/预检/建副本/合并核对/说明/分片清单）');
   }
 }
 

@@ -334,7 +334,8 @@ const FILES = [
   'src/main/resources/data/anglertackle/enchantment/high_quality_lure.json',
   // 宝箱专属附魔的战利品注入链（check-enchantments.js 的"宝箱阶梯"一节读这三个）。
   // 同样要留出"生成器 + 生成物一起改"的用法，否则红的是漂移、不是那条断言。
-  'src/main/resources/data/neoforge/loot_modifiers/global_loot_modifiers.json',
+  // ⚠ 26.1.2 已删除 data/neoforge/loot_modifiers/global_loot_modifiers.json（按目录加载），
+  //   所以它不在 FILES 里；下面的用例改成"删掉修饰符文件"来模拟"不会被加载"。
   'src/main/resources/data/anglertackle/loot_modifiers/high_quality_lure_book.json',
   'src/main/resources/data/anglertackle/loot_table/inject/high_quality_lure_book.json',
   // 合成栏装配件（check-craft-assembly.js 读这四个）
@@ -809,6 +810,27 @@ function mustReplace(src, from, to, label) {
 }
 
 /**
+ * 用例"本机缺可选文件"的跳过信号。
+ *
+ * <p>有些 FILES 条目是**本机才有的**：`工具/输入法锁定/*.bat` 被 .gitignore 排除、
+ * `参考资料/鱼图/_baseline` 是外部参考图、`fish_research/` 也不入库、`tuner.html`
+ * 要构建才生成。它们缺失时：
+ * <ul>
+ *   <li><b>不是失败</b> —— 用例本身没错，只是这台机器没有夹具；</li>
+ *   <li><b>不许静默</b> —— 必须打一条"跳过 + 原因"，否则日志里看起来像"少跑了几条"；</li>
+ *   <li><b>不许算进清单</b> —— 跳过用例的副本不跑检查器，父进程按
+ *       "清单 + 跳过 == 全部用例"核对，丢用例仍然会报错。</li>
+ * </ul>
+ * 用法：`mutate: (at) => { if (!at.has('x')) at.skip('缺少 x …'); ... }`
+ * 守着这条规则的是 tools/check-negtest-runner.js（"允许缺失的可选文件"那一节）。
+ */
+function skipCase(reason) {
+  const e = new Error(reason);
+  e.caseSkipped = true;      // 与 mustReplace 的"构造失败"区分开：一个跳过、一个报错
+  throw e;
+}
+
+/**
  * 展开 'a/b/*.json' 这样的通配，返回相对路径列表。
  *
  * <p>支持两种写法：
@@ -907,6 +929,8 @@ function makeAccessor(files, dirty, dest) {
       dirty.add(rel);          // ★ 只有登记过的文件才会写回副本（其余保持硬链接）
     },
     has: (name) => Object.keys(files).some((k) => k === name || k.endsWith('/' + name)),
+    // 可选夹具缺失时由用例主动声明"这条跑不了"（见 skipCase 的说明）。
+    skip: (reason) => skipCase(reason),
   };
 }
 
@@ -1424,6 +1448,11 @@ const CASES = [
   { dir: 'ps1enc-bat-chinese', checker: 'check-ps1-encoding.js', expect: 1,
     desc: '.bat 里混进中文（cmd 按 OEM 代码页读，会把下一行的命令吃掉 —— 真实踩过）',
     mutate: (at) => {
+      // 可选夹具：这三个 .bat 在 .gitignore 里（/工具/），本机没有就跳过这条，
+      // 打清楚原因 —— 不许静默、也不许判红（用户 2026-10-24 P4b 定案）。
+      if (!at.has('编译.bat')) {
+        at.skip('可选文件缺失：工具/输入法锁定/编译.bat（.gitignore 的本机脚本）');
+      }
       // ⚠ 锚点要和文件**逐字**一致。第一版凭记忆写成 'rem Build ime-lock.exe'，
       //   而文件里是 'rem  Build'（两个空格）—— mustReplace 当场抛异常、
       //   整个 _negtest.js 崩掉，副本没更新；接着单独跑用例时检查器读的是**旧副本**，
@@ -1435,6 +1464,9 @@ const CASES = [
   { dir: 'ps1enc-bat-bom', checker: 'check-ps1-encoding.js', expect: 1,
     desc: '.bat 被编辑器加上 UTF-8 BOM（第一条命令之前多出三个字节）',
     mutate: (at) => {
+      if (!at.has('开机自启.bat')) {
+        at.skip('可选文件缺失：工具/输入法锁定/开机自启.bat（.gitignore 的本机脚本）');
+      }
       at.set('开机自启.bat', '\uFEFF' + at.get('开机自启.bat'));
     } },
 
@@ -1840,6 +1872,11 @@ const CASES = [
   { dir: 'tuner-revert-broken', checker: 'check-tuning-tool.js', expect: 1,
     desc: '「还原已选为默认值」被改成不还原（after = before，等于点了没反应）—— 必须红',
     mutate: (at) => {
+      // tuner.html 是**构建产物**（make-release/build-deploy 生成），本机没跑构建时不存在：
+      // 跳过并说明（用 调参器.html 单独改也没用 —— 检查器比较的是两份是否一致）。
+      if (!at.has('tuner.html')) {
+        at.skip('可选文件缺失：tuner.html（构建产物，先跑 tools/build-deploy.ps1 才有）');
+      }
       // 两个文件一起改：调参器.html 是检查器真正跑的生成物，tuner.html 要与它逐字节一致
       //（只改一个的话，红的理由会变成"两份不一致"，而不是"还原失效" ✗ 红得不对地方）。
       const broken = (src) => mustReplace(src, 'const after = f.def;', 'const after = before;',
@@ -1879,13 +1916,11 @@ const CASES = [
         'villageloot-wrong-chest'));
     } },
 
+  // 26.1.2：LootModifierManager 扫目录加载，不再有 global_loot_modifiers.json。
+  // "不会被加载"等价于"文件不在 data/anglertackle/loot_modifiers/ 里" ⇒ 直接删掉它。
   { dir: 'villageloot-not-listed', checker: 'check-hut-loot.js', expect: 1,
-    desc: '修饰符没登记进 global_loot_modifiers.json（根本不会被加载）',
-    mutate: (at) => {
-      const p = 'src/main/resources/data/neoforge/loot_modifiers/global_loot_modifiers.json';
-      at.set(p, mustReplace(at.get(p),
-        ',\n    "anglertackle:village_fisher_fish"', '', 'villageloot-not-listed'));
-    } },
+    desc: '修饰符文件不在 data/anglertackle/loot_modifiers/ 里（26.1.2 按目录加载 → 根本不会被加载）',
+    mutate: () => {}, deleteData: ['loot_modifiers/village_fisher_fish.json'] },
 
   { dir: 'villageloot-chance-drift', checker: 'check-hut-loot.js', expect: 1,
     desc: '村庄那一池的概率与小屋不一致（用户要求"数值相同"）',
@@ -2796,18 +2831,16 @@ const CASES = [
       at.set(p, mustReplace(at.get(p), '"min": 20', '"min": 40', 'ench-chest-levels/json'));
     } },
 
-  // ⚠ 2026-10-02：全局清单改成由 tools/glm-entries.js 统一声明（一个文件一个写者），
-  //   所以这条负例改成"从共享清单里删掉自己的条目" —— 症状与原来一样：
-  //   修饰符不会被加载、附魔永远不掉。
+  // ⚠ 26.1.2：没有 global_loot_modifiers.json 了（扫目录加载），"不会被加载" = 修饰符文件不在
+  //   data/anglertackle/loot_modifiers/ 里。同时把 glm-entries.js 的登记删掉 —— 否则生成器的
+  //   "登记 ↔ 文件必须一一对应"会先抛异常，红的原因就不是那条断言了。
   { dir: 'ench-chest-unlisted', checker: 'check-enchantments.js', expect: 1,
-    desc: '修饰符没写进 global_loot_modifiers.json（根本不会被加载）',
+    desc: '修饰符文件不在 data/anglertackle/loot_modifiers/ 里（根本不会被加载，附魔永远不掉）',
     mutate: (at) => {
       at.set('glm-entries.js', mustReplace(at.get('glm-entries.js'),
         "  'anglertackle:high_quality_lure_book',\n", '', 'ench-chest-unlisted/gen'));
-      const p = 'src/main/resources/data/neoforge/loot_modifiers/global_loot_modifiers.json';
-      at.set(p, mustReplace(at.get(p),
-        '    "anglertackle:high_quality_lure_book",\n', '', 'ench-chest-unlisted/json'));
-    } },
+    },
+    deleteData: ['loot_modifiers/high_quality_lure_book.json'] },
 
   { dir: 'ench-chest-badid', checker: 'check-enchantments.js', expect: 1,
     desc: '注入表里编了一个不存在的原版 id（整张表失效，东西不掉）',
@@ -2940,6 +2973,10 @@ const CASES = [
   { dir: 'fishtex-baseline-drift', checker: 'check-fish-textures.js', expect: 1,
     desc: '鱼贴图比例基线被改（模拟"把鱼上下拉高了"—— 这正是当年 --seal 那次事故）',
     mutate: (at) => {
+      // 参考资料/鱼图/_baseline 被 .gitignore 排除（本机参考图），克隆后没有 ⇒ 跳过。
+      if (!at.has('arapaima.json')) {
+        at.skip('可选文件缺失：参考资料/鱼图/_baseline/arapaima.json（.gitignore 的本机参考图）');
+      }
       // 锚点用带空格的写法：基线文件是 JSON.stringify(..., null, 2) 生成的
       at.set('arapaima.json', mustReplace(at.get('arapaima.json'),
         '"ar": 4,', '"ar": 1.5,', 'fishtex-baseline-drift'));
@@ -3479,6 +3516,8 @@ const CASES = [
     desc: '红宝石鱼的学名退回水族书旧名 Hemichromis bimaculatus（2022 年已分出 Rubricatochromis）',
     mutate: (at) => {
       const F = 'fish_research/jewel_cichlid.json';
+      // fish_research/ 也不入库（.gitignore）⇒ 本机没有调研资料时跳过，不判红。
+      if (!at.has(F)) at.skip('可选文件缺失：' + F + '（.gitignore 的调研资料）');
       at.set(F, mustReplace(at.get(F),
         '"scientificName": "Rubricatochromis bimaculatus（旧名 Hemichromis bimaculatus）",',
         '"scientificName": "Hemichromis bimaculatus",', 'fishnames-jewel-old'));
@@ -3487,6 +3526,7 @@ const CASES = [
     desc: '电鳗的学名写成拆分前的裸名（2019 年拆成三种这件事被抹掉，"860V 属于 E. voltai"也没了）',
     mutate: (at) => {
       const F = 'fish_research/electric_eel.json';
+      if (!at.has(F)) at.skip('可选文件缺失：' + F + '（.gitignore 的调研资料）');
       const s = at.get(F);
       const from = /"scientificName": "Electrophorus electricus（[\s\S]*?）",\n/.exec(s);
       if (!from) throw new Error('找不到电鳗的 scientificName 整行');
@@ -6455,6 +6495,8 @@ const BUILD_JOBS = (() => {
 function runAnchorPreflight() {
   const t0 = Date.now();
   const failures = [];
+  // 可选夹具缺失而主动跳过的用例（不是失败，见 skipCase）。
+  const skipped = [];
   // ⚠ 键集合必须**逐字复刻**建副本时的 `files` 对象（见 makeAccessor 的调用点）：
   //   · 只有 FILES 里的路径会登记（EXTRA 只拷不登记 ⇒ at.get 一个 EXTRA 路径在真跑时也会抛"找不到"）；
   //   · 不存在的文件不登记（`if (!fs.existsSync(src)) continue;`）；
@@ -6489,17 +6531,24 @@ function runAnchorPreflight() {
         },
         set: (name, text) => { files.set(findKey(name), text); },
         has: (name) => anchorKeys.some((k) => k === name || k.endsWith('/' + name)),
+        skip: (reason) => skipCase(reason),
       });
     } catch (err) {
-      failures.push(c.dir + '  ←  ' + err.message);
+      if (err && err.caseSkipped) skipped.push({ dir: c.dir, reason: err.message });
+      else failures.push(c.dir + '  ←  ' + err.message);
     }
   }
-  return { failures, ms: Date.now() - t0 };
+  return { failures, skipped, ms: Date.now() - t0 };
 }
 
 /** 预检失败就打印清单并以退出码 1 结束（**不许静默放过**）。 */
 function anchorPreflightOrDie(label) {
-  const { failures, ms } = runAnchorPreflight();
+  const { failures, skipped, ms } = runAnchorPreflight();
+  // 跳过要**说出来**（用户要求：不静默、不判红）—— 放在失败清单前面，和失败区分开。
+  if (skipped.length) {
+    console.log('ℹ 可选文件缺失，跳过 ' + skipped.length + ' 条用例（不是失败）：');
+    for (const s of skipped) console.log('   ⊘ ' + s.dir + '  ←  ' + s.reason);
+  }
   if (!failures.length) return ms;
   console.error('❌ 负例锚点预检未通过（' + failures.length + '/' + CASES.length + ' 条'
     + (label ? '，' + label : '') + '）：');
@@ -6598,6 +6647,19 @@ function purgeDir(dir) {
     console.log('⚠ 旧副本目录既删不掉也改不了名（后续写入可能失败）：' + err.message);
   }
 }
+// ---- 建副本前：把"本机没有的可选夹具"一次性说清楚 ----
+// ⚠ 用户 2026-10-24 (P4b) 的口径：FILES 里允许有**本机才有的可选文件**
+//   （.gitignore 的 工具/输入法锁定/*.bat、参考资料/鱼图/_baseline、fish_research/，
+//   以及构建产物 tuner.html）。缺失时 copier **跳过并说明**，不静默、也不判红。
+//   用例侧由 at.skip() 主动声明"这条跑不了"（见 skipCase），预检/建副本都不算漏检。
+if (!IS_SHARD) {
+  const missingFiles = FILES.filter((rel) => !fs.existsSync(path.join(ROOT, rel)));
+  if (missingFiles.length) {
+    console.log('ℹ 以下 FILES 在本机不存在，建副本时跳过（可选文件，不是错误）：');
+    for (const rel of missingFiles) console.log('   ⊘ ' + rel);
+  }
+}
+
 // ---- 父进程：并发清目录 → 并发建副本 → 合并清单 ----
 if (!IS_SHARD && BUILD_JOBS > 1) {
   const { spawn } = require('child_process');
@@ -6655,24 +6717,44 @@ if (!IS_SHARD && BUILD_JOBS > 1) {
       }
       // 合并分片清单（**按用例原始顺序**，与串行时逐字一致）
       const merged = [];
+      const skipped = [];
       for (let k = 0; k < BUILD_JOBS; k++) {
         const f = path.join(OUT, 'manifest-shard-' + k + '.json');
-        if (!fs.existsSync(f)) continue;
-        merged.push(...JSON.parse(fs.readFileSync(f, 'utf8')));
-        fs.rmSync(f, { force: true });
+        if (fs.existsSync(f)) {
+          merged.push(...JSON.parse(fs.readFileSync(f, 'utf8')));
+          fs.rmSync(f, { force: true });
+        }
+        const sf = path.join(OUT, 'skipped-shard-' + k + '.json');
+        if (fs.existsSync(sf)) {
+          skipped.push(...JSON.parse(fs.readFileSync(sf, 'utf8')));
+          fs.rmSync(sf, { force: true });
+        }
       }
-      if (merged.length !== CASES.length) {
-        console.error('❌ 清单条数不对：' + merged.length + ' ≠ ' + CASES.length);
+      // ⚠ 判据从 "清单 == 全部用例" 放宽成 "清单 + 跳过 == 全部用例"，但**不许重复、不许丢**：
+      //   可选夹具缺失的用例本来就不该跑（见 skipCase）；而分片崩掉/丢用例仍然会在这里报错。
+      const allDirs = [...merged, ...skipped].map((m) => m.dir);
+      if (merged.length + skipped.length !== CASES.length || new Set(allDirs).size !== CASES.length) {
+        console.error('❌ 清单条数不对：清单 ' + merged.length + ' + 跳过 ' + skipped.length
+          + ' ≠ 全部 ' + CASES.length + '（或有重复用例）');
         process.exit(1);
       }
       const byDir = new Map(merged.map((m) => [m.dir, m]));
+      const skipByDir = new Map(skipped.map((s) => [s.dir, s]));
       const ordered = CASES.map((c) => byDir.get(c.dir)).filter(Boolean);
       for (const m of ordered) {
         console.log('  ' + m.checker.padEnd(24) + m.dir.padEnd(24) + m.desc);
       }
+      const skipOrdered = CASES.map((c) => skipByDir.get(c.dir)).filter(Boolean);
+      if (skipOrdered.length) {
+        console.log('\nℹ 可选文件缺失，跳过 ' + skipOrdered.length + ' 条用例（不是失败）：');
+        for (const s of skipOrdered) {
+          console.log('   ⊘ ' + s.checker.padEnd(24) + s.dir.padEnd(24) + s.reason);
+        }
+      }
       fs.writeFileSync(path.join(OUT, 'manifest.json'), JSON.stringify(ordered, null, 2), 'utf8');
       console.log('  ⏱ 清目录 + 建副本共 ' + Math.round((Date.now() - t0) / 1000) + ' 秒');
-      console.log('\n共 ' + ordered.length + ' 个用例 → ' + path.relative(ROOT, OUT));
+      console.log('\n共 ' + ordered.length + ' 个用例 → ' + path.relative(ROOT, OUT)
+        + (skipOrdered.length ? '（另有 ' + skipOrdered.length + ' 条因可选文件缺失跳过）' : ''));
       process.exit(0);
     });
   }
@@ -6681,6 +6763,9 @@ if (!IS_SHARD) purgeDir(OUT);
 const srcBefore = sourceFingerprint();
 
 const manifest = [];
+// 本机缺可选夹具而跳过的用例：不进 manifest（不跑检查器），但要报给用户、并在
+// 分片合并时与"清单条数"一起核对（见父进程那段的 1+N 校验）。
+const skipped = [];
 for (let caseIndex = 0; caseIndex < CASES.length; caseIndex++) {
   const c = CASES[caseIndex];
   // 分片：只建属于本片的用例（`index % N === k`，与父进程的合并顺序无关 ——
@@ -6740,7 +6825,18 @@ for (let caseIndex = 0; caseIndex < CASES.length; caseIndex++) {
     linkOrCopy(src, dst);
     files[rel] = null;                  // 路径登记，内容按需读（见 makeAccessor 的 reader）
   }
-  (c.mutate || (() => {}))(makeAccessor(files, dirty, dest));
+  try {
+    (c.mutate || (() => {}))(makeAccessor(files, dirty, dest));
+  } catch (err) {
+    if (err && err.caseSkipped) {
+      // 可选夹具缺失：这一条**不跑**（不算漏检、也不算通过），打清楚原因后扔掉半成品副本。
+      skipped.push({ dir: c.dir, checker: c.checker, desc: c.desc, reason: err.message });
+      console.log('  ⊘ ' + c.checker.padEnd(24) + c.dir.padEnd(24) + '跳过：' + err.message);
+      try { purgeEntry(dest); } catch (e) { /* 清不掉就算了：下一轮 purgeDir 会清 */ }
+      continue;
+    }
+    throw err;      // 真正的"锚点没匹配上"照旧当场报错（不许混进"跳过"）
+  }
   // ⚠ **只写回用例真改过的文件**（原来是把 150 个文件全写一遍 —— 白写 99%）
   for (const rel of dirty) {
     writeInCopy(path.join(dest, rel), files[rel]);
@@ -6798,8 +6894,13 @@ if (IS_SHARD) {
   // 子进程：把清单写成**自己的分片**（父进程稍后合并；不碰 manifest.json ✓）
   fs.writeFileSync(path.join(OUT, 'manifest-shard-' + shardIndex + '.json'),
     JSON.stringify(manifest, null, 2), 'utf8');
+  // 跳过清单也**总是写**（空数组也要写）：父进程靠"文件在不在"区分
+  // "这一片没有跳过" 与 "这一片崩在半路"。
+  fs.writeFileSync(path.join(OUT, 'skipped-shard-' + shardIndex + '.json'),
+    JSON.stringify(skipped, null, 2), 'utf8');
 } else {
   fs.writeFileSync(path.join(OUT, 'manifest.json'), JSON.stringify(manifest, null, 2), 'utf8');
-  console.log('\n共 ' + CASES.length + ' 个用例 → ' + path.relative(ROOT, OUT));
+  if (skipped.length) console.log('\nℹ 另有 ' + skipped.length + ' 条用例因可选文件缺失被跳过（不是失败，见上）');
+  console.log('\n共 ' + manifest.length + ' 个用例 → ' + path.relative(ROOT, OUT));
 }
 }
