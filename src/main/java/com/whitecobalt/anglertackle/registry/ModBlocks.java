@@ -2,6 +2,10 @@ package com.whitecobalt.anglertackle.registry;
 
 import com.whitecobalt.anglertackle.AnglersTackle;
 import com.whitecobalt.anglertackle.block.FishRackBlock;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.material.MapColor;
@@ -21,7 +25,7 @@ public final class ModBlocks {
             DeferredRegister.createBlocks(AnglersTackle.MOD_ID);
 
     public static final DeferredBlock<FishRackBlock> FISH_RACK = BLOCKS.register("fish_rack",
-            () -> new FishRackBlock(BlockBehaviour.Properties.of()
+            () -> new FishRackBlock(BlockBehaviour.Properties.of().setId(blockKey("fish_rack"))
                     .mapColor(MapColor.WOOD)
                     .strength(0.8F)
                     .sound(SoundType.WOOD)
@@ -35,7 +39,7 @@ public final class ModBlocks {
      */
     public static final DeferredBlock<com.whitecobalt.anglertackle.block.AquariumBlock> AQUARIUM =
             BLOCKS.register("aquarium", () -> new com.whitecobalt.anglertackle.block.AquariumBlock(
-                    BlockBehaviour.Properties.of()
+                    BlockBehaviour.Properties.of().setId(blockKey("aquarium"))
                             .mapColor(MapColor.COLOR_CYAN)
                             .strength(0.6F)
                             .sound(SoundType.GLASS)
@@ -52,7 +56,7 @@ public final class ModBlocks {
      */
     public static final DeferredBlock<com.whitecobalt.anglertackle.block.ReleasePlatformBlock> RELEASE_PLATFORM =
             BLOCKS.register("release_platform", () -> new com.whitecobalt.anglertackle.block.ReleasePlatformBlock(
-                    BlockBehaviour.Properties.of()
+                    BlockBehaviour.Properties.of().setId(blockKey("release_platform"))
                             .mapColor(MapColor.WOOD)
                             .strength(2.0F)
                             .sound(SoundType.WOOD)));
@@ -68,7 +72,7 @@ public final class ModBlocks {
      */
     public static final DeferredBlock<com.whitecobalt.anglertackle.block.IceHoleBlock> ICE_HOLE =
             BLOCKS.register("ice_hole", () -> new com.whitecobalt.anglertackle.block.IceHoleBlock(
-                    BlockBehaviour.Properties.of()
+                    BlockBehaviour.Properties.of().setId(blockKey("ice_hole"))
                             .mapColor(MapColor.ICE)
                             .strength(0.5F)
                             .sound(SoundType.GLASS)
@@ -79,17 +83,25 @@ public final class ModBlocks {
 
     public static final DeferredBlock<com.whitecobalt.anglertackle.block.BrokenIceBlock> BROKEN_ICE =
             BLOCKS.register("broken_ice", () -> new com.whitecobalt.anglertackle.block.BrokenIceBlock(
-                    BlockBehaviour.Properties.of()
+                    BlockBehaviour.Properties.of().setId(blockKey("broken_ice"))
                             .mapColor(MapColor.ICE)
                             .strength(0.5F)
                             .sound(SoundType.GLASS)));
 
     public static final DeferredBlock<com.whitecobalt.anglertackle.block.PackIceBlock> PACK_ICE =
             BLOCKS.register("pack_ice", () -> new com.whitecobalt.anglertackle.block.PackIceBlock(
-                    BlockBehaviour.Properties.of()
+                    BlockBehaviour.Properties.of().setId(blockKey("pack_ice"))
                             .mapColor(MapColor.ICE)
                             .strength(0.5F)
                             .sound(SoundType.GLASS)));
+
+    /**
+     * 方块 id 键：26.1.2 的 {@link Block} 构造同样要求 {@code Properties} 已 setId，
+     * 否则在 {@code BlockBehaviour.Properties#effectiveDrops} 抛 {@code Block id not set}。
+     */
+    private static ResourceKey<Block> blockKey(String name) {
+        return ResourceKey.create(Registries.BLOCK, Identifier.fromNamespaceAndPath(AnglersTackle.MOD_ID, name));
+    }
 
     public static void register(IEventBus modBus) {
         BLOCKS.register(modBus);
@@ -100,7 +112,7 @@ public final class ModBlocks {
     /** 木板凳（配方 砖砖砖/.棍./棍.棍）。右击坐下，坐着回拉速度 +1%。 */
     public static final DeferredBlock<com.whitecobalt.anglertackle.block.StoolBlock> STOOL =
             BLOCKS.register("stool", () -> new com.whitecobalt.anglertackle.block.StoolBlock(
-                    BlockBehaviour.Properties.of()
+                    BlockBehaviour.Properties.of().setId(blockKey("stool"))
                             .mapColor(MapColor.WOOD)
                             .strength(0.8F)
                             .sound(SoundType.WOOD)
@@ -109,7 +121,7 @@ public final class ModBlocks {
     /** 带坐垫的木板凳（皮革 + 木板凳）。多 +1% 回拉速度。 */
     public static final DeferredBlock<com.whitecobalt.anglertackle.block.CushionedStoolBlock> CUSHIONED_STOOL =
             BLOCKS.register("cushioned_stool", () -> new com.whitecobalt.anglertackle.block.CushionedStoolBlock(
-                    BlockBehaviour.Properties.of()
+                    BlockBehaviour.Properties.of().setId(blockKey("cushioned_stool"))
                             .mapColor(MapColor.COLOR_BROWN)
                             .strength(0.8F)
                             .sound(SoundType.WOOD)

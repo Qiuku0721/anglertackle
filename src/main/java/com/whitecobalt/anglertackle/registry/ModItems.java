@@ -16,6 +16,8 @@ import com.whitecobalt.anglertackle.item.SeasoningItem;
 import com.whitecobalt.anglertackle.item.TacklePartItem;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -74,7 +76,7 @@ public final class ModItems {
 
     private static DeferredItem<RodItem> rod(String name, RodItem.RodType type, RodItem.RodSpec spec) {
         return ITEMS.register(name, () -> new RodItem(type, spec,
-                new Item.Properties()
+                new Item.Properties().setId(itemKey(name))
                         .stacksTo(1)
                         .durability(spec.maxDurability())
                         // 出生就带上"空装配"组件：
@@ -130,22 +132,22 @@ public final class ModItems {
      */
     public static final DeferredItem<TacklePartItem> HEMP_LINE = ITEMS.register("hemp_line",
             () -> new TacklePartItem(TacklePartItem.Slot.LINE,
-                    partProps(50, Rarity.COMMON, PartStats.line(1.08, 0.97, 1.05, 1.00, 1))));
+                    partProps(50, Rarity.COMMON, PartStats.line(1.08, 0.97, 1.05, 1.00, 1)).setId(itemKey("hemp_line"))));
 
     /** 棉线：绿档。回复略好、线略长，仍然是新手档。 */
     public static final DeferredItem<TacklePartItem> COTTON_LINE = ITEMS.register("cotton_line",
             () -> new TacklePartItem(TacklePartItem.Slot.LINE,
-                    partProps(50, Rarity.UNCOMMON, PartStats.line(1.20, 0.91, 1.15, 35.0 / 30.0, 2))));
+                    partProps(50, Rarity.UNCOMMON, PartStats.line(1.20, 0.91, 1.15, 35.0 / 30.0, 2)).setId(itemKey("cotton_line"))));
 
     /** 尼龙线：蓝档。性价比之选，张力和线长都上了一个台阶。 */
     public static final DeferredItem<TacklePartItem> NYLON_LINE = ITEMS.register("nylon_line",
             () -> new TacklePartItem(TacklePartItem.Slot.LINE,
-                    partProps(40, Rarity.RARE, PartStats.line(1.28, 0.95, 1.30, 45.0 / 30.0, 3))));
+                    partProps(40, Rarity.RARE, PartStats.line(1.28, 0.95, 1.30, 45.0 / 30.0, 3)).setId(itemKey("nylon_line"))));
 
     /** 碳氟线：紫档。抗磨、低延展，张力回复快，专治"线黄得快"的黏液型鱼。 */
     public static final DeferredItem<TacklePartItem> FLUORO_LINE = ITEMS.register("fluoro_line",
             () -> new TacklePartItem(TacklePartItem.Slot.LINE,
-                    partProps(35, Rarity.EPIC, PartStats.line(1.64, 0.78, 1.42, 60.0 / 30.0, 4))));
+                    partProps(35, Rarity.EPIC, PartStats.line(1.64, 0.78, 1.42, 60.0 / 30.0, 4)).setId(itemKey("fluoro_line"))));
 
     /**
      * 编织 PE 线：**金档**（用户定案，原为紫）。
@@ -156,7 +158,7 @@ public final class ModItems {
      */
     public static final DeferredItem<TacklePartItem> PE_LINE = ITEMS.register("pe_line",
             () -> new TacklePartItem(TacklePartItem.Slot.LINE,
-                    partProps(30, Rarity.EPIC, PartStats.line(2.08, 0.64, 1.52, 65.0 / 30.0, 5))));
+                    partProps(30, Rarity.EPIC, PartStats.line(2.08, 0.64, 1.52, 65.0 / 30.0, 5)).setId(itemKey("pe_line"))));
 
     /**
      * 钛合金记忆金属线：**红档**，全模组最强鱼线（用户定案）。
@@ -169,7 +171,7 @@ public final class ModItems {
      */
     public static final DeferredItem<TacklePartItem> TITANIUM_LINE = ITEMS.register("titanium_line",
             () -> new TacklePartItem(TacklePartItem.Slot.LINE,
-                    partProps(30, Rarity.EPIC, PartStats.line(2.36, 0.56, 1.78, 70.0 / 30.0, 6))));
+                    partProps(30, Rarity.EPIC, PartStats.line(2.36, 0.56, 1.78, 70.0 / 30.0, 6)).setId(itemKey("titanium_line"))));
 
     // ------------------------------------------------------------------ ③ 渔轮
     // 参数顺序：不挣扎回拉 / 挣扎回拉 / 体力削减 / 压制阻尼
@@ -199,17 +201,17 @@ public final class ModItems {
      */
     public static final DeferredItem<TacklePartItem> HAND_REEL = ITEMS.register("hand_reel",
             () -> new TacklePartItem(TacklePartItem.Slot.REEL,
-                    partProps(0, Rarity.COMMON, PartStats.reel(1.08, 1.08, 1.08, 1.07, 1))));
+                    partProps(0, Rarity.COMMON, PartStats.reel(1.08, 1.08, 1.08, 1.07, 1)).setId(itemKey("hand_reel"))));
 
     /** 纺车轮：绿档，三项同步小幅提升。 */
     public static final DeferredItem<TacklePartItem> SPINNING_REEL = ITEMS.register("spinning_reel",
             () -> new TacklePartItem(TacklePartItem.Slot.REEL,
-                    partProps(0, Rarity.UNCOMMON, PartStats.reel(1.25, 1.25, 1.25, 1.20, 2))));
+                    partProps(0, Rarity.UNCOMMON, PartStats.reel(1.25, 1.25, 1.25, 1.20, 2)).setId(itemKey("spinning_reel"))));
 
     /** 鼓轮：蓝档，均衡型——三项都在中等偏上，最稳的过渡轮。 */
     public static final DeferredItem<TacklePartItem> DRUM_REEL = ITEMS.register("drum_reel",
             () -> new TacklePartItem(TacklePartItem.Slot.REEL,
-                    partProps(0, Rarity.RARE, PartStats.reel(1.45, 1.45, 1.60, 1.45, 3))));
+                    partProps(0, Rarity.RARE, PartStats.reel(1.45, 1.45, 1.60, 1.45, 3)).setId(itemKey("drum_reel"))));
 
     /**
      * 水滴轮：**紫档，收线型**。
@@ -222,7 +224,7 @@ public final class ModItems {
      */
     public static final DeferredItem<TacklePartItem> BAITCAST_REEL = ITEMS.register("baitcast_reel",
             () -> new TacklePartItem(TacklePartItem.Slot.REEL,
-                    partProps(0, Rarity.EPIC, PartStats.reel(1.98, 1.95, 1.40, 1.40, 4))));
+                    partProps(0, Rarity.EPIC, PartStats.reel(1.98, 1.95, 1.40, 1.40, 4)).setId(itemKey("baitcast_reel"))));
 
     /**
      * 大型纺车轮：**金档，绞盘型**。
@@ -234,7 +236,7 @@ public final class ModItems {
      */
     public static final DeferredItem<TacklePartItem> HEAVY_REEL = ITEMS.register("heavy_reel",
             () -> new TacklePartItem(TacklePartItem.Slot.REEL,
-                    partProps(0, Rarity.EPIC, PartStats.reel(1.64, 1.64, 2.30, 2.50, 5)), 1.25));
+                    partProps(0, Rarity.EPIC, PartStats.reel(1.64, 1.64, 2.30, 2.50, 5)).setId(itemKey("heavy_reel")), 1.25));
 
     // ------------------------------------------------------------------ ④ 鱼钩
     // 用户定案：鱼钩只保留**唯一真正生效**的「提竿窗口」。
@@ -243,12 +245,12 @@ public final class ModItems {
     /** 普通钩：基准，提竿窗口 +0.00s。 */
     public static final DeferredItem<TacklePartItem> PLAIN_HOOK = ITEMS.register("plain_hook",
             () -> new TacklePartItem(TacklePartItem.Slot.HOOK,
-                    partProps(0, Rarity.COMMON, PartStats.hook(0.00))));
+                    partProps(0, Rarity.COMMON, PartStats.hook(0.00)).setId(itemKey("plain_hook"))));
 
     /** 倒刺钩：提竿窗口 +0.08s（绿档）。 */
     public static final DeferredItem<TacklePartItem> BARBED_HOOK = ITEMS.register("barbed_hook",
             () -> new TacklePartItem(TacklePartItem.Slot.HOOK,
-                    partProps(0, Rarity.UNCOMMON, PartStats.hook(0.08))));
+                    partProps(0, Rarity.UNCOMMON, PartStats.hook(0.08)).setId(itemKey("barbed_hook"))));
 
     // ------------------------------------------------------------------ ⑥ 浮漂【已删除】
     // 木浮漂 / 荧光漂两个物品已移除（用户定案："去掉这个功能，目前没看到两配件作用"）。
@@ -393,7 +395,7 @@ public final class ModItems {
      * 真实钓鱼拿到的鱼会在 {@code FishingManager} 里被写上真实数据，覆盖这个默认值。
      */
     private static DeferredItem<FishItem> fish(String name) {
-        return ITEMS.register(name, () -> new FishItem(new Item.Properties().stacksTo(16)
+        return ITEMS.register(name, () -> new FishItem(new Item.Properties().setId(itemKey(name)).stacksTo(16)
                 .component(ModDataComponents.FISH_DATA.get(), defaultFishData(name))));
     }
 
@@ -445,7 +447,7 @@ public final class ModItems {
     /** 钓鱼手册：按右键打开（内容内置在 Java 里，数据包可覆盖）。 */
     public static final DeferredItem<com.whitecobalt.anglertackle.guide.GuideBookItem> GUIDE_BOOK =
             ITEMS.register("guide_book", () -> new com.whitecobalt.anglertackle.guide.GuideBookItem(
-                    new Item.Properties().stacksTo(1)));
+                    new Item.Properties().setId(itemKey("guide_book")).stacksTo(1)));
 
     // ------------------------------------------------------------------ 图鉴书
     /**
@@ -460,7 +462,7 @@ public final class ModItems {
      * 于是卖鱼/丢鱼/送人都不影响已点亮的记录 —— 图鉴跟着玩家走，不跟着鱼走。
      */
     public static final DeferredItem<CodexBookItem> CODEX_BOOK = ITEMS.register("codex_book",
-            () -> new CodexBookItem(new Item.Properties().stacksTo(1)));
+            () -> new CodexBookItem(new Item.Properties().setId(itemKey("codex_book")).stacksTo(1)));
 
     /**
      * 菜谱（2026-10-03 用户："制作菜谱，菜谱合成方式（原版任意熟鱼加书）"）。
@@ -472,7 +474,7 @@ public final class ModItems {
      * <p>{@code stacksTo(1)}：与教程书/图鉴书一致（工具类物品，不该占一摞）。
      */
     public static final DeferredItem<CookbookItem> COOKBOOK = ITEMS.register("cookbook",
-            () -> new CookbookItem(new Item.Properties().stacksTo(1)));
+            () -> new CookbookItem(new Item.Properties().setId(itemKey("cookbook")).stacksTo(1)));
 
     /**
      * **邮箱**（用户 2026-10-11 点名要的邮件系统；`docs/36` §5.7 的**主入口**）。
@@ -493,34 +495,34 @@ public final class ModItems {
     public static final DeferredItem<com.whitecobalt.anglertackle.item.TerminalItem> TERMINAL =
             ITEMS.register("terminal",
                     () -> new com.whitecobalt.anglertackle.item.TerminalItem(
-                            new Item.Properties().stacksTo(1)));
+                            new Item.Properties().setId(itemKey("terminal")).stacksTo(1)));
 
     public static final DeferredItem<com.whitecobalt.anglertackle.item.MailboxItem> MAILBOX =
             ITEMS.register("mailbox",
                     () -> new com.whitecobalt.anglertackle.item.MailboxItem(
-                            new Item.Properties().stacksTo(1)));
+                            new Item.Properties().setId(itemKey("mailbox")).stacksTo(1)));
 
     // ------------------------------------------------------------------ 鱼饵（消耗品）
     // tier = 品质下限（0 白 1 绿 2 蓝 3 紫 4 金 5 红）；maxWeight 0 = 无上限
     // floatRodAllowed = 台钓竿能不能用这种饵
     /** 面包屑：白档，只能钓 1kg 以下的小鱼。 */
     public static final DeferredItem<BaitItem> BAIT_BREAD = ITEMS.register("bait_bread",
-            () -> new BaitItem(0, 1.0, 0, true, 1, 1.5, new Item.Properties().stacksTo(1).durability(40)));
+            () -> new BaitItem(0, 1.0, 0, true, 1, 1.5, new Item.Properties().setId(itemKey("bait_bread")).stacksTo(1).durability(40)));
     /** 蚯蚓：白档通用，挖草方块可得。 */
     public static final DeferredItem<BaitItem> BAIT_WORM = ITEMS.register("bait_worm",
-            () -> new BaitItem(0, 4.0, 0, true, 1, 2.0, new Item.Properties().stacksTo(1).durability(40)));
+            () -> new BaitItem(0, 4.0, 0, true, 1, 2.0, new Item.Properties().setId(itemKey("bait_worm")).stacksTo(1).durability(40)));
     /** 玉米粒：绿档，草食鱼加成。 */
     public static final DeferredItem<BaitItem> BAIT_CORN = ITEMS.register("bait_corn",
-            () -> new BaitItem(1, 8.0, 0, true, 5, 2.2, new Item.Properties().stacksTo(1).durability(30)));
+            () -> new BaitItem(1, 8.0, 0, true, 5, 2.2, new Item.Properties().setId(itemKey("bait_corn")).stacksTo(1).durability(30)));
     /** 活虾：紫档，海洋稀有鱼加成。 */
     public static final DeferredItem<BaitItem> BAIT_SHRIMP = ITEMS.register("bait_shrimp",
-            () -> new BaitItem(3, 0, 3.0, true, 18, 2.5, new Item.Properties().stacksTo(1).durability(22)));
+            () -> new BaitItem(3, 0, 3.0, true, 18, 2.5, new Item.Properties().setId(itemKey("bait_shrimp")).stacksTo(1).durability(22)));
     /** 发光饵：金档，洞穴/深海专用。 */
     public static final DeferredItem<BaitItem> BAIT_GLOW = ITEMS.register("bait_glow",
-            () -> new BaitItem(4, 0, 5.0, true, 24, 3.0, new Item.Properties().stacksTo(1).durability(20)));
+            () -> new BaitItem(4, 0, 5.0, true, 24, 3.0, new Item.Properties().setId(itemKey("bait_glow")).stacksTo(1).durability(20)));
     /** 秘制香饵：红档，最强。 */
     public static final DeferredItem<BaitItem> BAIT_SECRET = ITEMS.register("bait_secret",
-            () -> new BaitItem(5, 0, 10.0, true, 30, 2.8, new Item.Properties().stacksTo(1).durability(20)));
+            () -> new BaitItem(5, 0, 10.0, true, 30, 2.8, new Item.Properties().setId(itemKey("bait_secret")).stacksTo(1).durability(20)));
 
     // ------------------------------------------------------------------ 拟饵（有耐久，路亚专用）
     // 六档阶梯 **1白 2绿 3蓝 4紫 5金 6红**（和鱼线用同一套口径，见上面的鱼线段）。
@@ -538,7 +540,7 @@ public final class ModItems {
     /** 亮片拟饵：**绿档**入门（档位 2），耐久 40。 */
     public static final DeferredItem<TacklePartItem> LURE_SPOON = ITEMS.register("lure_spoon",
             () -> new TacklePartItem(TacklePartItem.Slot.LURE,
-                    partProps(40, Rarity.UNCOMMON, PartStats.lure(2))));
+                    partProps(40, Rarity.UNCOMMON, PartStats.lure(2)).setId(itemKey("lure_spoon"))));
 
     /**
      * 荧光亮片：**绿档**入门（档位 2），耐久 40 —— 用户 2026-10-01 追加。
@@ -556,12 +558,12 @@ public final class ModItems {
      */
     public static final DeferredItem<TacklePartItem> LURE_GLOWSPOON = ITEMS.register("lure_glowspoon",
             () -> new TacklePartItem(TacklePartItem.Slot.LURE,
-                    partProps(40, Rarity.UNCOMMON, PartStats.lure(2))));
+                    partProps(40, Rarity.UNCOMMON, PartStats.lure(2)).setId(itemKey("lure_glowspoon"))));
 
     /** 米诺鱼拟饵：**蓝档**主力（档位 3），耐久 30。 */
     public static final DeferredItem<TacklePartItem> LURE_MINNOW = ITEMS.register("lure_minnow",
             () -> new TacklePartItem(TacklePartItem.Slot.LURE,
-                    partProps(30, Rarity.RARE, PartStats.lure(3))));
+                    partProps(30, Rarity.RARE, PartStats.lure(3)).setId(itemKey("lure_minnow"))));
 
     /**
      * 深潜刺激米诺：**紫档**打底层（档位 4），耐久 22。
@@ -571,12 +573,12 @@ public final class ModItems {
      */
     public static final DeferredItem<TacklePartItem> LURE_DEEP = ITEMS.register("lure_deep",
             () -> new TacklePartItem(TacklePartItem.Slot.LURE,
-                    partProps(22, Rarity.EPIC, PartStats.lure(4))));
+                    partProps(22, Rarity.EPIC, PartStats.lure(4)).setId(itemKey("lure_deep"))));
 
     /** 钢珠声诱拟饵：**金档**（档位 5）。内置钢珠发声，专钓警觉的大个体。 */
     public static final DeferredItem<TacklePartItem> LURE_RATTLE = ITEMS.register("lure_rattle",
             () -> new TacklePartItem(TacklePartItem.Slot.LURE,
-                    partProps(20, Rarity.EPIC, PartStats.lure(5))));
+                    partProps(20, Rarity.EPIC, PartStats.lure(5)).setId(itemKey("lure_rattle"))));
 
     /**
      * 镀金竞技拟饵：**红档顶配**（档位 6）。竞技级做工，金红鱼也吃。
@@ -586,12 +588,12 @@ public final class ModItems {
      */
     public static final DeferredItem<TacklePartItem> LURE_GILDED = ITEMS.register("lure_gilded",
             () -> new TacklePartItem(TacklePartItem.Slot.LURE,
-                    partProps(20, Rarity.EPIC, PartStats.lure(6))));
+                    partProps(20, Rarity.EPIC, PartStats.lure(6)).setId(itemKey("lure_gilded"))));
 
     /** 软虫拟饵：**蓝档**（档位 3），靠卷尾在水里摆动，走中层。 */
     public static final DeferredItem<TacklePartItem> LURE_SOFT = ITEMS.register("lure_soft",
             () -> new TacklePartItem(TacklePartItem.Slot.LURE,
-                    partProps(26, Rarity.RARE, PartStats.lure(3))));
+                    partProps(26, Rarity.RARE, PartStats.lure(3)).setId(itemKey("lure_soft"))));
 
     // ---- 第三批 3 个拟饵（用户 2026-10-01 定案）----
     //
@@ -611,17 +613,17 @@ public final class ModItems {
     /** 蓝—深水探索米诺：**蓝档**（档位 3），细长软虫 + 桨状尾，数值同软虫。 */
     public static final DeferredItem<TacklePartItem> LURE_DEPTHFINDER = ITEMS.register("lure_depthfinder",
             () -> new TacklePartItem(TacklePartItem.Slot.LURE,
-                    partProps(26, Rarity.RARE, PartStats.lure(3))));
+                    partProps(26, Rarity.RARE, PartStats.lure(3)).setId(itemKey("lure_depthfinder"))));
 
     /** 紫—深水摆尾拟饵：**紫档**（档位 4），绿背银腹 + 桨状尾，数值同浅层刺激拟饵。 */
     public static final DeferredItem<TacklePartItem> LURE_PADDLETAIL = ITEMS.register("lure_paddletail",
             () -> new TacklePartItem(TacklePartItem.Slot.LURE,
-                    partProps(22, Rarity.EPIC, PartStats.lure(4))));
+                    partProps(22, Rarity.EPIC, PartStats.lure(4)).setId(itemKey("lure_paddletail"))));
 
     /** 金—深潜巨物振动饵：**金档**（档位 5），蓝身黄头硬饵 + 两枚三本钩，数值同钢珠声诱。 */
     public static final DeferredItem<TacklePartItem> LURE_VIBRATION = ITEMS.register("lure_vibration",
             () -> new TacklePartItem(TacklePartItem.Slot.LURE,
-                    partProps(20, Rarity.EPIC, PartStats.lure(5))));
+                    partProps(20, Rarity.EPIC, PartStats.lure(5)).setId(itemKey("lure_vibration"))));
 
     /**
      * 测试拟饵：**仅用于调试**，上红概率 100%（用户定案）。
@@ -641,21 +643,21 @@ public final class ModItems {
      */
     public static final DeferredItem<TacklePartItem> TEST_LURE = ITEMS.register("lure_test_red",
             () -> new TacklePartItem(TacklePartItem.Slot.LURE,
-                    partProps(9999, Rarity.EPIC, PartStats.lure(6))));
+                    partProps(9999, Rarity.EPIC, PartStats.lure(6)).setId(itemKey("lure_test_red"))));
 
     // ------------------------------------------------------------------ 窝料
     /** 通用谷物窝：白档，只缩时间。 */
     public static final DeferredItem<ChumItem> CHUM_GRAIN = ITEMS.register("chum_grain",
-            () -> new ChumItem(0, false, 10, 0.75, 30, new Item.Properties().stacksTo(16)));
+            () -> new ChumItem(0, false, 10, 0.75, 30, new Item.Properties().setId(itemKey("chum_grain")).stacksTo(16)));
     /** 腥味肉窝：绿档起步。 */
     public static final DeferredItem<ChumItem> CHUM_MEAT = ITEMS.register("chum_meat",
-            () -> new ChumItem(1, false, 10, 0.65, 80, new Item.Properties().stacksTo(16)));
+            () -> new ChumItem(1, false, 10, 0.65, 80, new Item.Properties().setId(itemKey("chum_meat")).stacksTo(16)));
     /** 甜香蜂蜜谷物窝：蓝档起步。 */
     public static final DeferredItem<ChumItem> CHUM_FRUIT = ITEMS.register("chum_fruit",
-            () -> new ChumItem(2, false, 10, 0.55, 150, new Item.Properties().stacksTo(16)));
+            () -> new ChumItem(2, false, 10, 0.55, 150, new Item.Properties().setId(itemKey("chum_fruit")).stacksTo(16)));
     /** 秘制配方窝：紫档起步 + **沉底窝**（唯一能影响底层鱼的）。 */
     public static final DeferredItem<ChumItem> CHUM_SECRET = ITEMS.register("chum_secret",
-            () -> new ChumItem(3, true, 10, 0.45, 300, new Item.Properties().stacksTo(16)));
+            () -> new ChumItem(3, true, 10, 0.45, 300, new Item.Properties().setId(itemKey("chum_secret")).stacksTo(16)));
 
     /**
      * 老柯的刷怪蛋 —— **仅用于调试**。
@@ -692,7 +694,7 @@ public final class ModItems {
      */
     public static final DeferredItem<SpawnEggItem> FISHERMAN_SPAWN_EGG =
             ITEMS.register("fisherman_spawn_egg", () -> new SpawnEggItem(
-                    new Item.Properties().spawnEgg(ModEntities.FISHERMAN.get())));
+                    new Item.Properties().setId(itemKey("fisherman_spawn_egg")).spawnEgg(ModEntities.FISHERMAN.get())));
 
     // ------------------------------------------------------------------ 鱼的刷怪蛋
     // 21 个，调试用。颜色直接取该鱼的背部色 + 花纹色（与模型贴图同源），
@@ -708,283 +710,283 @@ public final class ModItems {
     public static final DeferredItem<com.whitecobalt.anglertackle.item.FishSpawnEggItem> TILAPIA_SPAWN_EGG =
             ITEMS.register("tilapia_spawn_egg", () -> new com.whitecobalt.anglertackle.item.FishSpawnEggItem(
                     com.whitecobalt.anglertackle.registry.ModEntities.FISHES.get("tilapia"), "tilapia", 0x6E7A4A, 0x3A3B2E,
-                    new Item.Properties()));
+                    new Item.Properties().setId(itemKey("tilapia_spawn_egg"))));
 
     /** 齿蝶鱼 —— 调试用刷怪蛋，上架前连同创造页签那一行一起删（见 docs/12 打包清单）。 */
     public static final DeferredItem<com.whitecobalt.anglertackle.item.FishSpawnEggItem> AFRICAN_BUTTERFLYFISH_SPAWN_EGG =
             ITEMS.register("african_butterflyfish_spawn_egg", () -> new com.whitecobalt.anglertackle.item.FishSpawnEggItem(
                     com.whitecobalt.anglertackle.registry.ModEntities.FISHES.get("african_butterflyfish"), "african_butterflyfish", 0x6B5F3A, 0x4A4028,
-                    new Item.Properties()));
+                    new Item.Properties().setId(itemKey("african_butterflyfish_spawn_egg"))));
 
     /** 鲫鱼 —— 调试用刷怪蛋，上架前连同创造页签那一行一起删（见 docs/12 打包清单）。 */
     public static final DeferredItem<com.whitecobalt.anglertackle.item.FishSpawnEggItem> CRUCIAN_CARP_SPAWN_EGG =
             ITEMS.register("crucian_carp_spawn_egg", () -> new com.whitecobalt.anglertackle.item.FishSpawnEggItem(
                     com.whitecobalt.anglertackle.registry.ModEntities.FISHES.get("crucian_carp"), "crucian_carp", 0x4A5A3C, 0xA8ADA2,
-                    new Item.Properties()));
+                    new Item.Properties().setId(itemKey("crucian_carp_spawn_egg"))));
 
     /** 镜鲤 —— 调试用刷怪蛋，上架前连同创造页签那一行一起删（见 docs/12 打包清单）。 */
     public static final DeferredItem<com.whitecobalt.anglertackle.item.FishSpawnEggItem> MIRROR_CARP_SPAWN_EGG =
             ITEMS.register("mirror_carp_spawn_egg", () -> new com.whitecobalt.anglertackle.item.FishSpawnEggItem(
                     com.whitecobalt.anglertackle.registry.ModEntities.FISHES.get("mirror_carp"), "mirror_carp", 0x6B5A3C, 0x6B5A3C,
-                    new Item.Properties()));
+                    new Item.Properties().setId(itemKey("mirror_carp_spawn_egg"))));
 
     /** 红宝石鱼 —— 调试用刷怪蛋，上架前连同创造页签那一行一起删（见 docs/12 打包清单）。 */
     public static final DeferredItem<com.whitecobalt.anglertackle.item.FishSpawnEggItem> JEWEL_CICHLID_SPAWN_EGG =
             ITEMS.register("jewel_cichlid_spawn_egg", () -> new com.whitecobalt.anglertackle.item.FishSpawnEggItem(
                     com.whitecobalt.anglertackle.registry.ModEntities.FISHES.get("jewel_cichlid"), "jewel_cichlid", 0x7A6A3F, 0x1B1B22,
-                    new Item.Properties()));
+                    new Item.Properties().setId(itemKey("jewel_cichlid_spawn_egg"))));
 
     /** 鲻鱼 —— 调试用刷怪蛋，上架前连同创造页签那一行一起删（见 docs/12 打包清单）。 */
     public static final DeferredItem<com.whitecobalt.anglertackle.item.FishSpawnEggItem> MULLET_SPAWN_EGG =
             ITEMS.register("mullet_spawn_egg", () -> new com.whitecobalt.anglertackle.item.FishSpawnEggItem(
                     com.whitecobalt.anglertackle.registry.ModEntities.FISHES.get("mullet"), "mullet", 0x6B7A7E, 0x3A4247,
-                    new Item.Properties()));
+                    new Item.Properties().setId(itemKey("mullet_spawn_egg"))));
 
     /** 梭鲈 —— 调试用刷怪蛋，上架前连同创造页签那一行一起删（见 docs/12 打包清单）。 */
     public static final DeferredItem<com.whitecobalt.anglertackle.item.FishSpawnEggItem> ZANDER_SPAWN_EGG =
             ITEMS.register("zander_spawn_egg", () -> new com.whitecobalt.anglertackle.item.FishSpawnEggItem(
                     com.whitecobalt.anglertackle.registry.ModEntities.FISHES.get("zander"), "zander", 0x4A5D3A, 0x3A3D2B,
-                    new Item.Properties()));
+                    new Item.Properties().setId(itemKey("zander_spawn_egg"))));
 
     /** 大西洋鲑 —— 调试用刷怪蛋，上架前连同创造页签那一行一起删（见 docs/12 打包清单）。 */
     public static final DeferredItem<com.whitecobalt.anglertackle.item.FishSpawnEggItem> ATLANTIC_SALMON_SPAWN_EGG =
             ITEMS.register("atlantic_salmon_spawn_egg", () -> new com.whitecobalt.anglertackle.item.FishSpawnEggItem(
                     com.whitecobalt.anglertackle.registry.ModEntities.FISHES.get("atlantic_salmon"), "atlantic_salmon", 0x3F5B54, 0x33291C,
-                    new Item.Properties()));
+                    new Item.Properties().setId(itemKey("atlantic_salmon_spawn_egg"))));
 
     /** 蓝鳍金枪鱼 —— 调试用刷怪蛋，上架前连同创造页签那一行一起删（见 docs/12 打包清单）。 */
     public static final DeferredItem<com.whitecobalt.anglertackle.item.FishSpawnEggItem> BLUEFIN_TUNA_SPAWN_EGG =
             ITEMS.register("bluefin_tuna_spawn_egg", () -> new com.whitecobalt.anglertackle.item.FishSpawnEggItem(
                     com.whitecobalt.anglertackle.registry.ModEntities.FISHES.get("bluefin_tuna"), "bluefin_tuna", 0x1F3F63, 0xC9D6DC,
-                    new Item.Properties()));
+                    new Item.Properties().setId(itemKey("bluefin_tuna_spawn_egg"))));
 
     /** 褐鳟 —— 调试用刷怪蛋，上架前连同创造页签那一行一起删（见 docs/12 打包清单）。 */
     public static final DeferredItem<com.whitecobalt.anglertackle.item.FishSpawnEggItem> BROWN_TROUT_SPAWN_EGG =
             ITEMS.register("brown_trout_spawn_egg", () -> new com.whitecobalt.anglertackle.item.FishSpawnEggItem(
                     com.whitecobalt.anglertackle.registry.ModEntities.FISHES.get("brown_trout"), "brown_trout", 0x5A5136, 0x1A1A18,
-                    new Item.Properties()));
+                    new Item.Properties().setId(itemKey("brown_trout_spawn_egg"))));
 
     /** 虎鱼 —— 调试用刷怪蛋，上架前连同创造页签那一行一起删（见 docs/12 打包清单）。 */
     public static final DeferredItem<com.whitecobalt.anglertackle.item.FishSpawnEggItem> TIGERFISH_SPAWN_EGG =
             ITEMS.register("tigerfish_spawn_egg", () -> new com.whitecobalt.anglertackle.item.FishSpawnEggItem(
                     com.whitecobalt.anglertackle.registry.ModEntities.FISHES.get("tigerfish"), "tigerfish", 0x6E5C3E, 0x4A3A1E,
-                    new Item.Properties()));
+                    new Item.Properties().setId(itemKey("tigerfish_spawn_egg"))));
 
     /** 翘嘴 —— 调试用刷怪蛋，上架前连同创造页签那一行一起删（见 docs/12 打包清单）。 */
     public static final DeferredItem<com.whitecobalt.anglertackle.item.FishSpawnEggItem> TOPMOUTH_CULTER_SPAWN_EGG =
             ITEMS.register("topmouth_culter_spawn_egg", () -> new com.whitecobalt.anglertackle.item.FishSpawnEggItem(
                     com.whitecobalt.anglertackle.registry.ModEntities.FISHES.get("topmouth_culter"), "topmouth_culter", 0x5A6470, 0x9AA6AC,
-                    new Item.Properties()));
+                    new Item.Properties().setId(itemKey("topmouth_culter_spawn_egg"))));
 
     /** 白条鱼 —— 调试用刷怪蛋，上架前连同创造页签那一行一起删（见 docs/12 打包清单）。 */
     public static final DeferredItem<com.whitecobalt.anglertackle.item.FishSpawnEggItem> HEMICULTER_SPAWN_EGG =
             ITEMS.register("hemiculter_spawn_egg", () -> new com.whitecobalt.anglertackle.item.FishSpawnEggItem(
                     com.whitecobalt.anglertackle.registry.ModEntities.FISHES.get("hemiculter"), "hemiculter", 0x5A6B70, 0xC9D2D6,
-                    new Item.Properties()));
+                    new Item.Properties().setId(itemKey("hemiculter_spawn_egg"))));
 
     /** 条纹鲈 —— 调试用刷怪蛋，上架前连同创造页签那一行一起删（见 docs/12 打包清单）。 */
     public static final DeferredItem<com.whitecobalt.anglertackle.item.FishSpawnEggItem> STRIPED_BASS_SPAWN_EGG =
             ITEMS.register("striped_bass_spawn_egg", () -> new com.whitecobalt.anglertackle.item.FishSpawnEggItem(
                     com.whitecobalt.anglertackle.registry.ModEntities.FISHES.get("striped_bass"), "striped_bass", 0x6B7A63, 0x16191B,
-                    new Item.Properties()));
+                    new Item.Properties().setId(itemKey("striped_bass_spawn_egg"))));
 
     /** 铂金银龙鱼 —— 调试用刷怪蛋，上架前连同创造页签那一行一起删（见 docs/12 打包清单）。 */
     public static final DeferredItem<com.whitecobalt.anglertackle.item.FishSpawnEggItem> PLATINUM_AROWANA_SPAWN_EGG =
             ITEMS.register("platinum_arowana_spawn_egg", () -> new com.whitecobalt.anglertackle.item.FishSpawnEggItem(
                     com.whitecobalt.anglertackle.registry.ModEntities.FISHES.get("platinum_arowana"), "platinum_arowana", 0xF2F0E8, 0xCFD3DA,
-                    new Item.Properties()));
+                    new Item.Properties().setId(itemKey("platinum_arowana_spawn_egg"))));
 
     /** 大眼海鲢 —— 调试用刷怪蛋，上架前连同创造页签那一行一起删（见 docs/12 打包清单）。 */
     public static final DeferredItem<com.whitecobalt.anglertackle.item.FishSpawnEggItem> OXEYE_TARPON_SPAWN_EGG =
             ITEMS.register("oxeye_tarpon_spawn_egg", () -> new com.whitecobalt.anglertackle.item.FishSpawnEggItem(
                     com.whitecobalt.anglertackle.registry.ModEntities.FISHES.get("oxeye_tarpon"), "oxeye_tarpon", 0x6E8C7E, 0xA9B4B9,
-                    new Item.Properties()));
+                    new Item.Properties().setId(itemKey("oxeye_tarpon_spawn_egg"))));
 
     /** 横纹鱼 —— 调试用刷怪蛋，上架前连同创造页签那一行一起删（见 docs/12 打包清单）。 */
     public static final DeferredItem<com.whitecobalt.anglertackle.item.FishSpawnEggItem> BANDED_LOACH_SPAWN_EGG =
             ITEMS.register("banded_loach_spawn_egg", () -> new com.whitecobalt.anglertackle.item.FishSpawnEggItem(
                     com.whitecobalt.anglertackle.registry.ModEntities.FISHES.get("banded_loach"), "banded_loach", 0x7A6A4F, 0xA8823C,
-                    new Item.Properties()));
+                    new Item.Properties().setId(itemKey("banded_loach_spawn_egg"))));
 
     /** 孔雀鱼 —— 调试用刷怪蛋，上架前连同创造页签那一行一起删（见 docs/12 打包清单）。 */
     public static final DeferredItem<com.whitecobalt.anglertackle.item.FishSpawnEggItem> GUPPY_SPAWN_EGG =
             ITEMS.register("guppy_spawn_egg", () -> new com.whitecobalt.anglertackle.item.FishSpawnEggItem(
                     com.whitecobalt.anglertackle.registry.ModEntities.FISHES.get("guppy"), "guppy", 0x6B5F45, 0x1B1B22,
-                    new Item.Properties()));
+                    new Item.Properties().setId(itemKey("guppy_spawn_egg"))));
 
     /** 长吻象鼻鱼 —— 调试用刷怪蛋，上架前连同创造页签那一行一起删（见 docs/12 打包清单）。 */
     public static final DeferredItem<com.whitecobalt.anglertackle.item.FishSpawnEggItem> ELEPHANTNOSE_SPAWN_EGG =
             ITEMS.register("elephantnose_spawn_egg", () -> new com.whitecobalt.anglertackle.item.FishSpawnEggItem(
                     com.whitecobalt.anglertackle.registry.ModEntities.FISHES.get("elephantnose"), "elephantnose", 0x4A4038, 0x2E2822,
-                    new Item.Properties()));
+                    new Item.Properties().setId(itemKey("elephantnose_spawn_egg"))));
 
     /** 金泥鳅 —— 调试用刷怪蛋，上架前连同创造页签那一行一起删（见 docs/12 打包清单）。 */
     public static final DeferredItem<com.whitecobalt.anglertackle.item.FishSpawnEggItem> GOLDEN_LOACH_SPAWN_EGG =
             ITEMS.register("golden_loach_spawn_egg", () -> new com.whitecobalt.anglertackle.item.FishSpawnEggItem(
                     com.whitecobalt.anglertackle.registry.ModEntities.FISHES.get("golden_loach"), "golden_loach", 0xE8A317, 0xE08A2B,
-                    new Item.Properties()));
+                    new Item.Properties().setId(itemKey("golden_loach_spawn_egg"))));
 
     /** 盲鱼 —— 调试用刷怪蛋，上架前连同创造页签那一行一起删（见 docs/12 打包清单）。 */
     public static final DeferredItem<com.whitecobalt.anglertackle.item.FishSpawnEggItem> CAVE_BLINDFISH_SPAWN_EGG =
             ITEMS.register("cave_blindfish_spawn_egg", () -> new com.whitecobalt.anglertackle.item.FishSpawnEggItem(
                     com.whitecobalt.anglertackle.registry.ModEntities.FISHES.get("cave_blindfish"), "cave_blindfish", 0xB49E9A, 0x9E4A42,
-                    new Item.Properties()));
+                    new Item.Properties().setId(itemKey("cave_blindfish_spawn_egg"))));
 
     /** 草鱼 —— 调试用刷怪蛋，上架前连同创造页签那一行一起删（见 docs/12 打包清单）。 */
     public static final DeferredItem<com.whitecobalt.anglertackle.item.FishSpawnEggItem> GRASS_CARP_SPAWN_EGG =
             ITEMS.register("grass_carp_spawn_egg", () -> new com.whitecobalt.anglertackle.item.FishSpawnEggItem(
                     com.whitecobalt.anglertackle.registry.ModEntities.FISHES.get("grass_carp"), "grass_carp", 0x5A6340, 0x4A4A42,
-                    new Item.Properties()));
+                    new Item.Properties().setId(itemKey("grass_carp_spawn_egg"))));
 
     /** 青鱼 —— 调试用刷怪蛋，上架前连同创造页签那一行一起删（见 docs/12 打包清单）。 */
     public static final DeferredItem<com.whitecobalt.anglertackle.item.FishSpawnEggItem> BLACK_CARP_SPAWN_EGG =
             ITEMS.register("black_carp_spawn_egg", () -> new com.whitecobalt.anglertackle.item.FishSpawnEggItem(
                     com.whitecobalt.anglertackle.registry.ModEntities.FISHES.get("black_carp"), "black_carp", 0x2B3338, 0x3D4A4F,
-                    new Item.Properties()));
+                    new Item.Properties().setId(itemKey("black_carp_spawn_egg"))));
 
     /** 狗鱼 —— 调试用刷怪蛋，上架前连同创造页签那一行一起删（见 docs/12 打包清单）。 */
     public static final DeferredItem<com.whitecobalt.anglertackle.item.FishSpawnEggItem> PIKE_SPAWN_EGG =
             ITEMS.register("pike_spawn_egg", () -> new com.whitecobalt.anglertackle.item.FishSpawnEggItem(
                     com.whitecobalt.anglertackle.registry.ModEntities.FISHES.get("pike"), "pike", 0x3F4A2A, 0xDFE7EC,
-                    new Item.Properties()));
+                    new Item.Properties().setId(itemKey("pike_spawn_egg"))));
 
     /** 巨骨舌鱼 —— 调试用刷怪蛋，上架前连同创造页签那一行一起删（见 docs/12 打包清单）。 */
     public static final DeferredItem<com.whitecobalt.anglertackle.item.FishSpawnEggItem> ARAPAIMA_SPAWN_EGG =
             ITEMS.register("arapaima_spawn_egg", () -> new com.whitecobalt.anglertackle.item.FishSpawnEggItem(
                     com.whitecobalt.anglertackle.registry.ModEntities.FISHES.get("arapaima"), "arapaima", 0x4E6157, 0xC1352B,
-                    new Item.Properties()));
+                    new Item.Properties().setId(itemKey("arapaima_spawn_egg"))));
 
     /** 北非胡子鲇 —— 调试用刷怪蛋，上架前连同创造页签那一行一起删（见 docs/12 打包清单）。 */
     public static final DeferredItem<com.whitecobalt.anglertackle.item.FishSpawnEggItem> NORTH_AFRICAN_CATFISH_SPAWN_EGG =
             ITEMS.register("north_african_catfish_spawn_egg", () -> new com.whitecobalt.anglertackle.item.FishSpawnEggItem(
                     com.whitecobalt.anglertackle.registry.ModEntities.FISHES.get("north_african_catfish"), "north_african_catfish", 0x3D3A33, 0x1E1C18,
-                    new Item.Properties()));
+                    new Item.Properties().setId(itemKey("north_african_catfish_spawn_egg"))));
 
     /** 蓝宝石雷龙鱼 —— 调试用刷怪蛋，上架前连同创造页签那一行一起删（见 docs/12 打包清单）。 */
     public static final DeferredItem<com.whitecobalt.anglertackle.item.FishSpawnEggItem> SAPPHIRE_SNAKEHEAD_SPAWN_EGG =
             ITEMS.register("sapphire_snakehead_spawn_egg", () -> new com.whitecobalt.anglertackle.item.FishSpawnEggItem(
                     com.whitecobalt.anglertackle.registry.ModEntities.FISHES.get("sapphire_snakehead"), "sapphire_snakehead", 0x3B4650, 0xC75B23,
-                    new Item.Properties()));
+                    new Item.Properties().setId(itemKey("sapphire_snakehead_spawn_egg"))));
 
     /** 幼鲨 —— 调试用刷怪蛋，上架前连同创造页签那一行一起删（见 docs/12 打包清单）。 */
     public static final DeferredItem<com.whitecobalt.anglertackle.item.FishSpawnEggItem> JUVENILE_SHARK_SPAWN_EGG =
             ITEMS.register("juvenile_shark_spawn_egg", () -> new com.whitecobalt.anglertackle.item.FishSpawnEggItem(
                     com.whitecobalt.anglertackle.registry.ModEntities.FISHES.get("juvenile_shark"), "juvenile_shark", 0x2C5578, 0x1E2427,
-                    new Item.Properties()));
+                    new Item.Properties().setId(itemKey("juvenile_shark_spawn_egg"))));
 
     /** 北极红点鲑 —— 调试用刷怪蛋，上架前连同创造页签那一行一起删（见 docs/12 打包清单）。 */
     public static final DeferredItem<com.whitecobalt.anglertackle.item.FishSpawnEggItem> ARCTIC_CHAR_SPAWN_EGG =
             ITEMS.register("arctic_char_spawn_egg", () -> new com.whitecobalt.anglertackle.item.FishSpawnEggItem(
                     com.whitecobalt.anglertackle.registry.ModEntities.FISHES.get("arctic_char"), "arctic_char", 0x4A4632, 0xE8A0B4,
-                    new Item.Properties()));
+                    new Item.Properties().setId(itemKey("arctic_char_spawn_egg"))));
 
     /** 高白鲑 —— 调试用刷怪蛋，上架前连同创造页签那一行一起删（见 docs/12 打包清单）。 */
     public static final DeferredItem<com.whitecobalt.anglertackle.item.FishSpawnEggItem> WHITEFISH_SPAWN_EGG =
             ITEMS.register("whitefish_spawn_egg", () -> new com.whitecobalt.anglertackle.item.FishSpawnEggItem(
                     com.whitecobalt.anglertackle.registry.ModEntities.FISHES.get("whitefish"), "whitefish", 0x4A453F, 0x8A8A80,
-                    new Item.Properties()));
+                    new Item.Properties().setId(itemKey("whitefish_spawn_egg"))));
 
     /** 虹鳟 —— 调试用刷怪蛋，上架前连同创造页签那一行一起删（见 docs/12 打包清单）。 */
     public static final DeferredItem<com.whitecobalt.anglertackle.item.FishSpawnEggItem> RAINBOW_TROUT_SPAWN_EGG =
             ITEMS.register("rainbow_trout_spawn_egg", () -> new com.whitecobalt.anglertackle.item.FishSpawnEggItem(
                     com.whitecobalt.anglertackle.registry.ModEntities.FISHES.get("rainbow_trout"), "rainbow_trout", 0x4A5D23, 0x1A1A1A,
-                    new Item.Properties()));
+                    new Item.Properties().setId(itemKey("rainbow_trout_spawn_egg"))));
 
     /** 江鳕 —— 调试用刷怪蛋，上架前连同创造页签那一行一起删（见 docs/12 打包清单）。 */
     public static final DeferredItem<com.whitecobalt.anglertackle.item.FishSpawnEggItem> BURBOT_SPAWN_EGG =
             ITEMS.register("burbot_spawn_egg", () -> new com.whitecobalt.anglertackle.item.FishSpawnEggItem(
                     com.whitecobalt.anglertackle.registry.ModEntities.FISHES.get("burbot"), "burbot", 0x4A4433, 0x2E2A22,
-                    new Item.Properties()));
+                    new Item.Properties().setId(itemKey("burbot_spawn_egg"))));
 
     /** 哲罗鲑 —— 调试用刷怪蛋，上架前连同创造页签那一行一起删（见 docs/12 打包清单）。 */
     public static final DeferredItem<com.whitecobalt.anglertackle.item.FishSpawnEggItem> TAIMEN_SPAWN_EGG =
             ITEMS.register("taimen_spawn_egg", () -> new com.whitecobalt.anglertackle.item.FishSpawnEggItem(
                     com.whitecobalt.anglertackle.registry.ModEntities.FISHES.get("taimen"), "taimen", 0x6B6A4B, 0x2B2B2B,
-                    new Item.Properties()));
+                    new Item.Properties().setId(itemKey("taimen_spawn_egg"))));
 
     /** 北极鳕 —— 调试用刷怪蛋，上架前连同创造页签那一行一起删（见 docs/12 打包清单）。 */
     public static final DeferredItem<com.whitecobalt.anglertackle.item.FishSpawnEggItem> ARCTIC_COD_SPAWN_EGG =
             ITEMS.register("arctic_cod_spawn_egg", () -> new com.whitecobalt.anglertackle.item.FishSpawnEggItem(
                     com.whitecobalt.anglertackle.registry.ModEntities.FISHES.get("arctic_cod"), "arctic_cod", 0x6B5A3A, 0x8C9296,
-                    new Item.Properties()));
+                    new Item.Properties().setId(itemKey("arctic_cod_spawn_egg"))));
 
     /** 毛鳞鱼 —— 调试用刷怪蛋，上架前连同创造页签那一行一起删（见 docs/12 打包清单）。 */
     public static final DeferredItem<com.whitecobalt.anglertackle.item.FishSpawnEggItem> CAPELIN_SPAWN_EGG =
             ITEMS.register("capelin_spawn_egg", () -> new com.whitecobalt.anglertackle.item.FishSpawnEggItem(
                     com.whitecobalt.anglertackle.registry.ModEntities.FISHES.get("capelin"), "capelin", 0x4A5D23, 0x3A4247,
-                    new Item.Properties()));
+                    new Item.Properties().setId(itemKey("capelin_spawn_egg"))));
 
     /** 大西洋鲱 —— 调试用刷怪蛋，上架前连同创造页签那一行一起删（见 docs/12 打包清单）。 */
     public static final DeferredItem<com.whitecobalt.anglertackle.item.FishSpawnEggItem> ATLANTIC_HERRING_SPAWN_EGG =
             ITEMS.register("atlantic_herring_spawn_egg", () -> new com.whitecobalt.anglertackle.item.FishSpawnEggItem(
                     com.whitecobalt.anglertackle.registry.ModEntities.FISHES.get("atlantic_herring"), "atlantic_herring", 0x2E4A6B, 0x9AA096,
-                    new Item.Properties()));
+                    new Item.Properties().setId(itemKey("atlantic_herring_spawn_egg"))));
 
     /** 狼鱼 —— 调试用刷怪蛋，上架前连同创造页签那一行一起删（见 docs/12 打包清单）。 */
     public static final DeferredItem<com.whitecobalt.anglertackle.item.FishSpawnEggItem> WOLFFISH_SPAWN_EGG =
             ITEMS.register("wolffish_spawn_egg", () -> new com.whitecobalt.anglertackle.item.FishSpawnEggItem(
                     com.whitecobalt.anglertackle.registry.ModEntities.FISHES.get("wolffish"), "wolffish", 0x6E7A6E, 0x2E2E2A,
-                    new Item.Properties()));
+                    new Item.Properties().setId(itemKey("wolffish_spawn_egg"))));
 
     /** 平鲉 —— 调试用刷怪蛋，上架前连同创造页签那一行一起删（见 docs/12 打包清单）。 */
     public static final DeferredItem<com.whitecobalt.anglertackle.item.FishSpawnEggItem> REDFISH_SPAWN_EGG =
             ITEMS.register("redfish_spawn_egg", () -> new com.whitecobalt.anglertackle.item.FishSpawnEggItem(
                     com.whitecobalt.anglertackle.registry.ModEntities.FISHES.get("redfish"), "redfish", 0xD13B27, 0x2E2E2A,
-                    new Item.Properties()));
+                    new Item.Properties().setId(itemKey("redfish_spawn_egg"))));
 
     /** 裸盖鱼 —— 调试用刷怪蛋，上架前连同创造页签那一行一起删（见 docs/12 打包清单）。 */
     public static final DeferredItem<com.whitecobalt.anglertackle.item.FishSpawnEggItem> SABLEFISH_SPAWN_EGG =
             ITEMS.register("sablefish_spawn_egg", () -> new com.whitecobalt.anglertackle.item.FishSpawnEggItem(
                     com.whitecobalt.anglertackle.registry.ModEntities.FISHES.get("sablefish"), "sablefish", 0x4A4A4A, 0x2E2E2E,
-                    new Item.Properties()));
+                    new Item.Properties().setId(itemKey("sablefish_spawn_egg"))));
 
     /** 大西洋鳕 —— 调试用刷怪蛋，上架前连同创造页签那一行一起删（见 docs/12 打包清单）。 */
     public static final DeferredItem<com.whitecobalt.anglertackle.item.FishSpawnEggItem> ATLANTIC_COD_SPAWN_EGG =
             ITEMS.register("atlantic_cod_spawn_egg", () -> new com.whitecobalt.anglertackle.item.FishSpawnEggItem(
                     com.whitecobalt.anglertackle.registry.ModEntities.FISHES.get("atlantic_cod"), "atlantic_cod", 0x6B5A3A, 0xC0C4C8,
-                    new Item.Properties()));
+                    new Item.Properties().setId(itemKey("atlantic_cod_spawn_egg"))));
 
     /** 格陵兰大比目鱼 —— 调试用刷怪蛋，上架前连同创造页签那一行一起删（见 docs/12 打包清单）。 */
     public static final DeferredItem<com.whitecobalt.anglertackle.item.FishSpawnEggItem> GREENLAND_HALIBUT_SPAWN_EGG =
             ITEMS.register("greenland_halibut_spawn_egg", () -> new com.whitecobalt.anglertackle.item.FishSpawnEggItem(
                     com.whitecobalt.anglertackle.registry.ModEntities.FISHES.get("greenland_halibut"), "greenland_halibut", 0x5A4A32, 0x3A3228,
-                    new Item.Properties()));
+                    new Item.Properties().setId(itemKey("greenland_halibut_spawn_egg"))));
 
     /** 格陵兰鲨 —— 调试用刷怪蛋，上架前连同创造页签那一行一起删（见 docs/12 打包清单）。 */
     public static final DeferredItem<com.whitecobalt.anglertackle.item.FishSpawnEggItem> GREENLAND_SHARK_SPAWN_EGG =
             ITEMS.register("greenland_shark_spawn_egg", () -> new com.whitecobalt.anglertackle.item.FishSpawnEggItem(
                     com.whitecobalt.anglertackle.registry.ModEntities.FISHES.get("greenland_shark"), "greenland_shark", 0x96907F, 0x3A3A38,
-                    new Item.Properties()));
+                    new Item.Properties().setId(itemKey("greenland_shark_spawn_egg"))));
 
     /** 雨伞旗鱼 —— 调试用刷怪蛋，上架前连同创造页签那一行一起删（见 docs/12 打包清单）。 */
     public static final DeferredItem<com.whitecobalt.anglertackle.item.FishSpawnEggItem> SAILFISH_SPAWN_EGG =
             ITEMS.register("sailfish_spawn_egg", () -> new com.whitecobalt.anglertackle.item.FishSpawnEggItem(
                     com.whitecobalt.anglertackle.registry.ModEntities.FISHES.get("sailfish"), "sailfish", 0x17293D, 0x1F4E79,
-                    new Item.Properties()));
+                    new Item.Properties().setId(itemKey("sailfish_spawn_egg"))));
 
     /** 鲯鳅 —— 调试用刷怪蛋，上架前连同创造页签那一行一起删（见 docs/12 打包清单）。 */
     public static final DeferredItem<com.whitecobalt.anglertackle.item.FishSpawnEggItem> MAHI_MAHI_SPAWN_EGG =
             ITEMS.register("mahi_mahi_spawn_egg", () -> new com.whitecobalt.anglertackle.item.FishSpawnEggItem(
                     com.whitecobalt.anglertackle.registry.ModEntities.FISHES.get("mahi_mahi"), "mahi_mahi", 0x1E8C8C, 0x7A6410,
-                    new Item.Properties()));
+                    new Item.Properties().setId(itemKey("mahi_mahi_spawn_egg"))));
 
     /** 鳄雀鳝 —— 调试用刷怪蛋，上架前连同创造页签那一行一起删（见 docs/12 打包清单）。 */
     public static final DeferredItem<com.whitecobalt.anglertackle.item.FishSpawnEggItem> ALLIGATOR_GAR_SPAWN_EGG =
             ITEMS.register("alligator_gar_spawn_egg", () -> new com.whitecobalt.anglertackle.item.FishSpawnEggItem(
                     com.whitecobalt.anglertackle.registry.ModEntities.FISHES.get("alligator_gar"), "alligator_gar", 0x4B5320, 0xE8E4C0,
-                    new Item.Properties()));
+                    new Item.Properties().setId(itemKey("alligator_gar_spawn_egg"))));
 
     /** 巨暹罗鲤 —— 调试用刷怪蛋，上架前连同创造页签那一行一起删（见 docs/12 打包清单）。 */
     public static final DeferredItem<com.whitecobalt.anglertackle.item.FishSpawnEggItem> GIANT_SIAMESE_CARP_SPAWN_EGG =
             ITEMS.register("giant_siamese_carp_spawn_egg", () -> new com.whitecobalt.anglertackle.item.FishSpawnEggItem(
                     com.whitecobalt.anglertackle.registry.ModEntities.FISHES.get("giant_siamese_carp"), "giant_siamese_carp", 0x1B2A4A, 0x1A1A1A,
-                    new Item.Properties()));
+                    new Item.Properties().setId(itemKey("giant_siamese_carp_spawn_egg"))));
 
     /** 电鳗 —— 调试用刷怪蛋，上架前连同创造页签那一行一起删（见 docs/12 打包清单）。 */
     public static final DeferredItem<com.whitecobalt.anglertackle.item.FishSpawnEggItem> ELECTRIC_EEL_SPAWN_EGG =
             ITEMS.register("electric_eel_spawn_egg", () -> new com.whitecobalt.anglertackle.item.FishSpawnEggItem(
                     com.whitecobalt.anglertackle.registry.ModEntities.FISHES.get("electric_eel"), "electric_eel", 0x4A3520, 0xC9C0A8,
-                    new Item.Properties()));
+                    new Item.Properties().setId(itemKey("electric_eel_spawn_egg"))));
 
     /** 鱼种 id → 刷怪蛋。给调试命令与检查脚本用，顺序与 FISH_IDS 一致。 */
     public static final java.util.Map<String, DeferredItem<com.whitecobalt.anglertackle.item.FishSpawnEggItem>> FISH_SPAWN_EGGS =
@@ -1060,7 +1062,7 @@ public final class ModItems {
      */
     public static final DeferredItem<com.whitecobalt.anglertackle.item.HutClueItem> HUT_CLUE =
             ITEMS.register("hut_clue", () -> new com.whitecobalt.anglertackle.item.HutClueItem(
-                    new Item.Properties()));
+                    new Item.Properties().setId(itemKey("hut_clue"))));
 
     // ⚠ 「失灵的罗盘」（broken_compass）**故意还没注册**，不是漏了：
     //   策划案 §2.2 写的修理配方是「追踪罗盘 + 1 鱼币」，而鱼币**不是物品**
@@ -1081,17 +1083,17 @@ public final class ModItems {
     /** 盐：香煎、盐烤、腌渍的基础调料。配方见 tools 里的说明（水桶 + 干海带，空桶返还）。 */
     public static final DeferredItem<SeasoningItem> SALT = ITEMS.register("salt",
             () -> new SeasoningItem("salt", net.minecraft.ChatFormatting.WHITE,
-                    new Item.Properties().stacksTo(64)));
+                    new Item.Properties().setId(itemKey("salt")).stacksTo(64)));
 
     /** 酱油：红烧 / 清蒸 / 刺身蘸料。 */
     public static final DeferredItem<SeasoningItem> SOY_SAUCE = ITEMS.register("soy_sauce",
             () -> new SeasoningItem("soy_sauce", net.minecraft.ChatFormatting.GOLD,
-                    new Item.Properties().stacksTo(64)));
+                    new Item.Properties().setId(itemKey("soy_sauce")).stacksTo(64)));
 
     /** 芥末：刺身的可选搭配（不给配方加门槛，只是"更够味"）。 */
     public static final DeferredItem<SeasoningItem> MUSTARD = ITEMS.register("mustard",
             () -> new SeasoningItem("mustard", net.minecraft.ChatFormatting.YELLOW,
-                    new Item.Properties().stacksTo(64)));
+                    new Item.Properties().setId(itemKey("mustard")).stacksTo(64)));
 
     /**
      * 鱼油：取代原方案里"向日葵 + 玻璃瓶榨植物油"那套（用户 2026-10-03 定）。
@@ -1102,7 +1104,7 @@ public final class ModItems {
      */
     public static final DeferredItem<SeasoningItem> FISH_OIL = ITEMS.register("fish_oil",
             () -> new SeasoningItem("fish_oil", net.minecraft.ChatFormatting.YELLOW,
-                    new Item.Properties().stacksTo(64)));
+                    new Item.Properties().setId(itemKey("fish_oil")).stacksTo(64)));
 
     // ══════════════════════════════════════════════════════════════════════════════
     // 特殊处理的产物（B①）—— 用户 2026-10-11 定案："处理得当可降一级"。
@@ -1134,25 +1136,25 @@ public final class ModItems {
 
     /** 发酵鲨肉（hákarl）：格陵兰鲨鲜肉含尿素 + TMAO、FishBase 记 "Poisonous to eat"，发酵之后才能吃。 */
     public static final DeferredItem<Item> HAKARL = ITEMS.register("hakarl",
-            () -> new Item(new Item.Properties().stacksTo(64)
+            () -> new Item(new Item.Properties().setId(itemKey("hakarl")).stacksTo(64)
                     .food(new net.minecraft.world.food.FoodProperties.Builder()
                             .nutrition(6).saturationModifier(0.8F).build())));
 
     /** 冷冻刺身：虹鳟这类淡水鱼的寄生虫风险靠**冷冻**解决（香港食物安全中心口径：-20℃ 7 天）。 */
     public static final DeferredItem<Item> FROZEN_SASHIMI = ITEMS.register("frozen_sashimi",
-            () -> new Item(new Item.Properties().stacksTo(64)
+            () -> new Item(new Item.Properties().setId(itemKey("frozen_sashimi")).stacksTo(64)
                     .food(new net.minecraft.world.food.FoodProperties.Builder()
                             .nutrition(6).saturationModifier(0.8F).build())));
 
     /** 处理过的电鳗：300~800V 的那位，**耗电**之后才安全。 */
     public static final DeferredItem<Item> SHOCKED_EEL = ITEMS.register("shocked_eel",
-            () -> new Item(new Item.Properties().stacksTo(64)
+            () -> new Item(new Item.Properties().setId(itemKey("shocked_eel")).stacksTo(64)
                     .food(new net.minecraft.world.food.FoodProperties.Builder()
                             .nutrition(6).saturationModifier(0.8F).build())));
 
     /** 去卵鳄雀鳝肉：鳄雀鳝的**卵与内脏剧毒**（省市场监管局安全提示），去干净才是安全的肉。 */
     public static final DeferredItem<Item> BONELESS_GAR = ITEMS.register("boneless_gar",
-            () -> new Item(new Item.Properties().stacksTo(64)
+            () -> new Item(new Item.Properties().setId(itemKey("boneless_gar")).stacksTo(64)
                     .food(new net.minecraft.world.food.FoodProperties.Builder()
                             .nutrition(6).saturationModifier(0.8F).build())));
 
@@ -1163,7 +1165,7 @@ public final class ModItems {
      * 不写死第二个数字。
      */
     public static final DeferredItem<FishKnifeItem> FISH_KNIFE = ITEMS.register("fish_knife",
-            () -> new FishKnifeItem(new Item.Properties()
+            () -> new FishKnifeItem(new Item.Properties().setId(itemKey("fish_knife"))
                     .stacksTo(1)
                     .durability(FishKnifeItem.DURABILITY)));
 
@@ -1171,7 +1173,7 @@ public final class ModItems {
     /** 凿冰镐：右键四种冰 → 冰洞；右键冰洞 → 碎冰。耐久上限取自 {@link IcePickItem#DURABILITY}。 */
     public static final DeferredItem<com.whitecobalt.anglertackle.item.IcePickItem> ICE_PICK =
             ITEMS.register("ice_pick", () -> new com.whitecobalt.anglertackle.item.IcePickItem(
-                    new Item.Properties()
+                    new Item.Properties().setId(itemKey("ice_pick"))
                             .stacksTo(1)
                             .durability(com.whitecobalt.anglertackle.item.IcePickItem.DURABILITY)));
 
@@ -1180,17 +1182,17 @@ public final class ModItems {
     public static final DeferredItem<net.minecraft.world.item.BlockItem> ICE_HOLE =
             ITEMS.register("ice_hole", () -> new net.minecraft.world.item.BlockItem(
                     com.whitecobalt.anglertackle.registry.ModBlocks.ICE_HOLE.get(),
-                    new Item.Properties()));
+                    new Item.Properties().setId(itemKey("ice_hole"))));
 
     public static final DeferredItem<net.minecraft.world.item.BlockItem> BROKEN_ICE =
             ITEMS.register("broken_ice", () -> new net.minecraft.world.item.BlockItem(
                     com.whitecobalt.anglertackle.registry.ModBlocks.BROKEN_ICE.get(),
-                    new Item.Properties()));
+                    new Item.Properties().setId(itemKey("broken_ice"))));
 
     public static final DeferredItem<net.minecraft.world.item.BlockItem> PACK_ICE =
             ITEMS.register("pack_ice", () -> new net.minecraft.world.item.BlockItem(
                     com.whitecobalt.anglertackle.registry.ModBlocks.PACK_ICE.get(),
-                    new Item.Properties()));
+                    new Item.Properties().setId(itemKey("pack_ice"))));
 
     // ------------------------------------------------------------------ 料理：三档鱼块（生 3 + 熟 3）
     // 见 docs/25 §2：三档材料是**鱼的品质**决定的（白绿→普通、蓝紫→优质、金红→顶级），
@@ -1215,22 +1217,22 @@ public final class ModItems {
 
     /** 普通鱼块（白绿品质的鱼切出来的）。 */
     public static final DeferredItem<FishChunkItem> FISH_CHUNK = ITEMS.register("fish_chunk",
-            () -> new FishChunkItem(FishChunkData.GROUP_COMMON, false, chunkProps(FishChunkData.GROUP_COMMON)));
+            () -> new FishChunkItem(FishChunkData.GROUP_COMMON, false, chunkProps(FishChunkData.GROUP_COMMON).setId(itemKey("fish_chunk"))));
     /** 优质鱼肉（蓝紫品质）。 */
     public static final DeferredItem<FishChunkItem> FINE_FISH_MEAT = ITEMS.register("fine_fish_meat",
-            () -> new FishChunkItem(FishChunkData.GROUP_FINE, false, chunkProps(FishChunkData.GROUP_FINE)));
+            () -> new FishChunkItem(FishChunkData.GROUP_FINE, false, chunkProps(FishChunkData.GROUP_FINE).setId(itemKey("fine_fish_meat"))));
     /** 顶级鱼排（金红品质）。 */
     public static final DeferredItem<FishChunkItem> SUPREME_FISH_STEAK = ITEMS.register("supreme_fish_steak",
-            () -> new FishChunkItem(FishChunkData.GROUP_SUPREME, false, chunkProps(FishChunkData.GROUP_SUPREME)));
+            () -> new FishChunkItem(FishChunkData.GROUP_SUPREME, false, chunkProps(FishChunkData.GROUP_SUPREME).setId(itemKey("supreme_fish_steak"))));
     /** 熟鱼块 = 熔炉**清烤**的产物，可直接吃，也是所有第 3 级菜的主料。 */
     public static final DeferredItem<FishChunkItem> FISH_CHUNK_COOKED = ITEMS.register("fish_chunk_cooked",
             () -> new FishChunkItem(FishChunkData.GROUP_COMMON, true,
-                    cookedChunkProps(FishChunkData.GROUP_COMMON)));
+                    cookedChunkProps(FishChunkData.GROUP_COMMON).setId(itemKey("fish_chunk_cooked"))));
     public static final DeferredItem<FishChunkItem> FINE_FISH_MEAT_COOKED = ITEMS.register("fine_fish_meat_cooked",
-            () -> new FishChunkItem(FishChunkData.GROUP_FINE, true, cookedChunkProps(FishChunkData.GROUP_FINE)));
+            () -> new FishChunkItem(FishChunkData.GROUP_FINE, true, cookedChunkProps(FishChunkData.GROUP_FINE).setId(itemKey("fine_fish_meat_cooked"))));
     public static final DeferredItem<FishChunkItem> SUPREME_FISH_STEAK_COOKED = ITEMS.register("supreme_fish_steak_cooked",
             () -> new FishChunkItem(FishChunkData.GROUP_SUPREME, true,
-                    cookedChunkProps(FishChunkData.GROUP_SUPREME)));
+                    cookedChunkProps(FishChunkData.GROUP_SUPREME).setId(itemKey("supreme_fish_steak_cooked"))));
 
     /**
      * 熟鱼块的属性：能吃 + 默认鱼种组件 + **兜底饱食度**。
@@ -1283,42 +1285,42 @@ public final class ModItems {
 
     /** 刺身：生料 + 酱油 + 鱼刀（唯一走生料的菜）。 */
     public static final DeferredItem<DishItem> SASHIMI = ITEMS.register("sashimi",
-            () -> new DishItem("sashimi", dishProps()));
+            () -> new DishItem("sashimi", dishProps().setId(itemKey("sashimi"))));
     /** 鱼汤：熟块 + 水桶（返还空桶）。碗装 → 吃完返还碗。 */
     public static final DeferredItem<DishItem> FISH_SOUP = ITEMS.register("fish_soup",
-            () -> new DishItem("fish_soup", soupProps()));
+            () -> new DishItem("fish_soup", soupProps().setId(itemKey("fish_soup"))));
     /** 奶白鱼汤：熟块 + 水桶 + 鱼油。碗装 → 吃完返还碗。 */
     public static final DeferredItem<DishItem> CREAMY_FISH_SOUP = ITEMS.register("creamy_fish_soup",
-            () -> new DishItem("creamy_fish_soup", soupProps()));
+            () -> new DishItem("creamy_fish_soup", soupProps().setId(itemKey("creamy_fish_soup"))));
     /** 慢炖鱼：熟块 + 水桶 + 甘蔗（姜）。碗装 → 吃完返还碗。 */
     public static final DeferredItem<DishItem> FISH_STEW = ITEMS.register("fish_stew",
-            () -> new DishItem("fish_stew", soupProps()));
+            () -> new DishItem("fish_stew", soupProps().setId(itemKey("fish_stew"))));
     /** 清蒸鱼：熟块 + 水桶 + 甘蔗 + 酱油。 */
     public static final DeferredItem<DishItem> STEAMED_FISH = ITEMS.register("steamed_fish",
-            () -> new DishItem("steamed_fish", dishProps()));
+            () -> new DishItem("steamed_fish", dishProps().setId(itemKey("steamed_fish"))));
     /** 红烧鱼：熟块 + 酱油 + 糖。 */
     public static final DeferredItem<DishItem> BRAISED_FISH = ITEMS.register("braised_fish",
-            () -> new DishItem("braised_fish", dishProps()));
+            () -> new DishItem("braised_fish", dishProps().setId(itemKey("braised_fish"))));
     /** 香煎鱼：熟块 + 鱼油 + 盐。 */
     public static final DeferredItem<DishItem> PAN_FRIED_FISH = ITEMS.register("pan_fried_fish",
-            () -> new DishItem("pan_fried_fish", dishProps()));
+            () -> new DishItem("pan_fried_fish", dishProps().setId(itemKey("pan_fried_fish"))));
     /** 油炸鱼块：熟块 + 鱼油 + 小麦。 */
     public static final DeferredItem<DishItem> FRIED_FISH_CHUNK = ITEMS.register("fried_fish_chunk",
-            () -> new DishItem("fried_fish_chunk", dishProps()));
+            () -> new DishItem("fried_fish_chunk", dishProps().setId(itemKey("fried_fish_chunk"))));
     /** 鱼丸：熟块 ×2 + 小麦。 */
     public static final DeferredItem<DishItem> FISH_BALL = ITEMS.register("fish_ball",
-            () -> new DishItem("fish_ball", dishProps()));
+            () -> new DishItem("fish_ball", dishProps().setId(itemKey("fish_ball"))));
     /** 整条油炸：整鱼 + 鱼油 + 小麦（横纹鱼 / 白条鱼专用，它们切不出块）。 */
     public static final DeferredItem<DishItem> DEEP_FRIED_FISH = ITEMS.register("deep_fried_fish",
-            () -> new DishItem("deep_fried_fish", dishProps()));
+            () -> new DishItem("deep_fried_fish", dishProps().setId(itemKey("deep_fried_fish"))));
     /** 熏鱼：烟熏炉产出，**堆叠 64**（保存性好、适合带出门 —— docs/25 §5）。 */
     public static final DeferredItem<DishItem> SMOKED_FISH = ITEMS.register("smoked_fish",
-            () -> new DishItem("smoked_fish", new Item.Properties()
+            () -> new DishItem("smoked_fish", new Item.Properties().setId(itemKey("smoked_fish"))
                     .stacksTo(64)
                     .food(com.whitecobalt.anglertackle.fishing.FoodValues.dish(2))));
     /** 炭烤鱼：营火产出（野外现做）。 */
     public static final DeferredItem<DishItem> CHARRED_FISH = ITEMS.register("charred_fish",
-            () -> new DishItem("charred_fish", dishProps()));
+            () -> new DishItem("charred_fish", dishProps().setId(itemKey("charred_fish"))));
 
     // ------------------------------------------------------------------ 方块
     /**
@@ -1330,11 +1332,11 @@ public final class ModItems {
     /** 水族箱：拼起来是一口无缝的缸，里面是水，能放鱼。 */
     public static final DeferredItem<net.minecraft.world.item.BlockItem> AQUARIUM =
             ITEMS.register("aquarium", () -> new net.minecraft.world.item.BlockItem(
-                    ModBlocks.AQUARIUM.get(), new Item.Properties()));
+                    ModBlocks.AQUARIUM.get(), new Item.Properties().setId(itemKey("aquarium"))));
 
     public static final DeferredItem<net.minecraft.world.item.BlockItem> FISH_RACK =
             ITEMS.register("fish_rack", () -> new net.minecraft.world.item.BlockItem(
-                    ModBlocks.FISH_RACK.get(), new Item.Properties()));
+                    ModBlocks.FISH_RACK.get(), new Item.Properties().setId(itemKey("fish_rack"))));
 
     /**
      * 放生台：右击把手里的鱼放回附近的水里。
@@ -1345,20 +1347,20 @@ public final class ModItems {
      */
     public static final DeferredItem<net.minecraft.world.item.BlockItem> RELEASE_PLATFORM =
             ITEMS.register("release_platform", () -> new net.minecraft.world.item.BlockItem(
-                    ModBlocks.RELEASE_PLATFORM.get(), new Item.Properties()));
+                    ModBlocks.RELEASE_PLATFORM.get(), new Item.Properties().setId(itemKey("release_platform"))));
 
     // ------------------------------------------------------------------ 创造标签
     /** 木板凳（配方 砖砖砖/.棍./棍.棍）。右击坐下。 */
     public static final DeferredItem<net.minecraft.world.item.BlockItem> STOOL =
             ITEMS.register("stool", () -> new net.minecraft.world.item.BlockItem(
                     com.whitecobalt.anglertackle.registry.ModBlocks.STOOL.get(),
-                    new net.minecraft.world.item.Item.Properties()));
+                    new Item.Properties().setId(itemKey("stool"))));
 
     /** 带坐垫的木板凳（皮革 + 木板凳）。坐着的回拉加成比光板凳多 1%。 */
     public static final DeferredItem<net.minecraft.world.item.BlockItem> CUSHIONED_STOOL =
             ITEMS.register("cushioned_stool", () -> new net.minecraft.world.item.BlockItem(
                     com.whitecobalt.anglertackle.registry.ModBlocks.CUSHIONED_STOOL.get(),
-                    new net.minecraft.world.item.Item.Properties()));
+                    new Item.Properties().setId(itemKey("cushioned_stool"))));
     public static final DeferredHolder<CreativeModeTab, CreativeModeTab> TAB =
             TABS.register("main", () -> CreativeModeTab.builder()
                     .title(Component.translatable("itemGroup.anglertackle"))
@@ -1615,6 +1617,15 @@ public final class ModItems {
             props = props.durability(durability);
         }
         return props.component(ModDataComponents.PART_STATS.get(), stats);
+    }
+
+    /**
+     * 物品 id 键：26.1.2 的 {@link Item} 构造会读 {@code Properties} 里的 id，
+     * 没设置就在 {@code Item.Properties#itemIdOrThrow} 抛 {@code Item id not set}。
+     * 这里与 {@code ITEMS.register(...)} 的名字同源，保证不会写错。
+     */
+    private static ResourceKey<Item> itemKey(String name) {
+        return ResourceKey.create(Registries.ITEM, Identifier.fromNamespaceAndPath(AnglersTackle.MOD_ID, name));
     }
 
     public static void register(IEventBus modBus) {
