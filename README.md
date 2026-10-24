@@ -3,13 +3,19 @@
 > 一个把「手感」放在第一位的 Minecraft 钓鱼模组。
 > 不是右键等待收鱼，而是抛得准、看得懂、拉得住。
 
-[![Minecraft](https://img.shields.io/badge/Minecraft-1.21.1-3C8527)](https://minecraft.net)
-[![Loader](https://img.shields.io/badge/Loader-NeoForge%2021.1.x-D7742F)](https://neoforged.net)
+[![Minecraft](https://img.shields.io/badge/Minecraft-26.1.2-3C8527)](https://minecraft.net)
+[![Loader](https://img.shields.io/badge/Loader-NeoForge%2026.1.2.122-D7742F)](https://neoforged.net)
+[![Java](https://img.shields.io/badge/Java-25-orange)](https://adoptium.net)
 [![License](https://img.shields.io/badge/License-MIT-blue)](LICENSE)
 
 - **作者**：白钴 · White Cobalt
 - **当前版本**：1.6.18（开发中，未发布正式版）
+- **目标版本**：**Minecraft 26.1.2 + NeoForge 26.1.2.122 + Java 25**（`mc26.1.2` 分支）
 - **语言**：简体中文 / English（双语语言文件）
+
+> **关于本仓库**：这是把《垂纶》从 1.21.1 移植到 **26.1.2** 的版本。
+> 原版（1.21.1 + NeoForge 21.1.x）的状态保留在 `main` 分支；
+> 移植过程与踩坑记录在 [`docs/进行中.md`](docs/进行中.md)。
 
 ---
 
@@ -70,32 +76,33 @@
 
 ## 三、版本支持策略（重要）
 
-> **本模组只有 Minecraft 1.21.1 + NeoForge 21.1.x 这一个版本。**
+> **当前分支（`mc26.1.2`）对应 Minecraft 26.1.2 + NeoForge 26.1.2.122 + Java 25。**
+> 1.21.1 的原始状态保留在 `main` 分支，不在这条线上继续维护。
 
 | 平台 / 版本 | 支持情况 |
 |---|---|
-| **Minecraft 1.21.1 + NeoForge 21.1.x** | ✅ **唯一支持** |
-| Minecraft 1.20.x、1.21.2+ | ❌ 不做 |
+| **Minecraft 26.1.2 + NeoForge 26.1.2.122（Java 25）** | ✅ **当前分支支持** |
+| Minecraft 1.21.1 + NeoForge 21.1.x | ⚠ 保留在 `main` 分支（移植前状态，不再更新） |
+| 其它 Minecraft 版本 | ❌ 不做 |
 | Forge、Fabric、Quilt | ❌ 不做 |
 | 基岩版 | ❌ 不做 |
 
-**为什么不做别的版本**（不是"以后再说"，是当前没有这个能力）：
+**这次移植覆盖了什么**（26.1.2 相对 1.21.1 的 API 变化，逐条记在 `docs/进行中.md`）：
 
-1. 代码贴着 NeoForge 21.1 的 API 写：自定义网络包（手写编解码）、玩家附件（`AttachmentType`）、
-   属性锁（`Attributes.MOVEMENT_SPEED` 临时归零）、GUI 图层注册（`RegisterGuiLayersEvent`）…
-   这些在 1.20.x 与 Fabric 上都是另一套 API，不是改几个 import 的事；
-2. 渲染与物理耦合很重（浮漂实体、幽灵鱼线、竿尖锚点按模型 `display` 变换反解），
-   换版本等于把这几块重写一遍；
-3. 单人维护，宁可把 1.21.1 这一个版本做扎实。
+1. **代码层**：`ResourceLocation`→`Identifier`、NBT 读取 Optional 化、`InteractionResult` 密封接口、
+   `GuiGraphicsExtractor` 抽取式 GUI、渲染的 render-state/submit 模型、`Recipe<T>` + `RecipeSerializer` record、
+   `SavedDataType`/Codec 存档、刷怪蛋数据组件化、物品/方块注册必须带 id……共 40+ 个提交；
+2. **资源层**：133 个 `items/*.json` 物品定义、48 个刷怪蛋的逐蛋贴图、5 根台钓竿的 `range_dispatch`；
+3. **数据层**：105 条配方的材料语法迁移（`"item"` / `"#tag"`）、废弃的战利品修饰器索引移除；
+4. **质量闸**：检查器按新 API 重写、负例锚点全部更新。
 
-**如果你想移植**：代码是 MIT，欢迎 fork 自行移植；但上游不会提供跨版本支持，
-issue 里也不处理"能不能支持 1.20.1 / Fabric"这类请求。
+**如果你想移植到别的版本**：代码是 MIT，欢迎 fork 自行移植；本仓库不承诺跨版本支持。
 
 ---
 
 ## 四、安装
 
-1. 装好 **NeoForge 21.1.x**（对应 Minecraft 1.21.1）；
+1. 装好 **NeoForge 26.1.2.122**（对应 Minecraft 26.1.2，需要 **Java 25**）；
 2. 把 `anglertackle-x.y.z.jar` 放进 `.minecraft/mods/`；
 3. 启动游戏。首次进入世界会收到一本《钓鱼手册》——它在**邮箱**里，输入 `/atl mail` 点【领取】。
 
@@ -105,41 +112,44 @@ issue 里也不处理"能不能支持 1.20.1 / Fabric"这类请求。
 
 ## 五、从源码构建
 
-本仓库**没有**用 Gradle 官方 wrapper。开发机到 `services.gradle.org` / GitHub 不通，
-所以工具链走项目自带脚本（从国内镜像拉 JDK 21 + Gradle 到 `.jdk/`）：
+开发环境：**JDK 25 + Gradle 9.6.1 + ModDevGradle 2.0.147**，目标 **NeoForge 26.1.2.122**。
 
-```bat
-:: 1) 一次性准备 JDK 21 + Gradle
-powershell -NoProfile -ExecutionPolicy Bypass -File tools\get-toolchain.ps1
+```bash
+export GRADLE_USER_HOME=/path/to/.gradle          # 例：C:/Users/<you>/.gradle
+export JAVA_HOME=/path/to/jdk-25                  # 例：C:/Users/<you>/.jdks/ms-25.0.4.1
+G=/path/to/gradle-9.6.1/bin/gradle
 
-:: 2) 构建
-tools\gradlew.cmd build
+"$G" -p . :compileJava                            # 编译
+ATL_AUDIT=true "$G" -p . runServer                # 无头服务端 + 配方体检（跑完自动关服）
+"$G" -p . build                                   # 打包
 ```
 
 产物：`build/libs/anglertackle-<version>.jar`。
 
-> 机器上已有 Gradle 9.x 与 JDK 21 的话，也可以直接 `gradle build`。
-> 工程用 **ModDevGradle 2.x**（不是 ForgeGradle）。
+> 工程用 **ModDevGradle 2.x**（不是 ForgeGradle）；`gradle.properties` 里已配好镜像仓库。
+> Windows 上经代理访问 GitHub 时，git 需要加 `-c http.sslBackend=openssl`（schannel 会握手失败）。
 
 ### 质量闸（可选，给改代码的人）
 
-```bat
-tools\build-deploy.ps1 -NoDeploy     :: 构建 + 生成器链 + 140 个检查器 + 648 条负例
+```powershell
+pwsh -NoProfile -File tools/negtest.ps1           # 负例：648 条，实际跑 633 条
+for f in tools/check-*.js; do node "$f"; done     # 140 个静态检查器
 ```
 
-这道闸做的事：三条生成链（配件/鱼种/玩法配置）→ 140 个静态检查器 → 648 条**负例**
-（故意改坏一处，检查器必须变红）→ 部署到本地游戏目录。
+- **检查器：131 / 140 通过。** 9 条红全部是环境依赖（缺 `javap`、缺 `.jdk` 便携 JDK、
+  缺 `fish_research/` 与参考图 —— 这些目录被 `.gitignore`），不是移植缺陷。
+- **负例：633 / 633 符合预期**（68 棵对照组全绿）。跳过 15 条，逐条带理由
+  （环境 6 + 失效 3 + 可选夹具 6），跳过不会算成绿。
 
-**默认值冻结**：仓库根的 `anglertackle-common.toml` 是**发布用默认配置**，
-与 `Config.java` 的默认值逐项一致（925 项）。改默认值要跑生成链并
-`node tools/reset-release-defaults.js`，否则检查器会红。
+**默认值冻结**：仓库根的 `anglertackle-common.toml` 是发布用默认配置，与 `Config.java`
+的默认值逐项一致（925 项）。改默认值要跑生成链并 `node tools/reset-release-defaults.js`。
 
 ---
 
 ## 六、目录结构
 
 ```
-src/main/java/com/whitecobalt/anglertackle/   源码（212 个文件 / 约 5.5 万行）
+src/main/java/com/whitecobalt/anglertackle/   源码（218 个文件 / 约 5.6 万行）
 src/main/resources/                            资源、语言文件、教程书数据包（749 个文件）
 docs/                                          设计文档 57 篇（约 2.1 万行，中文，按系统分册）
 tools/                                         构建包装器、生成器、140 个检查器、648 条负例、调参器
@@ -177,6 +187,8 @@ tools/                                         构建包装器、生成器、140
 ## 九、许可证与素材
 
 - **代码**：MIT（见 [`LICENSE`](LICENSE)）。可自由使用、修改、再分发、商用，保留版权与许可声明即可。
+- **本仓库的 26.1.2 移植**：基于 [whitecobltBG/anglertackle](https://github.com/whitecobltBG/anglertackle)（MIT）修改而来，
+  移植部分同样以 MIT 发布；原版权与许可声明保留在 [`LICENSE`](LICENSE) / [`CREDITS.txt`](CREDITS.txt)。
 - **美术 / 音频素材**：**不在 MIT 覆盖范围内**，各自采用 CC0 或 CC-BY，
   作者、来源与许可证逐条登记在 [`CREDITS.txt`](CREDITS.txt)。
   再分发（包括打进整合包）请一并保留该文件。
