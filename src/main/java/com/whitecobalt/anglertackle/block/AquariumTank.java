@@ -11,6 +11,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
@@ -199,11 +200,13 @@ public final class AquariumTank {
         if (type == null) {
             return false;
         }
-        ModFish fish = type.create(level);
+        // 26.1.2 的 create 必须带 EntitySpawnReason；这条重载只用它做工厂，不读 reason，
+        // 所以行为与旧版 create(Level) 完全一致。BUCKET = "从物品里放出来的活鱼"。
+        ModFish fish = type.create(level, EntitySpawnReason.BUCKET);
         if (fish == null) {
             return false;
         }
-        fish.moveTo(spot.getX() + 0.5D, spot.getY() + 0.5D, spot.getZ() + 0.5D,
+        fish.snapTo(spot.getX() + 0.5D, spot.getY() + 0.5D, spot.getZ() + 0.5D,
                 level.getRandom().nextFloat() * 360.0F, 0.0F);
         fish.setFishData(data);
         fish.setInTank(true);
@@ -250,7 +253,7 @@ public final class AquariumTank {
         if (data == null) {
             // 野生鱼：现抽一份个体数据，别让玩家拿到一条"没有数值"的鱼
             data = species.rollIndividual(fish.getRandom(), fish.level().getGameTime(),
-                    player == null ? "" : player.getGameProfile().getName());
+                    player == null ? "" : player.getGameProfile().name());
         }
         ItemStack out = new ItemStack(species.item().get());
         out.set(ModDataComponents.FISH_DATA.get(), data);
@@ -373,12 +376,12 @@ public final class AquariumTank {
         if (holder == null) {
             return false;
         }
-        ModFish fish = holder.get().create(level);
+        ModFish fish = holder.get().create(level, EntitySpawnReason.BUCKET);
         if (fish == null) {
             return false;
         }
         // 2×2×2 的中心是 (x+1, y+1, z+1)；再往下压 0.1 保证判定框整体在水里
-        fish.moveTo(pocket.getX() + 1.0D, pocket.getY() + 0.9D, pocket.getZ() + 1.0D,
+        fish.snapTo(pocket.getX() + 1.0D, pocket.getY() + 0.9D, pocket.getZ() + 1.0D,
                 level.getRandom().nextFloat() * 360.0F, 0.0F);
         fish.setFishData(data);
         fish.setInTank(false);   // 放生的是野鱼，不再受缸约束

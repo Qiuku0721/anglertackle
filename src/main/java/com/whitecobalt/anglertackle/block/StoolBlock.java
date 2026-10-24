@@ -18,7 +18,7 @@ import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
-import net.minecraft.world.level.block.state.properties.DirectionProperty;
+import net.minecraft.world.level.block.state.properties.EnumProperty;
 import net.minecraft.world.level.block.WoolCarpetBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
@@ -38,7 +38,7 @@ public class StoolBlock extends Block {
     public static final MapCodec<StoolBlock> CODEC = simpleCodec(StoolBlock::new);
 
     /** 朝向（照森罗厨娘凳：放置时朝着玩家，四向可转）。凳子本身左右对称，但朝向让玩家能"摆正"它 ✓ */
-    public static final DirectionProperty FACING = BlockStateProperties.HORIZONTAL_FACING;
+    public static final EnumProperty<Direction> FACING = BlockStateProperties.HORIZONTAL_FACING;
 
     public StoolBlock(Properties properties) {
         super(properties);

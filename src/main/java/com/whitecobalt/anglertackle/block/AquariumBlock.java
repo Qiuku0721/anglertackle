@@ -14,6 +14,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
@@ -21,6 +22,8 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.LevelAccessor;
+import net.minecraft.world.level.LevelReader;
+import net.minecraft.world.level.ScheduledTickAccess;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.SimpleWaterloggedBlock;
 import net.minecraft.world.level.block.state.BlockState;
@@ -97,14 +100,14 @@ public class AquariumBlock extends Block implements SimpleWaterloggedBlock {
     }
 
     @Override
-    public ItemStack pickupBlock(net.minecraft.world.entity.player.Player player,
-                                 LevelAccessor level, BlockPos pos, BlockState state) {
+    public ItemStack pickupBlock(LivingEntity user, LevelAccessor level, BlockPos pos,
+                                 BlockState state) {
         return ItemStack.EMPTY;   // 缸里的水舀不走
     }
 
     @Override
-    public boolean canPlaceLiquid(net.minecraft.world.entity.player.Player player,
-                                  BlockGetter level, BlockPos pos, BlockState state,
+    public boolean canPlaceLiquid(LivingEntity user, BlockGetter level, BlockPos pos,
+                                  BlockState state,
                                   net.minecraft.world.level.material.Fluid fluid) {
         return false;
     }
@@ -127,14 +130,16 @@ public class AquariumBlock extends Block implements SimpleWaterloggedBlock {
     }
 
     @Override
-    protected BlockState updateShape(BlockState state, Direction dir, BlockState neighborState,
-                                     LevelAccessor level, BlockPos pos, BlockPos neighborPos) {
-        BooleanProperty p = SIDES.get(dir);
+    protected BlockState updateShape(BlockState state, LevelReader level, ScheduledTickAccess ticks,
+                                     BlockPos pos, Direction directionToNeighbour,
+                                     BlockPos neighbourPos, BlockState neighbourState,
+                                     RandomSource random) {
+        BooleanProperty p = SIDES.get(directionToNeighbour);
         if (p != null) {
-            state = state.setValue(p, neighborState.getBlock() instanceof AquariumBlock);
+            state = state.setValue(p, neighbourState.getBlock() instanceof AquariumBlock);
         }
         // 水永远补满（缸破了也会立刻回满，避免出现"半缸水"）
-        level.scheduleTick(pos, Fluids.WATER, Fluids.WATER.getTickDelay(level));
+        ticks.scheduleTick(pos, Fluids.WATER, Fluids.WATER.getTickDelay(level));
         return state;
     }
 
@@ -246,12 +251,14 @@ public class AquariumBlock extends Block implements SimpleWaterloggedBlock {
      * 那是玩家拆缸的自然后果，也是最好懂的表现。
      */
     @Override
-    protected void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState,
-                            boolean movedByPiston) {
-        if (!state.is(newState.getBlock()) && level instanceof ServerLevel server) {
-            AquariumTank.releaseAll(server, pos);
+    protected void affectNeighborsAfterRemoval(BlockState state, ServerLevel level, BlockPos pos,
+                                               boolean movedByPiston) {
+        // 与旧 onRemove 的等价：钩子只在旧方块确实被换掉时才调用（LevelChunk.java:318-321），
+        // 此刻 pos 上已经是新方块，所以用 level.getBlockState(pos) 代替原来的 newState 判定。
+        if (!state.is(level.getBlockState(pos).getBlock())) {
+            AquariumTank.releaseAll(level, pos);
         }
-        super.onRemove(state, level, pos, newState, movedByPiston);
+        super.affectNeighborsAfterRemoval(state, level, pos, movedByPiston);
     }
 
     // ---------------------------------------------------------------- 碰撞：只给露出的面加薄壁
@@ -303,7 +310,7 @@ public class AquariumBlock extends Block implements SimpleWaterloggedBlock {
     }
 
     @Override
-    protected boolean propagatesSkylightDown(BlockState state, BlockGetter level, BlockPos pos) {
+    protected boolean propagatesSkylightDown(BlockState state) {
         return true;
     }
 

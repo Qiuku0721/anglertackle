@@ -60,7 +60,7 @@ public final class ModBlocks {
     /**
      * 冰钓三形态里属于本模组的两个（第三个"浮冰"见 {@link #PACK_ICE}）。
      *
-     * <p><b>冰洞</b>：{@code noCollission} 是必须的 —— 浮漂要停在这一格的水面上；
+     * <p><b>冰洞</b>：{@code noCollision} 是必须的 —— 浮漂要停在这一格的水面上；
      * 不透明也不行（洞里是水，剔掉面会看不见水）。它**不排回冻调度**（用户定案）。
      *
      * <p><b>碎冰 / 浮冰</b>：都是普通实心方块，靠 {@code scheduleTick} 到点换下一形态
@@ -72,7 +72,7 @@ public final class ModBlocks {
                             .mapColor(MapColor.ICE)
                             .strength(0.5F)
                             .sound(SoundType.GLASS)
-                            .noCollission()
+                            .noCollision()
                             .noOcclusion()
                             .isViewBlocking((state, level, pos) -> false)
                             .isSuffocating((state, level, pos) -> false)));

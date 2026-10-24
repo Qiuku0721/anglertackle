@@ -15,9 +15,8 @@ public final class ModBlockEntities {
             DeferredRegister.create(Registries.BLOCK_ENTITY_TYPE, AnglersTackle.MOD_ID);
 
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<FishRackBlockEntity>> FISH_RACK =
-            BLOCK_ENTITIES.register("fish_rack", () -> BlockEntityType.Builder
-                    .of(FishRackBlockEntity::new, ModBlocks.FISH_RACK.get())
-                    .build(null));
+            BLOCK_ENTITIES.register("fish_rack", () -> new BlockEntityType<>(
+                    FishRackBlockEntity::new, ModBlocks.FISH_RACK.get()));
 
     public static void register(IEventBus modBus) {
         BLOCK_ENTITIES.register(modBus);
