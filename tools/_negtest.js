@@ -866,10 +866,21 @@ function readTextLF(abs) {
  * </ul>
  * 用法：`mutate: (at) => { if (!at.has('x')) at.skip('缺少 x …'); ... }`
  * 守着这条规则的是 tools/check-negtest-runner.js（"允许缺失的可选文件"那一节）。
+ *
+ * <p>⚠ 2026-10-24（P5b）起必须**带分类**，汇总里分开计数（用户口径：
+ * "skip 必须带理由，且要在负例汇总里单列'因失效而跳过'的条数，不能混进普通跳过"）：
+ * <ul>
+ *   <li><code>optional</code>（默认）—— 本机缺 P4b 的可选夹具（.bat / 参考图 / 调研资料）；</li>
+ *   <li><code>env</code> —— 本轮新增的环境夹具守卫（tuner.html / fish_research/ / JDK / _baseline），
+ *       理由必须以"缺 &lt;具体路径&gt;"开头；</li>
+ *   <li><code>invalid</code> —— 用例本身已失效（26.1.2 删了 API / 语义不存在），保留可见性，
+ *       <b>不许</b>混进普通跳过。</li>
+ * </ul>
  */
-function skipCase(reason) {
+function skipCase(reason, kind) {
   const e = new Error(reason);
   e.caseSkipped = true;      // 与 mustReplace 的"构造失败"区分开：一个跳过、一个报错
+  e.caseSkipKind = kind || 'optional';   // optional / env / invalid（见上）
   throw e;
 }
 
@@ -974,8 +985,13 @@ function makeAccessor(files, dirty, dest) {
       dirty.add(rel);          // ★ 只有登记过的文件才会写回副本（其余保持硬链接）
     },
     has: (name) => Object.keys(files).some((k) => k === name || k.endsWith('/' + name)),
+    // 夹具探测（P5b）：看**真仓库**，不是副本 —— .jdk 不在 FILES 里（副本只含源码/数据，
+    // check-environment 会向上找真仓库的 .jdk），fish_research/ 与 参考资料/鱼图/_baseline
+    // 是目录（at.has 只认 FILES 里的文件）。用例必须先探测、缺了才 skip；存在时照常跑。
+    exists: (rel) => fs.existsSync(path.join(ROOT, rel)),
     // 可选夹具缺失时由用例主动声明"这条跑不了"（见 skipCase 的说明）。
-    skip: (reason) => skipCase(reason),
+    // 第二参 kind：optional（默认，P4b 可选夹具）/ env（环境夹具）/ invalid（用例失效）。
+    skip: (reason, kind) => skipCase(reason, kind),
   };
 }
 
@@ -1019,22 +1035,23 @@ const CASES = [
   { dir: 'egg-ok', checker: 'check-spawn-egg.js', expect: 0,
     desc: '未改动的副本（对照组，应当通过）', mutate: () => {} },
 
+  // ⚠ P5b（2026-10-24）：26.1.2 已删除 DeferredSpawnEggItem 与多参构造器 —— 下面两条的
+  //   变异体一个字符都替换不到（no-op），用例已**不再可表达**。保留用例可见性，改成显式
+  //   失效跳过；不要删掉它（删了就没人知道这里原本想守什么）。
   { dir: 'egg-deprecated-ctor', checker: 'check-spawn-egg.js', expect: 1,
-    desc: '改回被弃用的 new SpawnEggItem(...)',
+    desc: '【已失效·显式跳过】改回被弃用的 new SpawnEggItem(...)（26.1.2 已删除该 API）',
     mutate: (at) => {
-      at.set('ModItems.java', at.get('ModItems.java')
-        .replace(/new net\.neoforged\.neoforge\.common\.DeferredSpawnEggItem\(/,
-          'new net.minecraft.world.item.SpawnEggItem(')
-        .replace(/DeferredItem<\s*net\.neoforged\.neoforge\.common\.DeferredSpawnEggItem\s*>/,
-          'DeferredItem<net.minecraft.world.item.SpawnEggItem>'));
+      at.skip('26.1.2 已删除该 API（DeferredSpawnEggItem 与多参构造器），用例不再可表达；'
+        + '等价语义由 egg-fish-wrong-base（漏 super.spawnEgg）覆盖', 'invalid');
     } },
 
   { dir: 'egg-eager-get', checker: 'check-spawn-egg.js', expect: 1,
-    desc: '实体参数写成 .get()（把注册顺序的坑踩回来）',
+    desc: '【已失效·显式跳过】实体参数写成 .get()（锚在已删类上）',
     mutate: (at) => {
-      at.set('ModItems.java', at.get('ModItems.java').replace(
-        /(DeferredSpawnEggItem\(\s*)com\.whitecobalt\.anglertackle\.registry\.ModEntities\.FISHERMAN,/,
-        '$1com.whitecobalt.anglertackle.registry.ModEntities.FISHERMAN.get(),'));
+      // 若将来要守"不许提前 .get()"，应在 check-spawn-egg 新增断言
+      //（例如：鱼的蛋第一个实参必须是 FISHES 表查表，且不许出现 ModEntities.X.get()）。
+      at.skip('26.1.2 已删除该 API（DeferredSpawnEggItem 与多参构造器），用例不再可表达；'
+        + '等价语义由 egg-fish-wrong-base（漏 super.spawnEgg）覆盖', 'invalid');
     } },
 
   { dir: 'egg-no-lang', checker: 'check-spawn-egg.js', expect: 1,
@@ -2747,13 +2764,13 @@ const CASES = [
         'ench-no-affinity'));
     } },
 
+  // ⚠ P5b（2026-10-24）：26.1.2 起 .enchantable(...) 由 RodItem 烘进 ENCHANTABLE 组件，
+  //   变异体不再是缺陷（1.21.1 的编译期失败已随组件化消失）⇒ 显式失效跳过，保留可见性。
   { dir: 'ench-enchantable-api', checker: 'check-enchantments.js', expect: 1,
-    desc: '把 1.21.2+ 才有的 .enchantable(...) 写回 ModItems（1.21.1 编译都过不了）',
+    desc: '【已失效·显式跳过】把 1.21.2+ 才有的 .enchantable(...) 写回 ModItems（组件化后不再是缺陷）',
     mutate: (at) => {
-      at.set('ModItems.java', mustReplace(at.get('ModItems.java'),
-        'RodItem.RodType.LURE, RodItem.RodSpec.WOOD);',
-        'RodItem.RodType.LURE, RodItem.RodSpec.WOOD).enchantable(15);',
-        'ench-enchantable-api'));
+      at.skip('1.21.1 的编译期失败已随组件化消失；等价语义由 check-enchantments 的 ENCHANTABLE 断言覆盖',
+        'invalid');
     } },
 
   { dir: 'ench-json-drift', checker: 'check-enchantments.js', expect: 1,
@@ -6592,10 +6609,11 @@ function runAnchorPreflight() {
         },
         set: (name, text) => { files.set(findKey(name), text); },
         has: (name) => anchorKeys.some((k) => k === name || k.endsWith('/' + name)),
-        skip: (reason) => skipCase(reason),
+        exists: (rel) => fs.existsSync(path.join(ROOT, rel)),
+        skip: (reason, kind) => skipCase(reason, kind),
       });
     } catch (err) {
-      if (err && err.caseSkipped) skipped.push({ dir: c.dir, reason: err.message });
+      if (err && err.caseSkipped) skipped.push({ dir: c.dir, reason: err.message, kind: err.caseSkipKind });
       else failures.push(c.dir + '  ←  ' + err.message);
     }
   }
@@ -6606,9 +6624,13 @@ function runAnchorPreflight() {
 function anchorPreflightOrDie(label) {
   const { failures, skipped, ms } = runAnchorPreflight();
   // 跳过要**说出来**（用户要求：不静默、不判红）—— 放在失败清单前面，和失败区分开。
+  // P5b 起按 kind 分类：普通（P4b 可选夹具）/ 环境（本轮守卫）/ 失效（26.1.2 已不可表达）。
   if (skipped.length) {
-    console.log('ℹ 可选文件缺失，跳过 ' + skipped.length + ' 条用例（不是失败）：');
-    for (const s of skipped) console.log('   ⊘ ' + s.dir + '  ←  ' + s.reason);
+    const tag = (k) => k === 'invalid' ? '失效跳过' : k === 'env' ? '环境跳过' : '普通跳过';
+    console.log('ℹ 跳过 ' + skipped.length + ' 条用例（不是失败，分类见下）：');
+    for (const s of skipped) {
+      console.log('   ⊘ [' + tag(s.kind) + '] ' + s.dir + '  跳过：' + s.reason);
+    }
   }
   if (!failures.length) return ms;
   console.error('❌ 负例锚点预检未通过（' + failures.length + '/' + CASES.length + ' 条'
@@ -6806,16 +6828,22 @@ if (!IS_SHARD && BUILD_JOBS > 1) {
         console.log('  ' + m.checker.padEnd(24) + m.dir.padEnd(24) + m.desc);
       }
       const skipOrdered = CASES.map((c) => skipByDir.get(c.dir)).filter(Boolean);
+      const kindTag = (k) => k === 'invalid' ? '失效跳过' : k === 'env' ? '环境跳过' : '普通跳过';
       if (skipOrdered.length) {
-        console.log('\nℹ 可选文件缺失，跳过 ' + skipOrdered.length + ' 条用例（不是失败）：');
+        console.log('\nℹ 跳过 ' + skipOrdered.length + ' 条用例（不是失败，分类见下）：');
         for (const s of skipOrdered) {
-          console.log('   ⊘ ' + s.checker.padEnd(24) + s.dir.padEnd(24) + s.reason);
+          console.log('   ⊘ [' + kindTag(s.kind) + '] ' + s.checker.padEnd(24) + s.dir.padEnd(24)
+            + '跳过：' + s.reason);
         }
       }
       fs.writeFileSync(path.join(OUT, 'manifest.json'), JSON.stringify(ordered, null, 2), 'utf8');
+      // P5b：跳过清单落盘，_negrun.js 的最终汇总据此分类计数（清单 + 跳过 == 全部用例）。
+      fs.writeFileSync(path.join(OUT, 'skipped.json'), JSON.stringify(skipOrdered, null, 2), 'utf8');
       console.log('  ⏱ 清目录 + 建副本共 ' + Math.round((Date.now() - t0) / 1000) + ' 秒');
+      const kindCount = (k) => skipOrdered.filter((s) => (s.kind || 'optional') === k).length;
       console.log('\n共 ' + ordered.length + ' 个用例 → ' + path.relative(ROOT, OUT)
-        + (skipOrdered.length ? '（另有 ' + skipOrdered.length + ' 条因可选文件缺失跳过）' : ''));
+        + (skipOrdered.length ? '（另有 ' + skipOrdered.length + ' 条跳过：环境 ' + kindCount('env')
+          + ' · 失效 ' + kindCount('invalid') + ' · 普通 ' + kindCount('optional') + '）' : ''));
       process.exit(0);
     });
   }
@@ -6890,9 +6918,12 @@ for (let caseIndex = 0; caseIndex < CASES.length; caseIndex++) {
     (c.mutate || (() => {}))(makeAccessor(files, dirty, dest));
   } catch (err) {
     if (err && err.caseSkipped) {
-      // 可选夹具缺失：这一条**不跑**（不算漏检、也不算通过），打清楚原因后扔掉半成品副本。
-      skipped.push({ dir: c.dir, checker: c.checker, desc: c.desc, reason: err.message });
-      console.log('  ⊘ ' + c.checker.padEnd(24) + c.dir.padEnd(24) + '跳过：' + err.message);
+      // 可选夹具缺失 / 环境夹具缺失 / 用例失效：这一条**不跑**（不算漏检、也不算通过），
+      // 打清楚原因与分类后扔掉半成品副本。
+      const kind = err.caseSkipKind || 'optional';
+      const tag = kind === 'invalid' ? '失效跳过' : kind === 'env' ? '环境跳过' : '普通跳过';
+      skipped.push({ dir: c.dir, checker: c.checker, desc: c.desc, reason: err.message, kind });
+      console.log('  ⊘ [' + tag + '] ' + c.checker.padEnd(24) + c.dir.padEnd(24) + '跳过：' + err.message);
       try { purgeEntry(dest); } catch (e) { /* 清不掉就算了：下一轮 purgeDir 会清 */ }
       continue;
     }
@@ -6961,7 +6992,12 @@ if (IS_SHARD) {
     JSON.stringify(skipped, null, 2), 'utf8');
 } else {
   fs.writeFileSync(path.join(OUT, 'manifest.json'), JSON.stringify(manifest, null, 2), 'utf8');
-  if (skipped.length) console.log('\nℹ 另有 ' + skipped.length + ' 条用例因可选文件缺失被跳过（不是失败，见上）');
+  fs.writeFileSync(path.join(OUT, 'skipped.json'), JSON.stringify(skipped, null, 2), 'utf8');
+  if (skipped.length) {
+    const kindCount = (k) => skipped.filter((s) => (s.kind || 'optional') === k).length;
+    console.log('\nℹ 另有 ' + skipped.length + ' 条用例被跳过（不是失败，见上）：环境 '
+      + kindCount('env') + ' · 失效 ' + kindCount('invalid') + ' · 普通 ' + kindCount('optional'));
+  }
   console.log('\n共 ' + manifest.length + ' 个用例 → ' + path.relative(ROOT, OUT));
 }
 }

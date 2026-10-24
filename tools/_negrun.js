@@ -216,6 +216,46 @@ let retried = 0;
   for (const [k, v] of [...byChecker.entries()].sort((a, b) => a[0].localeCompare(b[0]))) {
     console.log('  ' + k.padEnd(30) + ' ' + (v.ok + v.bad) + ' 个用例：' + v.ok + ' 符合预期，' + v.bad + ' 不符');
   }
+
+  // ---- 跳过汇总（P5b）----------------------------------------------------
+  //
+  // 跳过用例不进 manifest（不跑检查器），但**必须说清楚**：用户口径是
+  // "skip 必须带理由，且要在负例汇总里单列'因失效而跳过'的条数，不能混进普通跳过"。
+  // 分类由 tools/_negtest.js 的 skipCase(reason, kind) 写入 build/negtest/skipped.json：
+  //   env      = 本轮新增的环境夹具守卫（6 条）
+  //   invalid  = 用例本身已失效（3 条）
+  //   optional = P4b 已有的可选夹具跳过（6 条，单独列出，不混进上面两类）
+  {
+    let skippedCases = [];
+    const skipFile = path.join(SCRATCH, 'skipped.json');
+    if (fs.existsSync(skipFile)) {
+      try {
+        skippedCases = JSON.parse(fs.readFileSync(skipFile, 'utf8'));
+      } catch (e) {
+        console.log('  ⚠ 跳过清单解析失败（' + skipFile + '）：' + e.message);
+      }
+    }
+    if (skippedCases.length) {
+      const buckets = { env: [], invalid: [], optional: [] };
+      for (const s of skippedCases) {
+        const k = (s.kind === 'env' || s.kind === 'invalid') ? s.kind : 'optional';
+        buckets[k].push(s);
+      }
+      console.log('');
+      console.log('  ℹ 跳过 ' + skippedCases.length + ' 条：环境跳过 ' + buckets.env.length
+        + ' + 失效跳过 ' + buckets.invalid.length + ' = ' + (buckets.env.length + buckets.invalid.length)
+        + ' 条（本轮）；另有普通跳过 ' + buckets.optional.length + ' 条（P4b 可选夹具）');
+      const LABEL = { env: '环境跳过', invalid: '失效跳过', optional: '普通跳过' };
+      for (const k of ['env', 'invalid', 'optional']) {
+        if (!buckets[k].length) continue;
+        console.log('    ' + LABEL[k] + ' ' + buckets[k].length + ' 条：');
+        for (const s of buckets[k]) {
+          console.log('      ⊘ ' + (s.checker || '?').padEnd(24) + ' ' + s.dir.padEnd(28)
+            + ' 跳过：' + s.reason);
+        }
+      }
+    }
+  }
   console.log('');
   const secs = ((Date.now() - t0) / 1000).toFixed(1);
   if (fail === 0) {

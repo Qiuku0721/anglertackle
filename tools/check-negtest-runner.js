@@ -357,20 +357,49 @@ const buildCalls = neCalls.filter((l) => !/--check-anchors/.test(l));
   const { stripComments } = require('./java-source.js');
   const ne2 = stripComments(read('tools/_negtest.js'));
   const parts = [
-    ['跳过信号 skipCase/caseSkipped', /function skipCase\(reason\)/.test(ne2) && /caseSkipped/.test(ne2)],
-    ['访问器暴露 at.skip', /skip:\s*\(reason\)\s*=>\s*skipCase\(reason\)/.test(ne2)],
-    ['预检把"跳过"与"构造失败"分开', /err\.caseSkipped\)\s*skipped\.push/.test(ne2)],
-    ['建副本把"跳过"与"构造失败"分开', /err\.caseSkipped\)\s*\{[\s\S]{0,800}?continue;/.test(ne2)],
+    ['跳过信号 skipCase(reason, kind)/caseSkipped',
+      /function skipCase\(reason,\s*kind\)/.test(ne2) && /caseSkipped/.test(ne2)],
+    ['访问器暴露 at.skip(reason, kind)',
+      /skip:\s*\(reason,\s*kind\)\s*=>\s*skipCase\(reason,\s*kind\)/.test(ne2)],
+    ['跳过按三类记录（optional / env / invalid）',
+      /caseSkipKind/.test(ne2) && /'optional'/.test(ne2) && /'env'/.test(ne2) && /'invalid'/.test(ne2)],
+    ['夹具探测 at.exists（缺才跳，不看副本）',
+      /exists:\s*\(rel\)\s*=>\s*fs\.existsSync\(path\.join\(ROOT,\s*rel\)\)/.test(ne2)],
+    ['预检把"跳过"与"构造失败"分开', /err\.caseSkipped\)\s*skipped\.push/.test(ne2)
+      && /caseSkipKind/.test(ne2)],
+    ['建副本把"跳过"与"构造失败"分开', /err\.caseSkipped\)\s*\{[\s\S]{0,900}?continue;/.test(ne2)],
     ['父进程按「清单 + 跳过 == 全部用例」核对', /merged\.length \+ skipped\.length !== CASES\.length/.test(ne2)],
     ['copier 缺文件时打印说明（不静默）', /以下 FILES 在本机不存在，建副本时跳过/.test(ne2)],
     ['分片也写跳过清单', /skipped-shard-/.test(ne2)],
+    ['父进程持久化 skipped.json（最终汇总据此分类）', /skipped\.json/.test(ne2)],
   ];
   const missingParts = parts.filter(([, present]) => !present).map(([name]) => name);
   if (missingParts.length) {
     bad('可选文件跳过机制缺了：' + missingParts.join('、')
       + '（缺一样就会退回"静默跳过"或"缺文件就当失败"）');
   } else {
-    ok('可选文件跳过机制完整（' + parts.length + ' 项：信号/访问器/预检/建副本/合并核对/说明/分片清单）');
+    ok('可选文件跳过机制完整（' + parts.length + ' 项：信号/分类/探测/预检/建副本/合并核对/说明/分片清单/持久化）');
+  }
+
+  // 最终汇总（P5b）：_negrun.js 必须把 skipped.json 按 kind 分桶，并**单列失效跳过**。
+  // 这条守的是用户口径"不能混进普通跳过"——只写三行打印、不分类也算没做到。
+  {
+    const runner2 = stripComments(read(RUNNER));
+    const sumParts = [
+      ['最终汇总读 skipped.json', /skipped\.json/.test(runner2)],
+      ['按 kind 分桶（env / invalid / optional）',
+        /buckets\s*=\s*\{\s*env:\s*\[\],\s*invalid:\s*\[\],\s*optional:\s*\[\]\s*\}/.test(runner2)],
+      ['单列失效跳过', /失效跳过/.test(runner2)],
+      ['单列环境跳过', /环境跳过/.test(runner2)],
+      ['普通跳过单独列出', /普通跳过/.test(runner2)],
+    ];
+    const missingSum = sumParts.filter(([, present]) => !present).map(([name]) => name);
+    if (missingSum.length) {
+      bad('最终跳过汇总缺了：' + missingSum.join('、')
+        + ' —— 用户要求"因失效而跳过的条数单列，不能混进普通跳过"');
+    } else {
+      ok('最终汇总按 kind 分桶并单列"失效跳过"（' + sumParts.length + ' 项）✓');
+    }
   }
 }
 
