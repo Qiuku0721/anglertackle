@@ -2,15 +2,9 @@
   "type": "minecraft:crafting_shapeless",
   "category": "misc",
   "ingredients": [
-    {
-      "item": "anglertackle:whitefish"
-    },
-    {
-      "item": "minecraft:blue_ice"
-    },
-    {
-      "item": "minecraft:blue_ice"
-    }
+    "anglertackle:whitefish",
+    "minecraft:blue_ice",
+    "minecraft:blue_ice"
   ],
   "result": {
     "count": 1,

@@ -3,18 +3,10 @@
   "category": "misc",
   "group": "chum",
   "ingredients": [
-    {
-      "item": "minecraft:bread"
-    },
-    {
-      "item": "minecraft:bread"
-    },
-    {
-      "item": "minecraft:bread"
-    },
-    {
-      "item": "minecraft:bread"
-    }
+    "minecraft:bread",
+    "minecraft:bread",
+    "minecraft:bread",
+    "minecraft:bread"
   ],
   "result": {
     "id": "anglertackle:chum_grain",

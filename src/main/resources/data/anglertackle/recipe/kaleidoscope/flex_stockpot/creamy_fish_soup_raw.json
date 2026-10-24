@@ -6,16 +6,10 @@
     }
   ],
   "type": "kaleidoscope_cookery:flex_stockpot",
-  "carrier": {
-    "item": "minecraft:bowl"
-  },
+  "carrier": "minecraft:bowl",
   "ingredients": [
-    {
-      "tag": "anglertackle:raw_fish_chunk"
-    },
-    {
-      "tag": "anglertackle:cooking_oil"
-    }
+    "#anglertackle:raw_fish_chunk",
+    "#anglertackle:cooking_oil"
   ],
   "result": {
     "count": 1,

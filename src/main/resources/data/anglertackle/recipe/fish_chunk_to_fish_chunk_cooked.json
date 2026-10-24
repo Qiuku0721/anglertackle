@@ -1,9 +1,7 @@
 {
   "type": "anglertackle:chunk_smelting",
   "category": "food",
-  "ingredient": {
-    "item": "anglertackle:fish_chunk"
-  },
+  "ingredient": "anglertackle:fish_chunk",
   "result": {
     "id": "anglertackle:fish_chunk_cooked"
   },

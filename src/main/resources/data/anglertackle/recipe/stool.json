@@ -6,8 +6,8 @@
     "S S"
   ],
   "key": {
-    "#": { "tag": "minecraft:wooden_slabs" },
-    "S": { "item": "minecraft:stick" }
+    "#": "#minecraft:wooden_slabs",
+    "S": "minecraft:stick"
   },
   "result": { "id": "anglertackle:stool", "count": 1 }
 }

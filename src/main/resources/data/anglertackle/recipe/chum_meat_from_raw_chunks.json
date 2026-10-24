@@ -3,18 +3,10 @@
   "category": "misc",
   "group": "chum",
   "ingredients": [
-    {
-      "tag": "anglertackle:raw_fish_chunk"
-    },
-    {
-      "tag": "anglertackle:raw_fish_chunk"
-    },
-    {
-      "tag": "anglertackle:raw_fish_chunk"
-    },
-    {
-      "tag": "anglertackle:raw_fish_chunk"
-    }
+    "#anglertackle:raw_fish_chunk",
+    "#anglertackle:raw_fish_chunk",
+    "#anglertackle:raw_fish_chunk",
+    "#anglertackle:raw_fish_chunk"
   ],
   "result": {
     "id": "anglertackle:chum_meat",

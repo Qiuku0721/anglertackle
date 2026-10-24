@@ -7,9 +7,7 @@
   ],
   "type": "kaleidoscope_cookery:pot",
   "ingredients": [
-    {
-      "item": "anglertackle:fine_fish_meat"
-    }
+    "anglertackle:fine_fish_meat"
   ],
   "result": {
     "count": 1,

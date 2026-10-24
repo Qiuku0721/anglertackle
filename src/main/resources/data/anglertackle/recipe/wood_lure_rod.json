@@ -2,34 +2,16 @@
   "type": "minecraft:crafting_shapeless",
   "category": "equipment",
   "ingredients": [
-    {
-      "item": "minecraft:stick"
-    },
-    {
-      "item": "minecraft:stick"
-    },
-    {
-      "item": "minecraft:stick"
-    },
-    {
-      "item": "minecraft:string"
-    },
-    {
-      "item": "minecraft:string"
-    },
+    "minecraft:stick",
+    "minecraft:stick",
+    "minecraft:stick",
+    "minecraft:string",
+    "minecraft:string",
     [
-      {
-        "item": "minecraft:cod"
-      },
-      {
-        "item": "minecraft:salmon"
-      },
-      {
-        "item": "minecraft:pufferfish"
-      },
-      {
-        "item": "minecraft:tropical_fish"
-      }
+      "minecraft:cod",
+      "minecraft:salmon",
+      "minecraft:pufferfish",
+      "minecraft:tropical_fish"
     ]
   ],
   "result": {

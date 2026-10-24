@@ -2,12 +2,8 @@
   "type": "minecraft:crafting_shapeless",
   "category": "misc",
   "ingredients": [
-    {
-      "item": "minecraft:book"
-    },
-    {
-      "tag": "anglertackle:fishes"
-    }
+    "minecraft:book",
+    "#anglertackle:fishes"
   ],
   "result": {
     "count": 1,

@@ -5,18 +5,10 @@
     "LF"
   ],
   "key": {
-    "C": {
-      "item": "anglertackle:codex_book"
-    },
-    "T": {
-      "item": "anglertackle:guide_book"
-    },
-    "L": {
-      "item": "anglertackle:hemp_line"
-    },
-    "F": {
-      "tag": "anglertackle:fishes"
-    }
+    "C": "anglertackle:codex_book",
+    "T": "anglertackle:guide_book",
+    "L": "anglertackle:hemp_line",
+    "F": "#anglertackle:fishes"
   },
   "result": {
     "id": "anglertackle:terminal",

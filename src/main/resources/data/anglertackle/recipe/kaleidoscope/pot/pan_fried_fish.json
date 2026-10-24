@@ -6,16 +6,10 @@
     }
   ],
   "type": "kaleidoscope_cookery:pot",
-  "carrier": {
-    "item": "minecraft:bowl"
-  },
+  "carrier": "minecraft:bowl",
   "ingredients": [
-    {
-      "tag": "anglertackle:raw_fish_chunk"
-    },
-    {
-      "tag": "anglertackle:salt"
-    }
+    "#anglertackle:raw_fish_chunk",
+    "#anglertackle:salt"
   ],
   "result": {
     "count": 1,

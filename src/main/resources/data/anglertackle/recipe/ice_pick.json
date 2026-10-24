@@ -6,8 +6,8 @@
     "SIS"
   ],
   "key": {
-    "I": { "item": "minecraft:iron_ingot" },
-    "S": { "item": "minecraft:stick" }
+    "I": "minecraft:iron_ingot",
+    "S": "minecraft:stick"
   },
   "result": {
     "id": "anglertackle:ice_pick",

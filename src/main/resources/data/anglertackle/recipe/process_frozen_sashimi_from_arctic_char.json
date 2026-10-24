@@ -2,15 +2,9 @@
   "type": "minecraft:crafting_shapeless",
   "category": "misc",
   "ingredients": [
-    {
-      "item": "anglertackle:arctic_char"
-    },
-    {
-      "item": "minecraft:blue_ice"
-    },
-    {
-      "item": "minecraft:blue_ice"
-    }
+    "anglertackle:arctic_char",
+    "minecraft:blue_ice",
+    "minecraft:blue_ice"
   ],
   "result": {
     "count": 1,

@@ -3,18 +3,10 @@
   "category": "building",
   "group": "fish_rack",
   "ingredients": [
-    {
-      "item": "minecraft:stick"
-    },
-    {
-      "item": "minecraft:stick"
-    },
-    {
-      "tag": "minecraft:planks"
-    },
-    {
-      "tag": "minecraft:planks"
-    }
+    "minecraft:stick",
+    "minecraft:stick",
+    "#minecraft:planks",
+    "#minecraft:planks"
   ],
   "result": {
     "id": "anglertackle:fish_rack",

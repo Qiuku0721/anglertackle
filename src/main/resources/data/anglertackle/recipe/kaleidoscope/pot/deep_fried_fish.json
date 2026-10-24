@@ -6,16 +6,10 @@
     }
   ],
   "type": "kaleidoscope_cookery:pot",
-  "carrier": {
-    "item": "minecraft:bowl"
-  },
+  "carrier": "minecraft:bowl",
   "ingredients": [
-    {
-      "tag": "anglertackle:fishes"
-    },
-    {
-      "item": "minecraft:wheat"
-    }
+    "#anglertackle:fishes",
+    "minecraft:wheat"
   ],
   "result": {
     "count": 1,

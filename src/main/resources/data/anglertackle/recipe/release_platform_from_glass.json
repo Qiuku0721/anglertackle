@@ -3,18 +3,10 @@
   "category": "building",
   "group": "release_platform",
   "ingredients": [
-    {
-      "item": "minecraft:glass"
-    },
-    {
-      "item": "minecraft:glass"
-    },
-    {
-      "item": "minecraft:iron_ingot"
-    },
-    {
-      "item": "minecraft:iron_ingot"
-    }
+    "minecraft:glass",
+    "minecraft:glass",
+    "minecraft:iron_ingot",
+    "minecraft:iron_ingot"
   ],
   "result": {
     "id": "anglertackle:release_platform",

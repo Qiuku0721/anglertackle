@@ -2,15 +2,9 @@
   "type": "minecraft:crafting_shapeless",
   "category": "misc",
   "ingredients": [
-    {
-      "item": "minecraft:cactus"
-    },
-    {
-      "item": "minecraft:sugar"
-    },
-    {
-      "item": "anglertackle:salt"
-    }
+    "minecraft:cactus",
+    "minecraft:sugar",
+    "anglertackle:salt"
   ],
   "result": {
     "count": 1,

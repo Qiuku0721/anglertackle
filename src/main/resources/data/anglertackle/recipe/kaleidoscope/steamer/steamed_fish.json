@@ -6,9 +6,7 @@
     }
   ],
   "type": "kaleidoscope_cookery:steamer",
-  "ingredient": {
-    "tag": "anglertackle:fishes"
-  },
+  "ingredient": "#anglertackle:fishes",
   "result": {
     "count": 1,
     "id": "anglertackle:steamed_fish"

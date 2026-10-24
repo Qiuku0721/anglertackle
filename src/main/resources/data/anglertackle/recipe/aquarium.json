@@ -6,12 +6,8 @@
     "GGG"
   ],
   "key": {
-    "G": {
-      "item": "minecraft:glass"
-    },
-    "F": {
-      "tag": "anglertackle:fishes"
-    }
+    "G": "minecraft:glass",
+    "F": "#anglertackle:fishes"
   },
   "result": {
     "id": "anglertackle:aquarium",

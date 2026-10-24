@@ -3,15 +3,9 @@
   "category": "misc",
   "group": "anglertackle_mailbox",
   "ingredients": [
-    {
-      "item": "minecraft:chest"
-    },
-    {
-      "item": "minecraft:paper"
-    },
-    {
-      "item": "minecraft:paper"
-    }
+    "minecraft:chest",
+    "minecraft:paper",
+    "minecraft:paper"
   ],
   "result": {
     "id": "anglertackle:mailbox",

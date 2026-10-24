@@ -6,19 +6,11 @@
     }
   ],
   "type": "kaleidoscope_cookery:pot",
-  "carrier": {
-    "item": "minecraft:bowl"
-  },
+  "carrier": "minecraft:bowl",
   "ingredients": [
-    {
-      "tag": "anglertackle:fishes"
-    },
-    {
-      "item": "minecraft:sugar_cane"
-    },
-    {
-      "item": "anglertackle:soy_sauce"
-    }
+    "#anglertackle:fishes",
+    "minecraft:sugar_cane",
+    "anglertackle:soy_sauce"
   ],
   "result": {
     "count": 1,

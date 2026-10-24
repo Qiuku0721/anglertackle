@@ -7,9 +7,7 @@
   ],
   "type": "kaleidoscope_cookery:pot",
   "ingredients": [
-    {
-      "item": "anglertackle:fish_chunk"
-    }
+    "anglertackle:fish_chunk"
   ],
   "result": {
     "count": 1,

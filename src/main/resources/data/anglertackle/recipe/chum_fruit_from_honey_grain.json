@@ -3,18 +3,10 @@
   "category": "misc",
   "group": "chum",
   "ingredients": [
-    {
-      "item": "minecraft:honey_bottle"
-    },
-    {
-      "item": "minecraft:honeycomb"
-    },
-    {
-      "item": "minecraft:potato"
-    },
-    {
-      "item": "minecraft:wheat"
-    }
+    "minecraft:honey_bottle",
+    "minecraft:honeycomb",
+    "minecraft:potato",
+    "minecraft:wheat"
   ],
   "result": {
     "id": "anglertackle:chum_fruit",

@@ -2,12 +2,8 @@
   "type": "minecraft:crafting_shapeless",
   "category": "misc",
   "ingredients": [
-    {
-      "item": "anglertackle:electric_eel"
-    },
-    {
-      "item": "minecraft:lightning_rod"
-    }
+    "anglertackle:electric_eel",
+    "minecraft:lightning_rod"
   ],
   "result": {
     "count": 1,

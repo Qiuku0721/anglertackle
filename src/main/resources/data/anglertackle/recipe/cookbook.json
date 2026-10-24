@@ -3,12 +3,8 @@
   "category": "misc",
   "group": "anglertackle_cookbook",
   "ingredients": [
-    {
-      "item": "minecraft:book"
-    },
-    {
-      "tag": "c:foods/cooked_fish"
-    }
+    "minecraft:book",
+    "#c:foods/cooked_fish"
   ],
   "result": {
     "id": "anglertackle:cookbook",
