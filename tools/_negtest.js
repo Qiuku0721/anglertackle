@@ -33,6 +33,10 @@ const FILES = [
   'src/main/resources/assets/anglertackle/models/item/wood_float_rod.json',
   'src/main/resources/assets/anglertackle/models/item/wood_float_rod_cast.json',
   'src/main/java/com/whitecobalt/anglertackle/client/ClientSetup.java',
+  // ⚠ 2026-10-24（P5a-2）：26.1.2 把"抛竿换图"的判据从 ItemProperties.register（在 ClientSetup 里）
+  //   搬到了一个 RangeSelectItemModelProperty 实现类。负例 rodcast-not-per-stack 改的是**判据本体**，
+  //   所以它必须进 FILES —— 不进的话 at.get 直接抛"找不到文件"，预检当场停摆（与 QuestTiers 那次同型）。
+  'src/main/java/com/whitecobalt/anglertackle/client/CastItemProperty.java',
   'src/main/java/com/whitecobalt/anglertackle/recipe/PalatabilityLedger.java',
   'src/main/java/com/whitecobalt/anglertackle/recipe/FermentingData.java',
   'src/main/java/com/whitecobalt/anglertackle/event/BarrelFermenting.java',
@@ -1331,7 +1335,8 @@ const CASES = [
     mutate: (at) => {
       const p = 'src/main/resources/data/anglertackle/recipe/hut_clue.json';
       at.set(p, mustReplace(at.get(p),
-        '    {\n      "item": "minecraft:paper"\n    },\n    {\n      "item": "minecraft:paper"\n    },\n    {\n      "item": "minecraft:paper"\n    },\n    {\n      "item": "minecraft:paper"\n    },\n',
+        '    "minecraft:paper",\n    "minecraft:paper",\n    "minecraft:paper",\n    "minecraft:paper",\n'
+        + '    "minecraft:paper",\n    "minecraft:paper",\n    "minecraft:paper",\n    "minecraft:paper",\n',
         '    {\n      "item": "minecraft:paper"\n    },\n', 'clue-recipe-paper'));
     } },
 
@@ -1348,8 +1353,8 @@ const CASES = [
     desc: '物品 tooltip 不再写制作方法（玩家只能靠翻手册第八章）',
     mutate: (at) => {
       at.set('HutClueItem.java', mustReplace(at.get('HutClueItem.java'),
-        'lines.add(Component.translatable("item.anglertackle.hut_clue.craft")',
-        'lines.add(Component.translatable("item.anglertackle.hut_clue.craft_gone")',
+        'builder.accept(Component.translatable("item.anglertackle.hut_clue.craft")',
+        'builder.accept(Component.translatable("item.anglertackle.hut_clue.craft_gone")',
         'clue-no-tooltip'));
     } },
 
@@ -1874,8 +1879,8 @@ const CASES = [
     mutate: (at) => {
       const F = 'src/main/java/com/whitecobalt/anglertackle/economy/CodexRewards.java';
       at.set(F, mustReplace(at.get(F),
-        '                    Tuning.mailMaxMails()).withStyle(ChatFormatting.RED), false);',
-        '                    Tuning.mailMaxMails()).withStyle(ChatFormatting.RED), false);\n'
+        '                    Tuning.mailMaxMails()).withStyle(ChatFormatting.RED));',
+        '                    Tuning.mailMaxMails()).withStyle(ChatFormatting.RED));\n'
         + '            PlayerData.update(player, d -> d.markClaimed(0));', 'codex-mark-in-full-box'));
     } },
   { dir: 'mailreturn-no-drop-fallback', checker: 'check-anvil-return.js', expect: 1,
@@ -2113,11 +2118,11 @@ const CASES = [
     } },
 
   { dir: 'egg-fish-wrong-base', checker: 'check-spawn-egg.js', expect: 1,
-    desc: '让 FishSpawnEggItem 改继承原版 SpawnEggItem（踩回"注册顺序"的坑）',
+    desc: '子类不再把实体类型写进 super(properties.spawnEgg(...))（26.1.2 的"注册顺序"坑：蛋生成不出东西）',
     mutate: (at) => {
       at.set('FishSpawnEggItem.java', mustReplace(at.get('FishSpawnEggItem.java'),
-        'public class FishSpawnEggItem extends DeferredSpawnEggItem {',
-        'public class FishSpawnEggItem extends net.minecraft.world.item.SpawnEggItem {',
+        'super(properties.spawnEgg(type.get()));',
+        'super(properties);',
         'egg-fish-wrong-base'));
     } },
 
@@ -2158,7 +2163,7 @@ const CASES = [
     desc: '删掉原版近平面兜底（第一帧还没渲染过手时会没有竿尖可用）',
     mutate: (at) => {
       at.set('FishingLineRenderer.java', mustReplace(at.get('FishingLineRenderer.java'),
-        '.getNearPlane()', '.getPosition()', 'line-no-fallback'));
+        '.getNearPlane((float) mc.options.fov().get())', '.getPosition()', 'line-no-fallback'));
     } },
 
   { dir: 'line-offhand-overwrite', checker: 'check-line-anchor.js', expect: 1,
@@ -2173,10 +2178,10 @@ const CASES = [
     } },
 
   { dir: 'line-no-center', checker: 'check-line-anchor.js', expect: 1,
-    desc: '去掉模型空间居中的 translate(−0.5,−0.5,−0.5)（整体偏半格）',
+    desc: '竿尖没乘在物品真实绘制姿态上（26.1.2 的 −0.5 居中在 ItemTransform 里 ⇒ 少了它整体偏半格）',
     mutate: (at) => {
       at.set('RodTipAnchor.java', mustReplace(at.get('RodTipAnchor.java'),
-        '        ps.translate(-0.5F, -0.5F, -0.5F);', '', 'line-no-center'));
+        '        tip.mul(capturedItemPose);', '', 'line-no-center'));
     } },
 
   // ⚠ 2026-10-02 用户第二次报的就是这个："端点不固定、摇视角反着跑、落进玩家身体里"。
@@ -2192,11 +2197,9 @@ const CASES = [
     desc: '世界坐标改成"相机位置 + 相机空间偏移"（不做正交基换算，线头随视角乱飞）',
     mutate: (at) => {
       at.set('RodTipAnchor.java', mustReplace(at.get('RodTipAnchor.java'),
-        '        return new Vec3(\n'
-        + '                pos.x - left.x() * tip.x + up.x() * tip.y - look.x() * tip.z,\n'
-        + '                pos.y - left.y() * tip.x + up.y() * tip.y - look.y() * tip.z,\n'
-        + '                pos.z - left.z() * tip.x + up.z() * tip.y - look.z() * tip.z);',
-        '        return pos.add(tip);', 'line-camera-basis'));
+        '        Vector3f world = camera.orientation.transform(new Vector3f((float) tip.x, (float) tip.y, (float) tip.z));\n'
+        + '        return camera.pos.add(world.x(), world.y(), world.z());',
+        '        return camera.pos.add(tip);', 'line-camera-basis'));
     } },
 
   { dir: 'line-tip-const-drift', checker: 'check-line-anchor.js', expect: 1,
@@ -2217,7 +2220,7 @@ const CASES = [
     desc: '不用物品自己的 firstperson 显示变换（写死 GUI 那套）',
     mutate: (at) => {
       at.set('RodTipAnchor.java', mustReplace(at.get('RodTipAnchor.java'),
-        'right ? ItemDisplayContext.FIRST_PERSON_RIGHT_HAND : ItemDisplayContext.FIRST_PERSON_LEFT_HAND',
+        'ItemDisplayContext.FIRST_PERSON_RIGHT_HAND',
         'ItemDisplayContext.GUI', 'line-display-transform'));
     } },
 
@@ -2225,8 +2228,8 @@ const CASES = [
     desc: '竿的使用动画从 BOW 换成 SPEAR（追踪器只复刻了 BOW 那条分支）',
     mutate: (at) => {
       at.set('RodItem.java', mustReplace(at.get('RodItem.java'),
-        'return net.minecraft.world.item.UseAnim.BOW;',
-        'return net.minecraft.world.item.UseAnim.SPEAR;', 'line-useanim-changed'));
+        'return ItemUseAnimation.BOW;',
+        'return ItemUseAnimation.SPEAR;', 'line-useanim-changed'));
     } },
 
   { dir: 'line-clear-gone', checker: 'check-line-anchor.js', expect: 1,
@@ -2441,7 +2444,7 @@ const CASES = [
     mutate: (at) => {
       const p = 'src/main/resources/data/anglertackle/recipe/fish_rack.json';
       at.set(p, mustReplace(at.get(p),
-        '"item": "minecraft:stick"', '"item": "minecraft:oak_planks"',
+        '"minecraft:stick"', '"minecraft:oak_planks"',
         'recipeadv-stale'));
     } },
 
@@ -2503,12 +2506,12 @@ const CASES = [
     desc: '把退件挪进预览事件（玩家每动一下槽位就刷一个旧件出来）',
     mutate: (at) => {
       at.set('AnvilEvents.java', mustReplace(at.get('AnvilEvents.java'),
-        '        event.setOutput(result);\n        event.setCost(1);',
+        '        event.setOutput(result);\n        event.setXpCost(1);',
         '        event.setOutput(result);\n'
         + '        if (event.getPlayer() != null) {\n'
         + '            event.getPlayer().getInventory().add(RodModManager.partAt(left, 0).copy());\n'
         + '        }\n'
-        + '        event.setCost(1);', 'anvilret-in-update'));
+        + '        event.setXpCost(1);', 'anvilret-in-update'));
     } },
 
   { dir: 'anvilret-output', checker: 'check-anvil-return.js', expect: 1,
@@ -2567,12 +2570,12 @@ const CASES = [
     desc: '给配方建一个自己的 RecipeType（两个合成栏都查不到它，且不报错）',
     mutate: (at) => {
       at.set('RodAssemblyRecipe.java', mustReplace(at.get('RodAssemblyRecipe.java'),
-        '    @Override\n    public RecipeSerializer<?> getSerializer() {',
+        '    @Override\n    public RecipeSerializer<RodAssemblyRecipe> getSerializer() {',
         '    @Override\n'
         + '    public net.minecraft.world.item.crafting.RecipeType<?> getType() {\n'
         + '        return com.whitecobalt.anglertackle.registry.ModRecipes.ROD_ASSEMBLY_TYPE.get();\n'
         + '    }\n\n'
-        + '    @Override\n    public RecipeSerializer<?> getSerializer() {',
+        + '    @Override\n    public RecipeSerializer<RodAssemblyRecipe> getSerializer() {',
         'craftasm-custom-type'));
     } },
 
@@ -2709,10 +2712,10 @@ const CASES = [
     desc: '未改动的副本（对照组，应当通过）', mutate: () => {} },
 
   { dir: 'ench-no-affinity', checker: 'check-enchantments.js', expect: 1,
-    desc: '删掉 RodItem.getEnchantmentValue() 重写（亲和度 0 → 附魔台对竿什么都不出，用户原报）',
+    desc: '删掉 ENCHANTABLE 组件（亲和度 0 → 附魔台对竿什么都不出，用户原报；26.1.2 是数据组件不是覆写）',
     mutate: (at) => {
       at.set('RodItem.java', mustReplace(at.get('RodItem.java'),
-        'public int getEnchantmentValue() {', 'public int getEnchantmentValueRenamed() {',
+        'super(properties.enchantable(enchantmentValue(spec.material())));', 'super(properties);',
         'ench-no-affinity'));
     } },
 
@@ -3211,7 +3214,7 @@ const CASES = [
     mutate: (at) => {
       const p = 'src/main/resources/data/anglertackle/recipe/fish_knife.json';
       at.set(p, mustReplace(at.get(p),
-        '"tag": "minecraft:wooden_buttons"', '"item": "minecraft:oak_button"',
+        '"#minecraft:wooden_buttons"', '"minecraft:oak_button"',
         'kitchen-knife-recipe-drift'));
     } },
 
@@ -3220,7 +3223,7 @@ const CASES = [
     mutate: (at) => {
       const p = 'src/main/resources/data/anglertackle/recipe/salt.json';
       at.set(p, mustReplace(at.get(p),
-        '    {\n      "item": "minecraft:water_bucket"\n    },\n', '',
+        '    "minecraft:water_bucket",\n', '',
         'kitchen-salt-no-bucket'));
     } },
 
@@ -3519,18 +3522,18 @@ const CASES = [
     desc: '加工品改用 FishChunkItem —— 它保留着 FISH_DATA（格陵兰鲨 L4），吃"安全的"腌鲨肉反而会凋零',
     mutate: (at) => {
       at.set('ModItems.java', mustReplace(at.get('ModItems.java'),
-        'ITEMS.register("frozen_sashimi",\n            () -> new Item(new Item.Properties().stacksTo(64)',
-        'ITEMS.register("frozen_sashimi",\n            () -> new com.whitecobalt.anglertackle.item.FishChunkItem(new Item.Properties().stacksTo(64)',
+        'ITEMS.register("frozen_sashimi",\n            () -> new Item(new Item.Properties().setId(itemKey("frozen_sashimi")).stacksTo(64)',
+        'ITEMS.register("frozen_sashimi",\n            () -> new com.whitecobalt.anglertackle.item.FishChunkItem(new Item.Properties().setId(itemKey("frozen_sashimi")).stacksTo(64)',
         'palat-processed-dish'));
     } },
   { dir: 'palat-processed-no-food', checker: 'check-fish-palatability.js', expect: 1,
     desc: '处理过的电鳗丢掉 .food(...) —— "处理完就安全"变成"处理完是个 64 堆叠的摆件"',
     mutate: (at) => {
       at.set('ModItems.java', mustReplace(at.get('ModItems.java'),
-        'ITEMS.register("shocked_eel",\n            () -> new Item(new Item.Properties().stacksTo(64)\n'
+        'ITEMS.register("shocked_eel",\n            () -> new Item(new Item.Properties().setId(itemKey("shocked_eel")).stacksTo(64)\n'
         + '                    .food(new net.minecraft.world.food.FoodProperties.Builder()\n'
         + '                            .nutrition(6).saturationModifier(0.8F).build())));',
-        'ITEMS.register("shocked_eel",\n            () -> new Item(new Item.Properties().stacksTo(64)));',
+        'ITEMS.register("shocked_eel",\n            () -> new Item(new Item.Properties().setId(itemKey("shocked_eel")).stacksTo(64)));',
         'palat-processed-no-food'));
     } },
   // ---- check-fish-names.js（学名/中文名修正 7 条，2026-10-11）----
@@ -3639,7 +3642,7 @@ const CASES = [
       const F = 'src/main/java/com/whitecobalt/anglertackle/item/ChumItem.java';
       const s = at.get(F);
       const iRes = s.indexOf('if (!com.whitecobalt.anglertackle.fishing.ChumRegistry.get(serverLevel)');
-      const iFail = s.indexOf('return InteractionResultHolder.fail(stack);', iRes);
+      const iFail = s.indexOf('return InteractionResult.FAIL;', iRes);
       if (iRes < 0 || iFail < 0) throw new Error('找不到名额检查块');
       const iBlockEnd = s.indexOf('}', iFail) + 1;    // 连 if 的右花括号一起搬走
       const block = s.slice(iRes, iBlockEnd);
@@ -3849,13 +3852,13 @@ const CASES = [
         'ach-sync-not-sent'));
     } },
   { dir: 'ach-screen-hazy-render', checker: 'check-achievement.js', expect: 1,
-    desc: '把 super.render() 加回来 —— 全屏暗化画在面板与文字之后，界面糊成一层雾（用户 2026-10-15 截图抓到的那次）',
+    desc: '在 extractRenderState 里又抽一次背景（this.extractBackground）—— 全屏暗化画在面板与文字之后，界面糊成一层雾（用户 2026-10-15 截图抓到的那次）',
     mutate: (at) => {
       const F = 'src/main/java/com/whitecobalt/anglertackle/client/screen/AchievementScreen.java';
       at.set(F, mustReplace(at.get(F),
-        '        this.renderBackground(g, mouseX, mouseY, partialTick);',
-        '        this.renderBackground(g, mouseX, mouseY, partialTick);\n'
-        + '        super.render(g, mouseX, mouseY, partialTick);', 'ach-screen-hazy-render'));
+        '        g.fill(panelX, panelY, panelX + panelW, panelY + panelH, COLOR_BG);',
+        '        this.extractBackground(g);\n'
+        + '        g.fill(panelX, panelY, panelX + panelW, panelY + panelH, COLOR_BG);', 'ach-screen-hazy-render'));
     } },
   { dir: 'ach-level-hook-missing', checker: 'check-achievement.js', expect: 1,
     desc: '升级钩子从唯一经验入口（FishermanData.addXp）里拿掉 —— 等级类成就永远点不亮，而升级本身一切正常',
@@ -3878,8 +3881,8 @@ const CASES = [
     desc: '成就附件去掉 copyOnDeath() —— 死一次成就全掉（与称号/委托同一条口径：永久数据不许因死亡丢失）',
     mutate: (at) => {
       const F = 'src/main/java/com/whitecobalt/anglertackle/registry/ModAttachments.java';
-      at.set(F, mustReplace(at.get(F), '.serialize(AchievementData.CODEC)\n                    .copyOnDeath()',
-        '.serialize(AchievementData.CODEC)', 'achievement-no-copyondeath'));
+      at.set(F, mustReplace(at.get(F), '.serialize(asMap(AchievementData.CODEC))\n                    .copyOnDeath()',
+        '.serialize(asMap(AchievementData.CODEC))', 'achievement-no-copyondeath'));
     } },
   { dir: 'achievement-fieldof', checker: 'check-achievement.js', expect: 1,
     desc: '成就 Codec 的 optionalFieldOf 改成 fieldOf —— 老存档没有这个键，整份成就数据读不进来（零迁移纪律被破坏）',
@@ -4036,8 +4039,8 @@ const CASES = [
     mutate: (at) => {
       const F = 'src/main/java/com/whitecobalt/anglertackle/mail/MailService.java';
       at.set(F, mustReplace(at.get(F),
-        "mail_arrived\", title), false);",
-        "mail_arrived\", title), true);",
+        '            to.sendSystemMessage(Component.translatable("message.anglertackle.mail_arrived", title));\n',
+        '',
         'mail-toast-only'));
     } },
   { dir: 'mail-push-autoopens', checker: 'check-quest.js', expect: 1,
@@ -4172,7 +4175,7 @@ const CASES = [
     desc: '把广播改成只发给发言者自己 ⇒ 称号变成"只有自己看得见"的花架子（用户点名不许）',
     mutate: (at) => {
       const F = 'src/main/java/com/whitecobalt/anglertackle/event/TitleChatEvents.java';
-      at.set(F, mustReplace(at.get(F), 'player.server.getPlayerList().broadcastSystemMessage(line, false);',
+      at.set(F, mustReplace(at.get(F), 'player.level().getServer().getPlayerList().broadcastSystemMessage(line, false);',
         'player.sendSystemMessage(line);', 'titles-chat-self-only'));
     } },
   { dir: 'titles-no-copy-on-death', checker: 'check-titles.js', expect: 1,
@@ -4181,10 +4184,10 @@ const CASES = [
       const F = 'src/main/java/com/whitecobalt/anglertackle/registry/ModAttachments.java';
       at.set(F, mustReplace(at.get(F),
         '                    .builder(() -> PlayerTitles.EMPTY)\n'
-        + '                    .serialize(PlayerTitles.CODEC)\n'
+        + '                    .serialize(asMap(PlayerTitles.CODEC))\n'
         + '                    .copyOnDeath()\n',
         '                    .builder(() -> PlayerTitles.EMPTY)\n'
-        + '                    .serialize(PlayerTitles.CODEC)\n', 'titles-no-copy-on-death'));
+        + '                    .serialize(asMap(PlayerTitles.CODEC))\n', 'titles-no-copy-on-death'));
     } },
 
   // ---- check-titles.js 的界面组（2026-10-12，用户："称号佩戴在哪，很难发现。"）----
@@ -4217,7 +4220,7 @@ const CASES = [
     mutate: (at) => {
       const F = 'src/main/java/com/whitecobalt/anglertackle/client/screen/TitleScreen.java';
       at.set(F, mustReplace(at.get(F),
-        '        PacketDistributor.sendToServer(new TitleActionPayload(\n'
+        '        ClientPacketDistributor.sendToServer(new TitleActionPayload(\n'
         + '                r.equipped ? TitleActionPayload.UNEQUIP : TitleActionPayload.EQUIP, r.id));',
         '        com.whitecobalt.anglertackle.player.PlayerData.updateTitles(null, x -> x.withEquipped(r.id));',
         'titles-client-equips'));
@@ -4263,8 +4266,8 @@ const CASES = [
     mutate: (at) => {
       const F = 'src/main/java/com/whitecobalt/anglertackle/client/screen/TitleScreen.java';
       at.set(F, mustReplace(at.get(F),
-        '    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {',
-        '    public boolean _removedKeys(int keyCode, int scanCode, int modifiers) {',
+        '    public boolean keyPressed(KeyEvent event) {',
+        '    public boolean _removedKeys(KeyEvent event) {',
         'titles-no-keys'));
     } },
   { dir: 'titles-got-hint-removed', checker: 'check-titles.js', expect: 1,
@@ -4393,7 +4396,7 @@ const CASES = [
       at.set(F, mustReplace(at.get(F),
         '        // 名牌那张表要跟着变（`docs/38` §2.1）—— 这里是**唯一**改佩戴的入口，\n'
         + '        // 所以同步挂在这里就天然全覆盖（指令与界面两条入口都走它 ✓）。\n'
-        + '        com.whitecobalt.anglertackle.network.ModNetwork.broadcastNameplates(player.server);\n', '',
+        + '        com.whitecobalt.anglertackle.network.ModNetwork.broadcastNameplates(player.level().getServer());\n', '',
         'titles-nameplate-equip-silent'));
     } },
   { dir: 'titles-nameplate-unequip-silent', checker: 'check-titles.js', expect: 1,
@@ -4402,7 +4405,7 @@ const CASES = [
       const F = 'src/main/java/com/whitecobalt/anglertackle/title/Titles.java';
       at.set(F, mustReplace(at.get(F),
         '        // 同上：摘掉也要让**别人的**名牌立刻恢复成"只有名字"\n'
-        + '        com.whitecobalt.anglertackle.network.ModNetwork.broadcastNameplates(player.server);\n', '',
+        + '        com.whitecobalt.anglertackle.network.ModNetwork.broadcastNameplates(player.level().getServer());\n', '',
         'titles-nameplate-unequip-silent'));
     } },
   { dir: 'titles-nameplate-no-login-sync', checker: 'check-titles.js', expect: 1,
@@ -4413,7 +4416,7 @@ const CASES = [
         '    @SubscribeEvent\n'
         + '    public static void onLogin(PlayerEvent.PlayerLoggedInEvent event) {\n'
         + '        if (event.getEntity() instanceof ServerPlayer sp) {\n'
-        + '            ModNetwork.broadcastNameplates(sp.server);\n'
+        + '            ModNetwork.broadcastNameplates(sp.level().getServer());\n'
         + '        }\n'
         + '    }\n\n', '',
         'titles-nameplate-no-login-sync'));
@@ -4423,8 +4426,8 @@ const CASES = [
     mutate: (at) => {
       const F = 'src/main/java/com/whitecobalt/anglertackle/event/TitleNameplateSync.java';
       at.set(F, mustReplace(at.get(F),
-        'ModNetwork.broadcastNameplates(sp.server, sp.getUUID());',
-        'ModNetwork.broadcastNameplates(sp.server);',
+        'ModNetwork.broadcastNameplates(sp.level().getServer(), sp.getUUID());',
+        'ModNetwork.broadcastNameplates(sp.level().getServer());',
         'titles-nameplate-logout-no-skip'));
     } },
   { dir: 'titles-nameplate-lost-title', checker: 'check-titles.js', expect: 1,
@@ -4616,9 +4619,9 @@ const CASES = [
     mutate: (at) => {
       const F = 'src/main/java/com/whitecobalt/anglertackle/mail/MailService.java';
       at.set(F, mustReplace(at.get(F),
-        '            to.displayClientMessage(Component.translatable("message.anglertackle.mail_full",',
-        '            to.displayClientMessage(Component.literal("你的邮箱满了"), false);\n'
-        + '            if (true) { to.displayClientMessage(Component.translatable("message.anglertackle.mail_full",',
+        '            to.sendSystemMessage(Component.translatable("message.anglertackle.mail_full",',
+        '            to.sendSystemMessage(Component.literal("你的邮箱满了"));\n'
+        + '            if (true) { to.sendSystemMessage(Component.translatable("message.anglertackle.mail_full",',
         'mail-server-chinese'));
     } },
   { dir: 'mail-no-copy-on-death', checker: 'check-mail.js', expect: 1,
@@ -4627,10 +4630,10 @@ const CASES = [
       const F = 'src/main/java/com/whitecobalt/anglertackle/registry/ModAttachments.java';
       at.set(F, mustReplace(at.get(F),
         '                    .builder(() -> MailBox.EMPTY)\n'
-        + '                    .serialize(MailBox.CODEC)\n'
+        + '                    .serialize(asMap(MailBox.CODEC))\n'
         + '                    .copyOnDeath()\n',
         '                    .builder(() -> MailBox.EMPTY)\n'
-        + '                    .serialize(MailBox.CODEC)\n', 'mail-no-copy-on-death'));
+        + '                    .serialize(asMap(MailBox.CODEC))\n', 'mail-no-copy-on-death'));
     } },
   { dir: 'mail-unread-counter', checker: 'check-mail.js', expect: 1,
     desc: '另存一个"未读数"计数器（两个真源，迟早和列表不一致 —— "两套刻度"那类事故）',
@@ -4647,11 +4650,11 @@ const CASES = [
     mutate: (at) => {
       const F = 'src/main/java/com/whitecobalt/anglertackle/client/screen/MailScreen.java';
       at.set(F, mustReplace(at.get(F),
-        '    @Override\n    public boolean mouseClicked(double mx, double my, int button) {',
+        '    @Override\n    public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {',
         '    @Override\n    public void mouseMoved(double mx, double my) {\n'
         + '        action(MailActionPayload.READ, selectedId);\n'
         + '        super.mouseMoved(mx, my);\n    }\n\n'
-        + '    @Override\n    public boolean mouseClicked(double mx, double my, int button) {',
+        + '    @Override\n    public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {',
         'mail-hover-reads'));
     } },
   { dir: 'mail-click-claims', checker: 'check-mail.js', expect: 1,
@@ -4669,10 +4672,10 @@ const CASES = [
     mutate: (at) => {
       const F = 'src/main/java/com/whitecobalt/anglertackle/client/screen/MailScreen.java';
       at.set(F, mustReplace(at.get(F),
-        '            g.drawString(this.font,\n'
+        '            g.text(this.font,\n'
         + '                    Component.translatable(ClientMails.synced()\n'
         + '                            ? "gui.anglertackle.mail_empty" : "gui.anglertackle.mail_loading").getString(),',
-        '            g.drawString(this.font, "",',
+        '            g.text(this.font, "",',
         'mail-empty-list'));
     } },
   { dir: 'mail-panel-hardcoded', checker: 'check-mail.js', expect: 1,
@@ -4701,8 +4704,8 @@ const CASES = [
     desc: '删掉键盘导航（↑↓/Enter）⇒ 只能用鼠标逐行点',
     mutate: (at) => {
       const F = 'src/main/java/com/whitecobalt/anglertackle/client/screen/MailScreen.java';
-      at.set(F, mustReplace(at.get(F), '    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {',
-        '    public boolean _removedKeys(int keyCode, int scanCode, int modifiers) {', 'mail-no-keys'));
+      at.set(F, mustReplace(at.get(F), '    public boolean keyPressed(KeyEvent event) {',
+        '    public boolean _removedKeys(KeyEvent event) {', 'mail-no-keys'));
     } },
   { dir: 'mail-codex-entry-gone', checker: 'check-mail.js', expect: 1,
     desc: '图鉴里的邮箱入口被删掉（docs/36 §5.7 要的三个入口只剩两个）',
@@ -4710,7 +4713,7 @@ const CASES = [
       const F = 'src/main/java/com/whitecobalt/anglertackle/client/screen/CodexScreen.java';
       at.set(F, mustReplace(at.get(F),
         '        Button mail = Button.builder(Component.translatable("gui.anglertackle.codex_mail"), b ->\n'
-        + '                net.neoforged.neoforge.network.PacketDistributor.sendToServer(\n'
+        + '                net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(\n'
         + '                        new com.whitecobalt.anglertackle.network.MailActionPayload(\n'
         + '                                com.whitecobalt.anglertackle.network.MailActionPayload.OPEN, -1)))\n',
         '        Button mail = Button.builder(Component.translatable("gui.anglertackle.codex_mail"), b -> { })\n',
@@ -4845,7 +4848,7 @@ const CASES = [
     mutate: (at) => {
       const F = 'src/main/java/com/whitecobalt/anglertackle/league/LeagueData.java';
       at.set(F, mustReplace(at.get(F),
-        't.putInt("points", p.points);', 't.putInt("points", 0);', 'league-points-not-persisted'));
+        'pend.points = p.points();', 'pend.points = 0;', 'league-points-not-persisted'));
     } },
   // ---- 生成式称号与赛季号（`docs/39` §5）----
   { dir: 'league-season-from-seasonid', checker: 'check-league.js', expect: 1,
@@ -5084,7 +5087,7 @@ const CASES = [
     mutate: (at) => {
       const F = 'src/main/java/com/whitecobalt/anglertackle/client/screen/CodexScreen.java';
       at.set(F, mustReplace(at.get(F),
-        'net.neoforged.neoforge.network.PacketDistributor.sendToServer(\n'
+        'net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(\n'
         + '                        new com.whitecobalt.anglertackle.network.RankRequestPayload(""))',
         'Minecraft.getInstance().setScreen(new LeaderboardScreen(null))',
         'codex-rank-empty-screen'));
@@ -5146,8 +5149,8 @@ const CASES = [
   { dir: 'rodcast-not-per-stack', checker: 'check-rod-cast-model.js', expect: 1,
     desc: '判据改回"玩家在钓鱼就换图"（不判手上这根）—— 背包里与另一只手的台钓竿会一起变无线图',
     mutate: (at) => {
-      at.set('ClientSetup.java', mustReplace(at.get('ClientSetup.java'),
-        'return entity.getMainHandItem().getItem() == stack.getItem() ? 1.0F : 0.0F;',
+      at.set('CastItemProperty.java', mustReplace(at.get('CastItemProperty.java'),
+        'return entity.getMainHandItem().getItem() == itemStack.getItem() ? 1.0F : 0.0F;',
         'return 1.0F;', 'rodcast-not-per-stack'));
     } },
   // ---- check-exchange-special.js（兑换里的两处特殊行为，用户 2026-10-11）----
@@ -5226,11 +5229,11 @@ const CASES = [
         '    public boolean isSpecial() {\n        return true;\n    }', 'book-not-special'));
     } },
   { dir: 'book-no-ingredients', checker: 'check-recipe-book.js', expect: 1,
-    desc: 'getIngredients() 被改名（材料表没了 → isIncomplete() = 照样不进配方书）',
+    desc: 'placementInfo() 被改名（材料表没了 → 配方书认为这条配方摆不出来 / 照样不进配方书）',
     mutate: (at) => {
       at.set('DishRecipe.java', mustReplace(at.get('DishRecipe.java'),
-        '    public NonNullList<Ingredient> getIngredients() {',
-        '    public NonNullList<Ingredient> getIngredients_unused() {', 'book-no-ingredients'));
+        '    public PlacementInfo placementInfo() {',
+        '    public PlacementInfo _removedPlacement() {', 'book-no-ingredients'));
     } },
   { dir: 'book-pair-drift', checker: 'check-recipe-book.js', expect: 1,
     desc: '逐鱼表里把鲫鱼的奶白鱼汤删掉 → 磁盘上就多出一条"定义里没有"的配方',
@@ -5610,14 +5613,14 @@ const CASES = [
       // ⚠ 必须用**完整相对路径**：配方与进度都叫 cookbook.json，用文件名会报"有歧义"
       const rel = 'src/main/resources/data/anglertackle/recipe/cookbook.json';
       at.set(rel, mustReplace(at.get(rel),
-        '"tag": "c:foods/cooked_fish"', '"tag": "c:foods/raw_fish"',
+        '"#c:foods/cooked_fish"', '"#c:foods/raw_fish"',
         'cookbook-recipe-wrong-ingredient'));
     } },
   { dir: 'cookbook-item-client-class', checker: 'check-cookbook.js', expect: 1,
     desc: '菜谱物品直接在 common 侧开界面（专用服务器会因此装不进模组）',
     mutate: (at) => {
       at.set('CookbookItem.java', mustReplace(at.get('CookbookItem.java'),
-        '            PacketDistributor.sendToServer(CookbookRequestPayload.INSTANCE);',
+        '            ClientPacketDistributor.sendToServer(CookbookRequestPayload.INSTANCE);',
         '            net.minecraft.client.Minecraft.getInstance()'
         + '.setScreen(new com.whitecobalt.anglertackle.client.screen.CookbookScreen());',
         'cookbook-item-client-class'));
@@ -5664,8 +5667,8 @@ const CASES = [
     desc: '「配料怎么来」改成手抄一张表（不再问配方管理器 —— 配方一改界面就撒谎）',
     mutate: (at) => {
       at.set('CookbookScreen.java', mustReplace(at.get('CookbookScreen.java'),
-        'for (RecipeHolder<?> holder : mc.level.getRecipeManager().getRecipes()) {',
-        'for (RecipeHolder<?> holder : java.util.List.<RecipeHolder<?>>of()) {',
+        'for (RecipeCollection collection : mc.player.getRecipeBook().getCollections()) {',
+        'for (RecipeCollection collection : java.util.List.<RecipeCollection>of()) {',
         'cookbook-hardcoded-source'));
     } },
   { dir: 'cookbook-tooltip-missing-extra', checker: 'check-cookbook.js', expect: 1,
@@ -5805,8 +5808,8 @@ const CASES = [
       // ⚠ 锚点必须把 serialize 那一行带上：文件里有两处 .copyOnDeath()（鱼币/图鉴 与 老柯进度），
       //   只写 .copyOnDeath() 会报"有歧义"
       at.set('ModAttachments.java', mustReplace(at.get('ModAttachments.java'),
-        '                    .serialize(PlayerFishingData.CODEC)\n                    .copyOnDeath()',
-        '                    .serialize(PlayerFishingData.CODEC)',
+        '                    .serialize(asMap(PlayerFishingData.CODEC))\n                    .copyOnDeath()',
+        '                    .serialize(asMap(PlayerFishingData.CODEC))',
         'playerdata-no-copy-on-death'));
     } },
   { dir: 'selfconsist-ok', checker: 'check-self-consistency.js', expect: 0,
@@ -6143,7 +6146,7 @@ const CASES = [
     desc: '日界改用 getGameTime（纯 tick 计数 ⇒ 会在半夜刷委托，用户点名的"乱套"）',
     mutate: (at) => {
       at.set('QuestService.java', mustReplace(at.get('QuestService.java'),
-        'Math.floorDiv(level.getDayTime(), Environment.DAY_LENGTH)',
+        'Math.floorDiv(level.getOverworldClockTime(), Environment.DAY_LENGTH)',
         'Math.floorDiv(level.getGameTime(), Environment.DAY_LENGTH)', 'quest-daytime'));
     } },
 
