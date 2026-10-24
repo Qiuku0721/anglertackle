@@ -40,12 +40,15 @@ const ids = Object.keys(M.data.fish);
 {
   const gen = require('./gen-fish-model.js');
   const drift = [];
+  // ⚠ 比较前归一换行（与生成器用同一个 norm）：仓库存 LF，autocrlf=true 的 Windows 检出是
+  //   CRLF —— 那是检出方式，不是内容漂移。不归一的话整份生成的文件在 CRLF 检出上永远"不一致"。
   for (const [file, text] of gen.buildOutputs()) {
     const old = fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : null;
-    if (old !== text) drift.push(path.relative(ROOT, file));
+    if (gen.norm(old) !== gen.norm(text)) drift.push(path.relative(ROOT, file));
   }
   if (drift.length) bad('生成的 Java/语言/模型与数据源不一致，重跑 node tools/gen-fish-model.js：' + drift.join(', '));
-  else ok('ModFishModel / FishVariants / ModModelLayers / ModItems 生成段 / 语言键 / 21 个蛋模型 都与数据源逐字节一致');
+  else ok('ModFishModel / FishVariants / ModModelLayers / ModItems 生成段 / 语言键 / 47 个蛋模型 + 47 个 items 定义'
+    + ' 都与数据源逐字节一致（只忽略 LF/CRLF 检出差异）');
 }
 
 // ---------------------------------------------------------------- ①b 不能有残留的旧文件
@@ -271,16 +274,16 @@ const { stripComments } = require('./java-source.js');
   const itemSrc = stripComments(read(J + 'registry/ModItems.java'));
   const missing = ids.filter((id) => !itemSrc.includes('"' + id + '_spawn_egg"'));
   if (missing.length) bad('这些鱼种没有刷怪蛋物品：' + missing.join(', '));
-  else ok('21 个鱼种都有刷怪蛋物品');
+  else ok(ids.length + ' 个鱼种都有刷怪蛋物品');
 
   const notInTab = ids.filter((id) => !itemSrc.includes('output.accept(' + id.toUpperCase() + '_SPAWN_EGG.get())'));
   if (notInTab.length) bad('这些刷怪蛋没进创造页签，游戏里拿不到：' + notInTab.join(', '));
-  else ok('21 个刷怪蛋都进了创造页签');
+  else ok(ids.length + ' 个刷怪蛋都进了创造页签');
 
   const zh = JSON.parse(read('src/main/resources/assets/anglertackle/lang/zh_cn.json'));
   const noZh = ids.filter((id) => !zh['item.anglertackle.' + id + '_spawn_egg']);
   if (noZh.length) bad('这些刷怪蛋没有中文名（tooltip 会显示成键名）：' + noZh.join(', '));
-  else ok('21 个刷怪蛋都有中文名，例如 ' + zh['item.anglertackle.tigerfish_spawn_egg']
+  else ok(ids.length + ' 个刷怪蛋都有中文名，例如 ' + zh['item.anglertackle.tigerfish_spawn_egg']
     + ' / ' + zh['item.anglertackle.arapaima_spawn_egg']);
 }
 

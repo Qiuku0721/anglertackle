@@ -6,7 +6,8 @@
  *   fish/FishVariants.java           21 种鱼的渲染缩放与碰撞箱
  *   registry/ModItems.java           21 个刷怪蛋字段 + 创造页签上架行（注入生成块）
  *   assets/.../lang/*.json           21 个刷怪蛋的中英文名
- *   assets/.../models/item/*_spawn_egg.json
+ *   assets/.../models/item/*_spawn_egg.json  （26.1.2：generated + 每蛋贴图）
+ *   assets/.../items/*_spawn_egg.json         （26.1.2 的物品模型定义，指向上面那个模型）
  *
  * 这些文件**整份生成**（ModItems/lang 是注入生成块），不要手工改。
  * 要改鱼的外形请改 tools/fish-appearance.json 或 tools/fish-model.js。
@@ -26,6 +27,17 @@ const M = require('./fish-model');
 const ROOT = process.env.ATL_ROOT ? path.resolve(process.env.ATL_ROOT) : path.join(__dirname, '..');
 const JAVA = path.join(ROOT, 'src/main/java/com/whitecobalt/anglertackle');
 const CHECK = process.argv.includes('--check');
+
+/**
+ * 比较前归一换行。
+ *
+ * ⚠ 仓库存 LF，`core.autocrlf=true` 的 Windows 检出是 CRLF —— 那是**检出方式**，
+ *   不是内容漂移。不归一的话，`--check` 在 CRLF 检出上会把这几个"整份生成"的文件
+ *   永远报成不一致，而 `--write` 又只是把行尾改一遍（git 里连 diff 都看不到）。
+ *   归一之后"内容一致"与"逐字节一致"在**去掉行尾差异**的意义上等价，
+ *   断言强度不变（check-fish-model.js 用的是同一个 norm）。
+ */
+const norm = (s) => (s == null ? null : String(s).replace(/\r\n/g, '\n'));
 
 const f = (v) => {
   const r = Math.round(v * 1e6) / 1e6;
@@ -53,11 +65,11 @@ function genModel() {
   const ids = IDS();
   const L = [];
   L.push(HEADER('com.whitecobalt.anglertackle.client.model'));
-  L.push(`import com.whitecobalt.anglertackle.entity.ModFish;
+  L.push(`import com.whitecobalt.anglertackle.client.render.state.FishRenderState;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import net.minecraft.client.model.HierarchicalModel;
+import net.minecraft.client.model.EntityModel;
 import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.client.model.geom.PartPose;
 import net.minecraft.client.model.geom.builders.CubeListBuilder;
@@ -82,7 +94,7 @@ import net.minecraft.util.Mth;
  * <p><b>朝向约定</b>：吻端在 -Z，尾在 +Z，体轴在 y = 24 - 体高/2 - 1
  * （抬高 1 格是为了给向下的臀鳍留位置，让鱼的最低点正好落在 y=24 的"地面"上）。
  */
-public class ModFishModel extends HierarchicalModel<ModFish> {
+public class ModFishModel extends EntityModel<FishRenderState> {
 
     /**
      * 会摆动的零件名。不同鱼种的尾型不同（叉尾/圆尾/新月尾/歪尾），
@@ -96,11 +108,10 @@ public class ModFishModel extends HierarchicalModel<ModFish> {
 
     private static final String[] EMPTY = new String[0];
 
-    private final ModelPart root;
     private final List<ModelPart> tails = new ArrayList<>();
 
     public ModFishModel(ModelPart root, String species) {
-        this.root = root;
+        super(root);
         for (String name : TAILS.getOrDefault(species, EMPTY)) {
             this.tails.add(root.getChild(name));
         }
@@ -159,17 +170,11 @@ ${ids.map((id) => `            Map.entry("${id}", ${M.species[id].atlasH})`).joi
     );
 
     @Override
-    public ModelPart root() {
-        return this.root;
-    }
-
-    @Override
-    public void setupAnim(ModFish entity, float limbSwing, float limbSwingAmount,
-                          float ageInTicks, float netHeadYaw, float headPitch) {
+    public void setupAnim(FishRenderState state) {
         // 摆尾：照抄 CodModel，出水时摆得更快。
         // 四种尾型（叉/圆/新月/歪尾）共用这一句，只是各自只有属于自己的零件存在。
-        float f = entity.isInWater() ? 1.0F : 1.5F;
-        float swing = -f * 0.45F * Mth.sin(0.6F * ageInTicks);
+        float f = state.isInWater ? 1.0F : 1.5F;
+        float swing = -f * 0.45F * Mth.sin(0.6F * state.ageInTicks);
         for (ModelPart tail : this.tails) {
             tail.yRot = swing;
         }
@@ -193,7 +198,7 @@ import com.whitecobalt.anglertackle.AnglersTackle;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import net.minecraft.client.model.geom.ModelLayerLocation;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 /**
  * 模型层（LayerDefinition）的声明。
@@ -215,7 +220,7 @@ public final class ModModelLayers {
         Map<String, ModelLayerLocation> map = new LinkedHashMap<>();
         for (String s : species) {
             map.put(s, new ModelLayerLocation(
-                    ResourceLocation.fromNamespaceAndPath(AnglersTackle.MOD_ID, "fish_" + s), "main"));
+                    Identifier.fromNamespaceAndPath(AnglersTackle.MOD_ID, "fish_" + s), "main"));
         }
         return Map.copyOf(map);
     }
@@ -317,7 +322,7 @@ function eggFields() {
       `    public static final DeferredItem<${FQ.egg}> ${constName(id)} =\n` +
       `            ITEMS.register("${id}_spawn_egg", () -> new ${FQ.egg}(\n` +
       `                    ${FQ.entities}.FISHES.get("${id}"), "${id}", 0x${base.slice(1)}, 0x${spot.slice(1)},\n` +
-      `                    new Item.Properties()));`;
+      `                    new Item.Properties().setId(itemKey("${id}_spawn_egg"))));`;
   });
   const map = IDS().map((id) => `        map.put("${id}", ${constName(id)});`).join('\n');
   return EGG_BEGIN + '\n' + lines.join('\n\n') + '\n\n' +
@@ -337,8 +342,37 @@ function eggTabLines() {
     '\n' + EGG_TAB_END;
 }
 
-function eggModelJson() {
-  return JSON.stringify({ parent: 'minecraft:item/template_spawn_egg' }, null, 2) + '\n';
+/**
+ * 刷怪蛋的**物品模型**（26.1.2）。
+ *
+ * ⚠ 26.1.2 删掉了 SpawnEggItem 的颜色构造器与 DeferredSpawnEggItem，原版不再有
+ *   `template_spawn_egg` 那种"一张灰度图 + ItemColors 染色"的做法 —— 每个蛋必须有
+ *   **自己的贴图**。所以这里是 generated + 每蛋 layer0，**不是** template_spawn_egg。
+ *
+ * ⚠ 贴图本身**不由本生成器负责**：48 张逐蛋图（16×16 RGBA，底色 = 背部色 /
+ *   高光 = 花纹色）是 P2b 一次性脚本的产物，已入库在
+ *   `assets/anglertackle/textures/item/<id>_spawn_egg.png`（47 条鱼 + 老柯）。
+ *   重出贴图必须照 P2b 的两色模板做，**不要**在这里按 1.21.1 的染色思路生成旧模板图
+ *   （旧模板在 26.1.2 没有颜色来源，蛋会变成纯灰）。
+ */
+function eggModelJson(id) {
+  return JSON.stringify({
+    parent: 'minecraft:item/generated',
+    textures: { layer0: 'anglertackle:item/' + id + '_spawn_egg' },
+  }, null, 2) + '\n';
+}
+
+/**
+ * 刷怪蛋的**物品模型定义**（26.1.2 的 `assets/<ns>/items/<id>.json`）。
+ *
+ * <p>没有它，模型 json 摆在那里也**不会**被物品用上 —— 1.21.1 靠物品 id 直接找
+ * `models/item/<id>.json`，26.1.2 改成先读 `items/<id>.json` 这个"入口"。
+ * 缺了它的表现是紫黑方块，不报错。
+ */
+function eggItemDefinitionJson(id) {
+  return JSON.stringify({
+    model: { type: 'minecraft:model', model: 'anglertackle:item/' + id + '_spawn_egg' },
+  }, null, 2) + '\n';
 }
 
 const EGG_SUFFIX = { zh: '刷怪蛋', en: ' Spawn Egg' };
@@ -409,19 +443,23 @@ function buildOutputs() {
     [path.join(LANG, 'en_us.json'), injectLang(fs.readFileSync(path.join(LANG, 'en_us.json'), 'utf8'), EGG_SUFFIX.en)],
   ]) outs.push([file, text]);
   for (const id of IDS()) {
+    // 两个文件缺一不可：模型 json 是"画什么"，items/*.json 是"物品种怎么找到它"。
     outs.push([path.join(ROOT, 'src/main/resources/assets/anglertackle/models/item/' + id + '_spawn_egg.json'),
-      eggModelJson()]);
+      eggModelJson(id)]);
+    outs.push([path.join(ROOT, 'src/main/resources/assets/anglertackle/items/' + id + '_spawn_egg.json'),
+      eggItemDefinitionJson(id)]);
   }
   return outs;
 }
 
-module.exports = { buildOutputs };
+module.exports = { buildOutputs, norm };
 
 if (require.main === module) {
   let changed = 0;
   for (const [file, text] of buildOutputs()) {
     const old = fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : null;
-    if (old === text) { console.log('  = ' + path.relative(ROOT, file) + ' 无变化'); continue; }
+    // 只差行尾 ⇒ 不算漂移、也不重写（避免在 CRLF 检出上制造一堆看不见的 diff）。
+    if (norm(old) === norm(text)) { console.log('  = ' + path.relative(ROOT, file) + ' 无变化'); continue; }
     if (CHECK) {
       console.log('  ✗ ' + path.relative(ROOT, file) + ' 与生成结果不一致');
       changed++;
