@@ -258,7 +258,7 @@ for (const e of gen.ENCH) {
   const tbl = JSON.parse(fs.readFileSync(tablePath, 'utf8'));
 
   if (!listedModifiers.has(gen.NS + ':' + modName)) {
-    no(modName + ' 没写进 global_loot_modifiers.json —— 修饰符不会被加载，附魔永远不掉');
+    no(modName + ' 不在 data/anglertackle/loot_modifiers/ 里 —— 26.1.2 按目录加载，不在目录里就永远不会掉');
   }
   if (mod.type !== NEO_IDS.modifierType) {
     no(modName + ' 的修饰符类型是 ' + mod.type + '，应为 ' + NEO_IDS.modifierType +

@@ -58,8 +58,15 @@ const HIGH_VALUE_CHESTS = [
   'minecraft:chests/trial_chambers/reward_ominous_rare',
 ];
 
-/** 战利品表注入：global_loot_modifiers.json 的路径（NeoForge 规定）。 */
-const GLM_FILE = path.join(ROOT, 'src/main/resources/data/neoforge/loot_modifiers/global_loot_modifiers.json');
+/*
+ * 战利品表注入：修饰符目录。
+ *
+ * ⚠ 26.1.2 起 NeoForge 的 `LootModifierManager` 改成**扫目录**加载
+ *   （`FileToIdConverter.registry(…, "loot_modifiers")`，见 LootModifierManager.java:26/32），
+ *   `data/neoforge/loot_modifiers/global_loot_modifiers.json` 这份索引已随版本删除
+ *   （universal jar 里也没有它）。所以本生成器**不再产出**那个文件 ——
+ *   它会不会被加载，等价于文件在不在 `data/<ns>/loot_modifiers/` 里。
+ */
 const MODIFIER_DIR = path.join(ROOT, 'src/main/resources/data', NS, 'loot_modifiers');
 const INJECT_TABLE_DIR = path.join(ROOT, 'src/main/resources/data', NS, 'loot_table/inject');
 
@@ -203,8 +210,9 @@ function enchantmentJson(e) {
  */
 function lootFiles(out) {
   // ⚠ 清单是**共享**的（tools/glm-entries.js）—— 别的生成器（村庄箱子那份）也会往里加条目。
-  //   这里只**读**它、不要改它（改它会把别的生成器的条目重复追加进来），
-  //   写盘时照抄整份清单，谁都不会被覆盖。
+  //   这里只**读**它、不要改它（改它会把别的生成器的条目重复追加进来）。
+  //   26.1.2 不再有全局索引文件，这份清单现在的作用是"跨生成器的登记表"：
+  //   下面逐条核对"登记过的 id 都真的有修饰符文件"（写错一个字母不会报错，只会永远不掉）。
   const shared = require('./glm-entries.js').ENTRIES;
   for (const e of ENCH) {
     if (!e.loot) {
@@ -252,7 +260,8 @@ function lootFiles(out) {
         path.relative(ROOT, rel).replace(/\\/g, '/') + '（清单和文件必须一一对应）');
     }
   }
-  out.set(GLM_FILE, JSON.stringify({ replace: false, entries: shared }, null, 2) + '\n');
+  // ⚠ 不写 data/neoforge/loot_modifiers/global_loot_modifiers.json：26.1.2 已删除这份索引，
+  //   写入它不会报错，但也不会被加载 —— 属于"看着生成了、其实没接线"的假产物。
 }
 
 function build() {
@@ -288,7 +297,7 @@ function build() {
 
 module.exports = {
   build, ENCH, ENCH_DIR, ROD_TAG, MC_TAGS, NS,
-  GLM_FILE, MODIFIER_DIR, INJECT_TABLE_DIR, HIGH_VALUE_CHESTS,
+  MODIFIER_DIR, INJECT_TABLE_DIR, HIGH_VALUE_CHESTS,
 };
 
 if (require.main === module) {
