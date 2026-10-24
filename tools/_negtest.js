@@ -32,6 +32,15 @@ const FILES = [
   // 抛竿换图（2026-10-11）：负例要改模型 JSON 与 ClientSetup ⇒ 必须在主 FILES 里 ✓
   'src/main/resources/assets/anglertackle/models/item/wood_float_rod.json',
   'src/main/resources/assets/anglertackle/models/item/wood_float_rod_cast.json',
+  // ⚠ 2026-10-24（P5a-3）：26.1.2 的换图写法在**物品模型定义** `assets/anglertackle/items/<物品>.json`
+  //   的 range_dispatch 里（旧写法是主模型 JSON 的 overrides）。负例 rodcast-no-override 要改它、
+  //   check-rod-cast-model.js 要读它们，所以五把台钓竿的定义都放进 FILES（不进 EXTRA.rodCast：
+  //   同一路径同时出现在两边会走「链接失败→回退拷贝」那条路，而 dst 与真源码共 inode，没必要冒这个险）。
+  'src/main/resources/assets/anglertackle/items/wood_float_rod.json',
+  'src/main/resources/assets/anglertackle/items/iron_float_rod.json',
+  'src/main/resources/assets/anglertackle/items/gold_float_rod.json',
+  'src/main/resources/assets/anglertackle/items/diamond_float_rod.json',
+  'src/main/resources/assets/anglertackle/items/netherite_float_rod.json',
   'src/main/java/com/whitecobalt/anglertackle/client/ClientSetup.java',
   // ⚠ 2026-10-24（P5a-2）：26.1.2 把"抛竿换图"的判据从 ItemProperties.register（在 ClientSetup 里）
   //   搬到了一个 RangeSelectItemModelProperty 实现类。负例 rodcast-not-per-stack 改的是**判据本体**，
@@ -653,6 +662,14 @@ const EXTRA = {
     // 21 个刷怪蛋模型：check-fish-model.js 的"生成物同步"与 check-spawn-egg.js 的
     // "有模型 json" 都会读它们，缺了就变成对照组的假失败。
     'src/main/resources/assets/anglertackle/models/item/*_spawn_egg.json',
+    // ⚠ 2026-10-24（P5a-3）：26.1.2 把物品模型定义搬到了 assets/anglertackle/items/ 下
+    //   （新入口，check-spawn-egg.js 与 check-fish-model.js 都读它）。只拷旧的 models/item/ 时，
+    //   egg-ok / egg-fish-ok / model-ok 三个对照组全红，而红的原因是"副本里缺文件"、
+    //   跟检查器坏没坏毫无关系（假失败）。
+    'src/main/resources/assets/anglertackle/items/*_spawn_egg.json',
+    // 26.1.2 起每个蛋有自己的贴图（不再有染色模板）：check-spawn-egg.js 会读 layer0 指向的那张，
+    //   缺了同样是"副本里缺文件"的假失败。
+    'src/main/resources/assets/anglertackle/textures/item/*_spawn_egg.png',
   ],
   // 10 张竿图标：check-line-anchor.js 会从 PNG 里**重新量一遍竿尖像素**，
   // 再和 RodTipAnchor.java 里的常量比对。缺了图标它会直接报"找不到图标"。
@@ -2141,7 +2158,14 @@ const CASES = [
       const head = '    public static final DeferredItem<com.whitecobalt.anglertackle.item.FishSpawnEggItem> PIKE_SPAWN_EGG =';
       const from = s.indexOf(head);
       if (from < 0) throw new Error('负例构造失败：找不到 PIKE_SPAWN_EGG');
-      const end = s.indexOf('new Item.Properties()));', from) + 'new Item.Properties()));'.length;
+      // ⚠ 26.1.2 的注册尾巴多了 setId(itemKey(...))（旧锚点 'new Item.Properties()));' 已不存在）。
+      //   旧写法 indexOf 返回 -1 时仍会 slice（把文件头复制 23 个字符回去、蛋一个没删）——
+      //   变异体变成 no-op。这条用例以前是靠『副本里缺 items/ 文件』假通过的
+      //   （P5a-3 把 items/ 拷进副本后才暴露：真删了蛋，check-spawn-egg.js 仍然绿）。
+      const tail = 'new Item.Properties().setId(itemKey("pike_spawn_egg"))));';
+      const tailAt = s.indexOf(tail, from);
+      if (tailAt < 0) throw new Error('负例构造失败：找不到 PIKE_SPAWN_EGG 的注册尾巴');
+      const end = tailAt + tail.length;
       at.set('ModItems.java', s.slice(0, from) + s.slice(end));
     } },
 
@@ -2286,7 +2310,11 @@ const CASES = [
     } },
 
   // ---- check-chum-throw.js（打窝料要丢得出去、还要够远）----
-  { dir: 'chum-ok', checker: 'check-chum-throw.js', expect: 0,
+  // ⚠ 2026-10-24（P5a）：这里原来也叫 'chum-ok'，与下面 check-chum.js 的对照组**重名** ——
+  //   两条用例指向同一棵副本目录，清单里出现两个相同 dir ⇒ 父进程"清单+跳过 == 全部、且无重复"
+  //   的校验必然失败（日志里的「642 + 6 ≠ 648」就是它：条数对得上、唯一 dir 少一个）。
+  //   两个对照组内容本来完全相同（都不改文件），但目录名必须唯一，否则整套负例跑不起来。
+  { dir: 'chum-throw-ok', checker: 'check-chum-throw.js', expect: 0,
     desc: '未改动的副本（对照组，应当通过）', mutate: () => {} },
 
   // 用户 2026-10-02："打窝料可以稍微再抛远一点。"
@@ -5132,11 +5160,15 @@ const CASES = [
   { dir: 'rodcast-ok', checker: 'check-rod-cast-model.js', expect: 0,
     desc: '未改动的副本（对照组，应当通过）', mutate: () => {} },
   { dir: 'rodcast-no-override', checker: 'check-rod-cast-model.js', expect: 1,
-    desc: '某把台钓竿的主模型去掉 overrides（这把竿抛竿后不会换成无线的那张）',
+    desc: '某把台钓竿的物品模型定义去掉 range_dispatch（这把竿抛竿后不会换成无线的那张）',
     mutate: (at) => {
-      const p = 'models/item/wood_float_rod.json';
+      // ⚠ 26.1.2：换图写法从主模型的 overrides 搬到 `assets/anglertackle/items/<物品>.json`
+      //   的 range_dispatch。原来改 models/item/wood_float_rod.json 的 overrides —— 26.1.2 的
+      //   模型里没有那个键、也没人读它；而副本以前又缺 items/ 文件，于是这条用例一直靠
+      //   "缺文件"假通过（P5a-3 把 items/ 拷进副本后才暴露：检查器绿了 ⇒ 变异没被抓住）。
+      const p = 'src/main/resources/assets/anglertackle/items/wood_float_rod.json';
       const o = JSON.parse(at.get(p));
-      delete o.overrides;
+      delete o.model;      // 没有 model ⇒ 检查器判"缺分派 ⇒ 不会换图"
       at.set(p, JSON.stringify(o, null, 2) + '\n');
     } },
   { dir: 'rodcast-points-main-tex', checker: 'check-rod-cast-model.js', expect: 1,
