@@ -10,6 +10,8 @@ import net.minecraft.world.item.crafting.CraftingRecipe;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.item.crafting.Recipe;
 import net.minecraft.world.item.crafting.RecipeHolder;
+import net.minecraft.world.item.crafting.ShapedRecipe;
+import net.minecraft.world.item.crafting.ShapedRecipePattern;
 import net.minecraft.world.item.crafting.SingleRecipeInput;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -19,6 +21,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * **配方体检**：拿每条配方**自己显示的材料**去喂它，看它到底做不做得出来。
@@ -60,9 +63,10 @@ public final class RecipeAudit {
         }
         MinecraftServer server = event.getServer();
         try {
-            int checked = audit(server);
+            AuditResult result = audit(server);
             logFoodTable(server);
-            LOGGER.info("[垂纶/体检] 完事，{} 条配方体检通过；正在关服。", checked);
+            LOGGER.info("[垂纶/体检] 完事，通过 {} 条 / 总数 {} 条 / 失败 {} 条；正在关服。",
+                    result.passed(), result.total(), result.failed());
         } catch (Throwable t) {
             LOGGER.error("[垂纶/体检] 体检本身崩了", t);
         } finally {
@@ -138,10 +142,14 @@ public final class RecipeAudit {
         }
     }
 
-    /** @return 通过体检的配方条数（失败会逐条打 ERROR 日志） */
-    public static int audit(MinecraftServer server) {
+    /** 一次体检的结果：通过 / 总数 / 失败（失败会逐条打 ERROR 日志）。 */
+    public record AuditResult(int passed, int total, int failed) {
+    }
+
+    /** @return 体检结果；{@code passed} 只统计**真的一条都没报错**的配方 */
+    public static AuditResult audit(MinecraftServer server) {
         List<String> failures = new ArrayList<>();
-        int checked = 0;
+        int passed = 0;
         int total = 0;
         for (RecipeHolder<?> holder : server.overworld().recipeAccess().getRecipes()) {
             if (!holder.id().identifier().getNamespace().equals(AnglersTackle.MOD_ID)) {
@@ -152,6 +160,8 @@ public final class RecipeAudit {
                 continue;                      // special 配方（鱼竿装配）没有材料表，不参与
             }
             total++;
+            int failuresBefore = failures.size();
+            boolean verified = false;
             String name = holder.id().identifier().toString();
             List<Ingredient> ingredients = recipe.placementInfo().ingredients();
             if (ingredients.isEmpty()) {
@@ -165,13 +175,20 @@ public final class RecipeAudit {
                     List<ItemStack> shown = recipe
                             instanceof com.whitecobalt.anglertackle.recipe.DishRecipe dish
                             ? dish.exampleIngredients() : null;
+                    // shaped 配方必须按 **pattern 的真实宽高与槽位** 摆料：26.1.2 的
+                    // CraftingInput.of 会把 3×3 收缩到非空包围盒，而 ShapedRecipePattern.matches
+                    // 又要求宽高完全相等（没有旧版偏移扫描）。按 placementInfo() 的顺序平铺到 3×3
+                    // 会丢掉 pattern 里的空格位（例如 stool 的 " S "/"S S"），必然匹配失败。
                     CraftingInput input = shown != null
-                            ? asCraftingInputFromStacks(shown, 1) : asCraftingInput(ingredients, 1);
+                            ? asCraftingInputFromStacks(shown, 1)
+                            : recipe instanceof ShapedRecipe shaped
+                                    ? asShapedInput(shaped, 1)
+                                    : asCraftingInput(ingredients, 1);
                     if (input == null) {
                         failures.add(name + "：有材料项一个物品都没有（hasNoItems）");
                         continue;
                     }
-                    checked++;
+                    verified = true;
                     if (!crafting.matches(input, server.overworld())) {
                         failures.add(name + "：按它自己显示的材料（" + describe(input)
                                 + "）匹配失败 —— 界面上写着能做，实际做不出来");
@@ -189,7 +206,10 @@ public final class RecipeAudit {
                     //   第一版按**个数**数主料（baseCount += stack.getCount()），
                     //   于是"1 块"的菜放 2 个就不匹配了，这条断言第一次跑就会红。
                     CraftingInput stacked = shown != null
-                            ? asCraftingInputFromStacks(shown, 3) : asCraftingInput(ingredients, 3);
+                            ? asCraftingInputFromStacks(shown, 3)
+                            : recipe instanceof ShapedRecipe shaped
+                                    ? asShapedInput(shaped, 3)
+                                    : asCraftingInput(ingredients, 3);
                     if (stacked != null && !crafting.matches(stacked, server.overworld())) {
                         failures.add(name + "：每格放一叠（3 个）就不匹配了 —— 玩家没法批量合成"
                                 + "（原版每次合成每格只扣 1 个，不该因为放多了而拒绝）");
@@ -200,7 +220,7 @@ public final class RecipeAudit {
                         failures.add(name + "：材料项一个物品都没有");
                         continue;
                     }
-                    checked++;
+                    verified = true;
                     if (!cooking.matches(input, server.overworld())) {
                         failures.add(name + "：按它自己显示的材料匹配失败");
                         continue;
@@ -216,21 +236,68 @@ public final class RecipeAudit {
             } catch (Throwable t) {
                 failures.add(name + "：体检时抛异常 " + t);
             }
+            // 只有**验过且这一条没往 failures 里加东西**才算通过。
+            if (verified && failures.size() == failuresBefore) {
+                passed++;
+            }
         }
 
-        LOGGER.info("[垂纶/体检] 模组配方共 {} 条（special 除外），实际验了 {} 条，失败 {} 条",
-                total, checked, failures.size());
+        LOGGER.info("[垂纶/体检] 模组配方共 {} 条（special 除外），通过 {} 条 / 总数 {} 条 / 失败 {} 条",
+                total, passed, total, failures.size());
         for (String f : failures) {
             LOGGER.error("[垂纶/体检] ❌ {}", f);
         }
         if (failures.isEmpty()) {
             LOGGER.info("[垂纶/体检] ✅ 每条配方显示的材料都能真的做出来");
         }
-        return checked;
+        return new AuditResult(passed, total, failures.size());
+    }
+
+    /**
+     * 按 **shaped pattern 的真实宽高与槽位** 摆料。
+     *
+     * <p>为什么不能平铺：{@code CraftingInput.of} 会把 3×3 收缩到非空包围盒，而
+     * {@link ShapedRecipePattern#matches} 要求 {@code input.width()/height()} 与 pattern
+     * **完全相等**，26.1.2 没有旧版的偏移扫描。{@code placementInfo().ingredients()} 只为
+     * 配方书/JEI 展示而把空格位过滤掉了，照它平铺会丢掉 pattern 的空格（stool 的
+     * {@code " S "} / {@code "S S"}），也会把 2×2 的 terminal 摊成 3×2（第 3 件落到第一行最右）
+     * ——宽高都不等于 pattern，必然不匹配。
+     *
+     * <p>这里直接用 {@link ShapedRecipe#pattern} 的 {@link ShapedRecipePattern#ingredients()}
+     * （row-major，空格位是 {@link Optional#empty()}）逐格还原，宽高取
+     * {@link ShapedRecipePattern#width()} / {@link ShapedRecipePattern#height()}。
+     *
+     * @param perSlot 每格摆几个（1 = 正常合成；3 = "一叠"也要能匹配）
+     */
+    private static CraftingInput asShapedInput(ShapedRecipe shaped, int perSlot) {
+        ShapedRecipePattern pattern = shaped.pattern;
+        int width = pattern.width();
+        int height = pattern.height();
+        List<Optional<Ingredient>> slots = pattern.ingredients();
+        if (width <= 0 || height <= 0 || slots.size() != width * height) {
+            return null;
+        }
+        List<ItemStack> stacks = new ArrayList<>(slots.size());
+        for (Optional<Ingredient> maybe : slots) {
+            if (maybe.isEmpty()) {
+                stacks.add(ItemStack.EMPTY);     // pattern 里的空格位必须留空
+                continue;
+            }
+            List<ItemStack> items = maybe.get().items().map(ItemStack::new).toList();
+            if (items.isEmpty()) {
+                return null;
+            }
+            ItemStack one = items.get(0).copy();
+            one.setCount(Math.max(1, perSlot));
+            stacks.add(one);
+        }
+        return CraftingInput.of(width, height, stacks);
     }
 
     /**
      * 把材料表的**第一件**物品铺进 3×3 合成格（每个槽一件，或每槽 {@code perSlot} 件）。
+     *
+     * <p>**只用于 shapeless**；shaped 走 {@link #asShapedInput(ShapedRecipe, int)}。
      *
      * <p>{@code perSlot = 3} 那种摆法是给"一叠"用的：原版每次合成对每个非空格子只扣 1 个，
      * 所以摆一叠必须照样匹配（否则玩家没法批量合成）。

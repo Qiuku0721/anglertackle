@@ -2,7 +2,8 @@
   "credit": "垂纶 · 水族箱",
   "render_type": "minecraft:cutout",
   "textures": {
-    "frame": "anglertackle:block/aquarium"
+    "frame": "anglertackle:block/aquarium",
+    "particle": "anglertackle:block/aquarium"
   },
   "elements": [
     {

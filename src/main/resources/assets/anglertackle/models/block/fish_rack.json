@@ -7,7 +7,8 @@
   ],
   "textures": {
     "wood": "anglertackle:block/fish_rack",
-    "plank": "anglertackle:block/fish_rack"
+    "plank": "anglertackle:block/fish_rack",
+    "particle": "anglertackle:block/fish_rack"
   },
   "elements": [
     {

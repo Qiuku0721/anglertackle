@@ -6,8 +6,6 @@ import net.minecraft.client.renderer.item.properties.numeric.RangeSelectItemMode
 import net.minecraft.world.entity.ItemOwner;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemStack;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -37,7 +35,6 @@ import org.jetbrains.annotations.Nullable;
  * <p>⚠ 第 3 条必须按"**手上这根竿**"判断：模型属性是**对每个堆栈**求值的，
  * 只判断"玩家正在钓鱼"的话，背包里和另一只手上的台钓竿会一起变成无线的图 ✗。
  */
-@OnlyIn(Dist.CLIENT)
 public record CastItemProperty() implements RangeSelectItemModelProperty {
 
     /** 无参属性：{@code MapCodec.unit}（与原版 {@code Cooldown} 同一个写法）。 */
