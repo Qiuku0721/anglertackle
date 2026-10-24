@@ -337,6 +337,34 @@ const buildCalls = neCalls.filter((l) => !/--check-anchors/.test(l));
       }
     }
   }
+
+  // ---- 本轮新增的 6 条环境守卫：缺才跳、存在必须跑（2026-10-24 P5b）----
+  //
+  // 只盯源码里的 at.exists 不够（可能被写成 if (false)）。这里用**行为**判据：
+  // 预检日志里，夹具在本机（副本）存在时**不许**出现该用例的 ⊘ 行；缺失时**必须**有。
+  // .jdk 不在 FILES 里（副本不含它，check-environment 会向上找真仓库），
+  // 所以按副本的 .jdk 判断 —— 与 _negtest.js 预检里 at.exists(ROOT) 完全同源。
+  {
+    const jdkHere = exists('.jdk/jdk-21.0.12.1+1/bin/java.exe')
+      || exists('.jdk/jdk-21.0.12.1+1/bin/java');
+    const GUARDED = [
+      ['tuner-ok', 'tuner.html'],
+      ['fish-ok', 'fish_research'],
+      ['fishnames-ok', 'fish_research'],
+      ['env-ok', '.jdk/jdk-21*'],
+      ['selfconsist-ok', '参考资料/鱼图/_baseline'],
+      ['selfconsist-fish-not-in-tab', '参考资料/鱼图/_baseline'],
+    ];
+    const wrong = [];
+    for (const [dir, rel] of GUARDED) {
+      const present = rel.startsWith('.jdk/') ? jdkHere : exists(rel);
+      const skipped = skipLines.some((l) => l.includes(' ' + dir + ' '));
+      if (present && skipped) wrong.push(dir + '：夹具存在却被跳过（守卫写成了无条件 skip）');
+      if (!present && !skipped) wrong.push(dir + '：夹具缺失（' + rel + '）却没有跳过');
+    }
+    if (wrong.length) bad('环境夹具守卫不符合"缺才跳"：' + wrong.join('；'));
+    else ok('本轮 6 条环境夹具守卫都是"**缺才跳**"（夹具存在时不跳过）✓');
+  }
 }
 
 

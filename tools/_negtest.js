@@ -1931,7 +1931,12 @@ const CASES = [
   //   两条文件已经补进 FILES；下面第一条就是"未改动的副本必须通过"的对照组。
   { dir: 'tuner-ok', checker: 'check-tuning-tool.js', expect: 0,
     desc: '未改动的副本（对照组，应当通过 —— 它同时证明副本里四个文件都带齐了）',
-    mutate: () => {} },
+    mutate: (at) => {
+      // tuner.html 是构建产物：本机未构建时不存在 ⇒ 缺了才跳过；存在时必须照常跑。
+      if (!at.exists('tuner.html')) {
+        at.skip('缺 tuner.html（构建产物，先跑 tools/build-deploy.ps1 才有）', 'env');
+      }
+    } },
   { dir: 'tuner-revert-broken', checker: 'check-tuning-tool.js', expect: 1,
     desc: '「还原已选为默认值」被改成不还原（after = before，等于点了没反应）—— 必须红',
     mutate: (at) => {
@@ -1995,7 +2000,14 @@ const CASES = [
 
   // ---- check-fish-appearance.js ----
   { dir: 'fish-ok', checker: 'check-fish-appearance.js', expect: 0,
-    desc: '未改动的副本（对照组，应当通过）', extra: EXTRA.fish, mutate: () => {} },
+    desc: '未改动的副本（对照组，应当通过）', extra: EXTRA.fish,
+    mutate: (at) => {
+      // fish_research/ 被 .gitignore 排除：本机没有调研资料时，检查器会逐鱼报"缺资料"。
+      // 缺了才跳过；存在时必须照常跑（不许无条件 skip）。
+      if (!at.exists('fish_research')) {
+        at.skip('缺 fish_research/（.gitignore 的调研资料）', 'env');
+      }
+    } },
 
   { dir: 'fish-color-invented', checker: 'check-fish-appearance.js', expect: 1,
     desc: '把鲫鱼背部改成"看着像"的编造色（调研资料里没有这个值）',
@@ -2169,7 +2181,7 @@ const CASES = [
     } },
 
   { dir: 'egg-fish-missing-one', checker: 'check-spawn-egg.js', expect: 1,
-    desc: '漏掉狗鱼的刷怪蛋（21 种里少一个，肉眼很难发现）',
+    desc: '漏掉狗鱼的刷怪蛋（47 种里少一个，肉眼很难发现；check-spawn-egg 现在有 47+1=48 的蛋数断言）',
     mutate: (at) => {
       const s = at.get('ModItems.java');
       const head = '    public static final DeferredItem<com.whitecobalt.anglertackle.item.FishSpawnEggItem> PIKE_SPAWN_EGG =';
@@ -2935,7 +2947,15 @@ const CASES = [
   // ⚠ 算例回归那一条（A 段）在副本里跑的是**真实项目**的编译产物（检查器有回退），
   //   所以下面这些负例改的是数据、配置与源码结构 —— 那三块都是从副本读的。
   { dir: 'env-ok', checker: 'check-environment.js', expect: 0,
-    desc: '未改动的副本（对照组，应当通过）', mutate: () => {} },
+    desc: '未改动的副本（对照组，应当通过）',
+    mutate: (at) => {
+      // 算例回归要跑真实项目的便携 JDK（检查器会从副本向上找真仓库的 .jdk）。
+      // .jdk/jdk-21* 被 .gitignore / 工具链排除，本机没装时不存在 ⇒ 缺了才跳过。
+      const JDK = '.jdk/jdk-21.0.12.1+1/bin/java';
+      if (!at.exists(JDK) && !at.exists(JDK + '.exe')) {
+        at.skip('缺 .jdk/jdk-21*（便携 JDK，check-environment 的算例回归要用）', 'env');
+      }
+    } },
 
   { dir: 'env-data-missing-moon', checker: 'check-environment.js', expect: 1,
     desc: '某条鱼漏写 moon —— "忘了写"必须报错，而不是静默变成全天鱼',
@@ -3583,7 +3603,13 @@ const CASES = [
     } },
   // ---- check-fish-names.js（学名/中文名修正 7 条，2026-10-11）----
   { dir: 'fishnames-ok', checker: 'check-fish-names.js', expect: 0,
-    desc: '未改动的副本（对照组，应当通过）', mutate: () => {} },
+    desc: '未改动的副本（对照组，应当通过）',
+    mutate: (at) => {
+      // 与 fish-ok 同一个夹具：fish_research/ 被 .gitignore 排除。
+      if (!at.exists('fish_research')) {
+        at.skip('缺 fish_research/（.gitignore 的调研资料）', 'env');
+      }
+    } },
   { dir: 'fishnames-jewel-old', checker: 'check-fish-names.js', expect: 1,
     desc: '红宝石鱼的学名退回水族书旧名 Hemichromis bimaculatus（2022 年已分出 Rubricatochromis）',
     mutate: (at) => {
@@ -5862,10 +5888,20 @@ const CASES = [
         'playerdata-no-copy-on-death'));
     } },
   { dir: 'selfconsist-ok', checker: 'check-self-consistency.js', expect: 0,
-    desc: '未改动的副本（对照组，应当通过）', mutate: () => {} },
+    desc: '未改动的副本（对照组，应当通过）',
+    mutate: (at) => {
+      // 参考资料/鱼图/_baseline 被 .gitignore 排除：缺了时检查器 exit 2（四、参考图基线无法验证）。
+      if (!at.exists('参考资料/鱼图/_baseline')) {
+        at.skip('缺 参考资料/鱼图/_baseline/（.gitignore 的本机参考图）', 'env');
+      }
+    } },
   { dir: 'selfconsist-fish-not-in-tab', checker: 'check-self-consistency.js', expect: 1,
     desc: '有一种鱼没进创造栏（玩家在创造模式里找不到它）',
     mutate: (at) => {
+      // 同 selfconsist-ok：缺参考基线时检查器会以 exit 2 收场，先按环境缺失跳过。
+      if (!at.exists('参考资料/鱼图/_baseline')) {
+        at.skip('缺 参考资料/鱼图/_baseline/（.gitignore 的本机参考图）', 'env');
+      }
       at.set('ModItems.java', mustReplace(at.get('ModItems.java'),
         '                        output.accept(GRASS_CARP.get());\n',
         '',
@@ -6832,7 +6868,7 @@ if (!IS_SHARD && BUILD_JOBS > 1) {
       if (skipOrdered.length) {
         console.log('\nℹ 跳过 ' + skipOrdered.length + ' 条用例（不是失败，分类见下）：');
         for (const s of skipOrdered) {
-          console.log('   ⊘ [' + kindTag(s.kind) + '] ' + s.checker.padEnd(24) + s.dir.padEnd(24)
+          console.log('   ⊘ [' + kindTag(s.kind) + '] ' + s.checker.padEnd(24) + ' ' + s.dir.padEnd(24)
             + '跳过：' + s.reason);
         }
       }
@@ -6923,7 +6959,7 @@ for (let caseIndex = 0; caseIndex < CASES.length; caseIndex++) {
       const kind = err.caseSkipKind || 'optional';
       const tag = kind === 'invalid' ? '失效跳过' : kind === 'env' ? '环境跳过' : '普通跳过';
       skipped.push({ dir: c.dir, checker: c.checker, desc: c.desc, reason: err.message, kind });
-      console.log('  ⊘ [' + tag + '] ' + c.checker.padEnd(24) + c.dir.padEnd(24) + '跳过：' + err.message);
+      console.log('  ⊘ [' + tag + '] ' + c.checker.padEnd(24) + ' ' + c.dir.padEnd(24) + '跳过：' + err.message);
       try { purgeEntry(dest); } catch (e) { /* 清不掉就算了：下一轮 purgeDir 会清 */ }
       continue;
     }

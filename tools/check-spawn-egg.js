@@ -113,6 +113,44 @@ const fishIds = [...entSrc.matchAll(/FISH_IDS\s*=\s*\{([\s\S]*?)\}/g)]
 const fishAttrLoop = /for\s*\(\s*var\s+\w+\s*:\s*ModEntities\.FISHES\.values\(\)\s*\)/.test(mainSrc)
   && /e\.put\(\s*\w+\.get\(\)/.test(mainSrc);
 
+// ---------------------------------------------------------------- ⓪ 蛋数：47 条鱼各有且仅有一个 + 老柯 1 个 = 48
+//
+// ⚠ 2026-10-24（P5b）：负例 `egg-fish-missing-one` **真的**删掉了一个蛋，而旧检查器只逐蛋
+// 检查、没有"每鱼一蛋 / 总数"的断言 ⇒ 它仍然全绿。这里补上（用户要求：保留该用例，不放宽、
+// 反而更强）：
+//   · 47 条 FISH_IDS 每条都必须有且只有一个 `<id>_spawn_egg`；
+//   · 再加老柯的 `fisherman_spawn_egg` = 48；
+//   · 每条鱼的蛋注册的实体参数必须是**它自己**的 `FISHES.get("<id>")`（不许张冠李戴）。
+{
+  const expected = fishIds.map((id) => id + '_spawn_egg');
+  const counts = new Map();
+  for (const e of eggs) counts.set(e.id, (counts.get(e.id) || 0) + 1);
+  const dupes = [...counts].filter(([, n]) => n > 1).map(([id]) => id);
+  const missing = expected.filter((id) => !counts.has(id));
+  const extras = [...counts.keys()].filter((id) => id !== 'fisherman_spawn_egg' && !expected.includes(id));
+  const mismatched = [];
+  for (const e of eggs) {
+    if (!expected.includes(e.id)) continue;
+    const fish = e.id.slice(0, -'_spawn_egg'.length);
+    const first = (e.args.split(',')[0] || '').trim();
+    const m = first.match(/^(?:[\w.]+\.)?FISHES\.get\("([a-z_]+)"\)$/);
+    if (!m || m[1] !== fish) mismatched.push(e.id + ' → ' + (m ? m[1] : first));
+  }
+  if (eggs.length !== 48) {
+    bad('刷怪蛋总数应为 48（47 条鱼各一个 + 老柯 1 个），实际 ' + eggs.length + ' 个');
+  }
+  if (dupes.length) bad('这些注册名出现了多个刷怪蛋：' + dupes.join('、'));
+  if (missing.length) bad('这些鱼没有刷怪蛋：' + missing.join('、')
+    + '（每种鱼必须有且仅有一个 <id>_spawn_egg）');
+  if (extras.length) bad('这些刷怪蛋没有对应的鱼：' + extras.join('、'));
+  if (!counts.has('fisherman_spawn_egg')) bad('缺老柯的刷怪蛋 fisherman_spawn_egg');
+  if (mismatched.length) bad('这些鱼的蛋注册的实体不是自己：' + mismatched.join('、'));
+  if (!dupes.length && !missing.length && !extras.length && counts.has('fisherman_spawn_egg')
+      && eggs.length === 48 && !mismatched.length) {
+    ok('47 条鱼各有且仅有一个 <id>_spawn_egg + 老柯 1 个 = 48 个刷怪蛋');
+  }
+}
+
 for (const e of eggs) {
   const vanilla = e.cls === 'SpawnEggItem' || e.cls === 'net.minecraft.world.item.SpawnEggItem';
   const own = e.cls.startsWith('com.whitecobalt.anglertackle.');
