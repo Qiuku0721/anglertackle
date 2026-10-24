@@ -2,13 +2,5 @@
   "parent": "anglertackle:item/rod_grip",
   "textures": {
     "layer0": "anglertackle:item/diamond_float_rod"
-  },
-  "overrides": [
-    {
-      "predicate": {
-        "anglertackle:cast": 1
-      },
-      "model": "anglertackle:item/diamond_float_rod_cast"
-    }
-  ]
+  }
 }

@@ -1,0 +1,20 @@
+{
+  "model": {
+    "type": "minecraft:range_dispatch",
+    "property": "anglertackle:cast",
+    "scale": 1.0,
+    "entries": [
+      {
+        "threshold": 1.0,
+        "model": {
+          "type": "minecraft:model",
+          "model": "anglertackle:item/diamond_float_rod_cast"
+        }
+      }
+    ],
+    "fallback": {
+      "type": "minecraft:model",
+      "model": "anglertackle:item/diamond_float_rod"
+    }
+  }
+}
