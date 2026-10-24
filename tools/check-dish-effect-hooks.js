@@ -240,9 +240,13 @@ const NUMBERS = [
     bad('客户端没有"心跳超时（60 tick）+ 换世界作废"的兜底 —— 丢包或换维度会留下一条指向空气的线');
   } else ok('OreSightPayload 注册为 S→C 包，客户端有 60 tick 超时与换世界清理');
 
-  if (!/@SubscribeEvent[\s\S]{0,200}RenderLevelStageEvent/.test(renderer)
-      || !/RenderType\.lines\(\)/.test(renderer)) {
-    bad('OreSightRenderer 没有按鱼线那套画（RenderLevelStageEvent + RenderType.lines）');
+  // 26.1.2：RenderLevelStageEvent 不再给 MultiBufferSource，官方替代是 SubmitCustomGeometryEvent
+  // （event.getSubmitNodeCollector().submitCustomGeometry(...) + RenderTypes.lines()）。
+  // 断言语义不变：必须走**和鱼线同一档的线渲染**（会被方块挡住的那一档）。
+  if (!/@SubscribeEvent[\s\S]{0,200}SubmitCustomGeometryEvent/.test(renderer)
+      || !/submitCustomGeometry\(/.test(renderer)
+      || !/RenderTypes\.lines\(\)/.test(renderer)) {
+    bad('OreSightRenderer 没有按鱼线那套画（SubmitCustomGeometryEvent + submitCustomGeometry + RenderTypes.lines()）');
   } else if (!/drawTargetBox\(/.test(renderer)) {
     bad('指引线没有目标方框 —— 只能看出"哪个方向"，看不出"是哪一块"');
   } else if (!/^\s*drawFlowDot\(/m.test(renderer)) {

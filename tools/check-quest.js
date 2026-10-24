@@ -203,8 +203,11 @@ console.log('\n[H] 日界口径（docs/40 §3：按游戏内时刻，**不用 ge
 const svc = strip(read(SVC));
 const tiers = exists(TIERS) ? strip(read(TIERS)) : '';
 if (!tiers) { bad('缺少文件 ' + TIERS + '（活跃度四档表，1.6.4 从 QuestService 搬出来的）'); }
-if (!/getDayTime\(\)/.test(svc)) { bad('QuestService 没读 getDayTime() —— 日界就不是"游戏内天明"了'); }
-else { ok('QuestService 用 getDayTime() 判日界 ✓'); }
+// 26.1.2：Level#getDayTime() 已并入世界时钟，等价 API 是 getOverworldClockTime()
+// （Environment.java:79 有同一处迁移说明；语义仍是"游戏内天明"，不是 tick 计数）。
+if (!/getOverworldClockTime\(\)/.test(svc)) {
+  bad('QuestService 没读 getOverworldClockTime()（26.1.2 顶替旧 getDayTime 的世界时钟）—— 日界就不是"游戏内天明"了');
+} else { ok('QuestService 用 getOverworldClockTime() 判日界（26.1.2 的世界时钟，语义同旧 getDayTime）✓'); }
 if (/getGameTime\(\)/.test(svc)) { bad('QuestService 里出现 getGameTime() —— 它是纯 tick 计数，会在半夜刷委托（用户点名的"乱套"）'); }
 else { ok('QuestService 里没有 getGameTime() ✓'); }
 if (!/Environment\.DAY_LENGTH/.test(svc)) { bad('QuestService 没复用 Environment.DAY_LENGTH —— 一天的长度要只有一个真源'); }

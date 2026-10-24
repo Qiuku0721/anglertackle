@@ -39,12 +39,24 @@ const gen = require(genPath);
 const { files, rods } = gen.build();
 
 const drift = [];
+// 26.1.2 已删除 data/neoforge/loot_modifiers/global_loot_modifiers.json（改成扫目录加载，
+// LootModifierManager.java:32）。生成器还在产出它 ⇒ 这不是"缺文件"，而是**生成器过时**。
+const OBSOLETE = 'data/neoforge/loot_modifiers/global_loot_modifiers.json';
+// ⚠ 比较前归一换行：仓库存 LF（i/lf），autocrlf=true 的 Windows 检出是 CRLF（w/crlf）——
+//   那是检出方式，不是内容漂移。
+const norm = (s) => String(s).replace(/\r\n/g, '\n');
+let obsoleteEmitted = 0;
 for (const [file, text] of files) {
-  if (!fs.existsSync(file)) { drift.push(path.relative(ROOT, file) + '（缺）'); continue; }
-  if (fs.readFileSync(file, 'utf8') !== text) drift.push(path.relative(ROOT, file) + '（内容不符）');
+  const rel = path.relative(ROOT, file).split(path.sep).join('/');
+  if (rel.endsWith(OBSOLETE)) { obsoleteEmitted++; continue; }
+  if (!fs.existsSync(file)) { drift.push(rel + '（缺）'); continue; }
+  if (norm(fs.readFileSync(file, 'utf8')) !== norm(text)) drift.push(rel + '（内容不符）');
 }
-if (drift.length === 0) ok('附魔 JSON / 竿标签 / 两张原版标签共 ' + files.size + ' 个文件，全部与生成器一致');
-else no('这些生成物漂移了（改完规则要重跑 gen-enchantments.js --write）：' + drift.join('、'));
+if (drift.length === 0 && obsoleteEmitted === 0) ok('附魔 JSON / 竿标签 / 两张原版标签共 ' + files.size + ' 个文件，全部与生成器一致');
+else if (drift.length === 0) {
+  no('生成器还在产出 26.1.2 已删除的 ' + OBSOLETE + ' —— 该文件不会再被加载，'
+    + 'P4b 里让 gen-enchantments.js 停掉它（其余 ' + (files.size - 1) + ' 个文件都一致）');
+} else no('这些生成物漂移了（改完规则要重跑 gen-enchantments.js --write）：' + drift.join('、'));
 
 if (rods.length === 10) ok('竿的物品标签覆盖 ' + rods.length + ' 把竿（#anglertackle:enchantable/rod，不含原版鱼竿）');
 else no('竿标签里只有 ' + rods.length + ' 把竿（应为 10：五种材质 × 台钓/路亚）');
@@ -55,20 +67,26 @@ else no('竿标签里只有 ' + rods.length + ' 把竿（应为 10：五种材�
     'src/main/java/com/whitecobalt/anglertackle/registry/ModItems.java'), 'utf8');
   const rodItem = fs.readFileSync(path.join(ROOT,
     'src/main/java/com/whitecobalt/anglertackle/item/RodItem.java'), 'utf8');
-  // ⚠ 1.21.1 的附魔亲和度是**重写 getEnchantmentValue()**（不是属性、也不是组件 ——
-  //   .enchantable(...) 是 1.21.2+ 才有的）。亲和度 0 的表现是"附魔台对竿什么都不出"。
-  if (/public int getEnchantmentValue\(\)/.test(rodItem)
-      && /case (WOOD|IRON|GOLD|DIAMOND|NETHERITE) -> \d+/.test(rodItem)) {
-    ok('RodItem 重写了 getEnchantmentValue()（按材质给亲和度 —— 附魔台才给竿报价）');
-  } else no('RodItem 没有重写 getEnchantmentValue() —— 亲和度 0，附魔台对竿一个附魔都不出');
-  // ⚠ 必须剥注释：ModItems 的说明里就写着 .enchantable(...) 这个不存在的 API（当反面教材），
-  //   不剥的话会自己把自己判红（这一轮已经踩过一次同类问题）。
-  //   ⚠ 用**共用的**状态机剥离器（tools/java-source.js）：自己写正则剥注释，
-  //     行注释里出现 `/*` 会被当成块注释开头，一路吞掉大段真实代码。
-  const itemsCode = stripComments(items);
-  if (/\.enchantable\(/.test(itemsCode)) {
-    no('ModItems 里出现了 .enchantable(...) —— 1.21.1 没有这个 API（编译都过不了）');
+  // 26.1.2：附魔亲和度是**数据组件**（DataComponents.ENCHANTABLE），
+  // 只能在注册/构造时经 Item.Properties#enchantable(int) 烘进去 ——
+  // 旧的 Item#getEnchantmentValue() 覆写已随组件化删除。
+  // 断言语义不变：亲和度必须**按材质给不同值且真的烘进物品**（0 的表现是"附魔台对竿什么都不出"）。
+  const enchantBaked = /super\(\s*properties\.enchantable\(\s*enchantmentValue\(\s*spec\.material\(\)\s*\)\s*\)\s*\)/
+    .test(rodItem);
+  const perMaterial = /case (WOOD|IRON|GOLD|DIAMOND|NETHERITE) -> \d+/.test(rodItem);
+  if (enchantBaked && perMaterial) {
+    ok('RodItem 把附魔亲和度经 properties.enchantable(材质亲和度) 烘进 ENCHANTABLE 组件');
+  } else {
+    no('RodItem 没有把附魔亲和度烘进 ENCHANTABLE 组件（super(properties.enchantable(enchantmentValue(材质)))）'
+      + ' —— 亲和度 0，附魔台对竿一个附魔都不出');
   }
+  // 不许再有人去覆写已经删掉的旧 API（编译不过；注释里提到不算）
+  const rodCode = stripComments(rodItem);
+  if (/getEnchantmentValue\(/.test(rodCode)) {
+    no('RodItem 里还在用 getEnchantmentValue() —— 26.1.2 已删除这个方法，附魔亲和度只能走 ENCHANTABLE 组件');
+  }
+  void items;
+
   const durTag = path.join(ROOT, 'src/main/resources/data/minecraft/tags/item/enchantable/durability.json');
   if (fs.existsSync(durTag)) {
     const v = JSON.parse(fs.readFileSync(durTag, 'utf8')).values || [];
@@ -196,16 +214,22 @@ function checkLootFileIds(rel) {
     'NeoForge 的两个比 NeoForgeMod 的注册语句）');
 }
 
-const glmPath = path.join(ROOT, 'src/main/resources/data/neoforge/loot_modifiers/global_loot_modifiers.json');
-const glm = JSON.parse(fs.readFileSync(glmPath, 'utf8'));
-const listedModifiers = new Set(glm.entries || []);
-if (glm.replace === false && listedModifiers.size > 0) {
-  ok('global_loot_modifiers.json 列了 ' + listedModifiers.size + ' 条修饰符（没列进来的根本不会被加载）');
+// 26.1.2：NeoForge 的战利品修饰符改成**扫目录**加载
+// （LootModifierManager.java:32 FileToIdConverter.registry(…"loot_modifiers")），
+// data/neoforge/loot_modifiers/global_loot_modifiers.json 这份索引已经不存在了。
+// ⇒ "会不会被加载"等价于"文件在不在 data/anglertackle/loot_modifiers/ 里"。
+const glmDir = path.join(ROOT, 'src/main/resources/data/anglertackle/loot_modifiers');
+const listedModifiers = new Set(
+  (fs.existsSync(glmDir) ? fs.readdirSync(glmDir) : [])
+    .filter((f) => f.endsWith('.json'))
+    .map((f) => gen.NS + ':' + f.slice(0, -5)));
+if (listedModifiers.size > 0) {
+  ok('data/anglertackle/loot_modifiers/ 里有 ' + listedModifiers.size + ' 条修饰符（26.1.2 按目录自动登记）');
 } else {
-  no('global_loot_modifiers.json 是空的或 replace 不为 false —— 我们的修饰符不会被加载');
+  no('data/anglertackle/loot_modifiers/ 是空的 —— 我们的修饰符不会被加载');
 }
 
-/** 原版选法（同 ③ 节）：这张表会选中几级。 */
+
 const levelAt = (e, lo, hi, power) => {
   for (let lv = hi; lv >= lo; lv--) {
     const a = e.minCost[0] + e.minCost[1] * (lv - 1);

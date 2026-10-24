@@ -1,20 +1,24 @@
 /*
- * check-spawn-egg.js —— 刷怪蛋的三条硬约束。
+ * check-spawn-egg.js —— 刷怪蛋的三条硬约束（26.1.2 形态）。
  *
  * 触发理由：做老柯（渔人 NPC）的刷怪蛋时踩到两件事，都不是"风格问题"，
  * 而是**会在别人机器上炸、且报错完全指错方向**的问题：
  *
- *   ① 原版 `new SpawnEggItem(EntityType, int, int, Properties)` 在 NeoForge 里
- *      被标了 @Deprecated，注释原话：
- *        "Forge: Use net.neoforged.neoforge.common.DeferredSpawnEggItem instead for suppliers"
- *      坑在于它收的是**已解析好的** EntityType，于是必须写 `ModEntities.X.get()`。
- *      而"物品"和"实体类型"是两个 DeferredRegister、两次独立的 RegisterEvent，
- *      **先后顺序不受"我在主类里先调用谁"控制**。物品先解析时 get() 就会炸，
- *      报错只说 registry 不存在，看不出是刷怪蛋干的。
- *      DeferredSpawnEggItem 收 Supplier，把取值推迟到真正使用那一刻。
+ *   ① 实体类型**不能靠构造器传**。
+ *      旧版（1.21.1）原版 `new SpawnEggItem(EntityType, int, int, Properties)` 收的是
+ *      已解析好的 EntityType，NeoForge 为此提供了 `DeferredSpawnEggItem`（收 Supplier）。
+ *      **26.1.2 把 DeferredSpawnEggItem 删了**（universal jar 与 sources 里都没有），
+ *      原版 SpawnEggItem 也只剩 `SpawnEggItem(Item.Properties)` 一个构造器：
+ *      实体类型改由 `Item.Properties.spawnEgg(type)` 写进 `DataComponents.ENTITY_DATA`，
+ *      `SpawnEggItem.getType(ItemStack)` 读它。
+ *      ⇒ 断言：**每个蛋都必须经 `Properties.spawnEgg(...)` 注入实体类型**
+ *        （原版 SpawnEggItem 直接写在参数里；本模组子类写在传给 super 的 properties 里）。
+ *      颜色同样不在构造器里了：26.1.2 每个蛋**一张自己的贴图**（不再有染色模板）。
  *
  *   ② 实体类型注册了、**属性忘了注册**（EntityAttributeCreationEvent），
  *      症状是"实体能生成，但一出现就 NaN 血 / 立刻倒地"，同样完全不提属性二字。
+ *
+ *   ③ 有蛋就必须有**物品模型定义 + 每蛋贴图 + 语言键 + 创造页签**（缺一样就看不见/拿不到）。
  *
  * 用法：node tools/check-spawn-egg.js
  */
@@ -27,6 +31,7 @@ const path = require('path');
 // 重新实现一遍 Java 的算法），所以每个新检查器都必须能被证伪。
 const ROOT = process.env.ATL_ROOT ? path.resolve(process.env.ATL_ROOT) : path.join(__dirname, '..');
 const read = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
+const exists = (p) => fs.existsSync(path.join(ROOT, p));
 
 const itemSrc = read('src/main/java/com/whitecobalt/anglertackle/registry/ModItems.java');
 const entSrc = read('src/main/java/com/whitecobalt/anglertackle/registry/ModEntities.java');
@@ -38,155 +43,196 @@ let fail = 0;
 const ok = (m) => console.log('  ✅ ' + m);
 const bad = (m) => { console.log('  ❌ ' + m); fail++; };
 
-console.log('=== 刷怪蛋检查 ===\n');
+console.log('=== 刷怪蛋检查（26.1.2：Properties.spawnEgg + 每蛋贴图）===\n');
 
-// ---------------------------------------------------------------- ① 不许用被弃用的原版构造器
-// 只在**真的 new** 的时候才算，import / 注释里提到不算。
-{
-  const hits = [...itemSrc.matchAll(/new\s+(?:net\.minecraft\.world\.item\.)?SpawnEggItem\s*\(/g)];
-  if (hits.length === 0) {
-    ok('没有直接 new 原版 SpawnEggItem（那个构造器已弃用且要求已解析的 EntityType）');
-  } else {
-    for (const h of hits) {
-      const line = itemSrc.slice(0, h.index).split('\n').length;
-      bad('ModItems.java:' + line + ' 用了被弃用的 new SpawnEggItem(...)，'
-        + '改用 net.neoforged.neoforge.common.DeferredSpawnEggItem（收 Supplier）');
+const lineOf = (src, idx) => src.slice(0, idx).split('\n').length;
+
+/**
+ * 抠出所有 `DeferredItem<...> NAME = ITEMS.register("id", () -> new CLS( ... ))`，
+ * 只保留 CLS 以 SpawnEggItem 结尾的（刷怪蛋）。
+ * 用**括号配平**扫参数，避免旧版"非贪婪正则被内层 ) 截断"导致的解析错
+ * （上一次它把参数截成 `...get()`，再由它拼正则会直接抛 Invalid regular expression）。
+ */
+function spawnEggRegistrations(src) {
+  const out = [];
+  const re = /ITEMS\.register\s*\(\s*"([a-z0-9_]+)"\s*,\s*\(\s*\)\s*->\s*new\s+([\w.]+)\s*\(/g;
+  let m;
+  while ((m = re.exec(src)) !== null) {
+    if (!/SpawnEggItem$/.test(m[2])) continue;
+    const open = re.lastIndex - 1;
+    let depth = 0;
+    let end = -1;
+    for (let i = open; i < src.length; i++) {
+      const c = src[i];
+      if (c === '"') {                       // 跳过字符串字面量里的括号
+        i++;
+        while (i < src.length && src[i] !== '"') { if (src[i] === '\\') i++; i++; }
+        continue;
+      }
+      if (c === '(') depth++;
+      else if (c === ')') { depth--; if (depth === 0) { end = i; break; } }
     }
+    if (end < 0) continue;
+    const before = src.slice(Math.max(0, m.index - 400), m.index);
+    const names = [...before.matchAll(/DeferredItem\s*<[^;]*?>\s+(\w+)\s*=\s*$/g)];
+    out.push({
+      id: m[1],
+      cls: m[2],
+      args: src.slice(open + 1, end),
+      name: names.length ? names[names.length - 1][1] : '(?)',
+      line: lineOf(src, m.index),
+    });
   }
+  return out;
 }
 
-// ---------------------------------------------------------------- ② 蛋一律走 Deferred，且传 Supplier 而非 .get()
-{
-  const re = /DeferredItem<\s*([\w.]+)\s*>\s+(\w+)\s*=\s*ITEMS\.register\(\s*"([a-z_]+)"\s*,\s*\(\)\s*->\s*new\s+([\w.]+)\s*\(([\s\S]*?)\)\);/g;
-  const eggs = [];
-  let m;
-  while ((m = re.exec(itemSrc)) !== null) {
-    const cls = m[4];
-    if (!/SpawnEggItem$/.test(cls)) continue;
-    eggs.push({ name: m[2], id: m[3], cls, args: m[5], line: itemSrc.slice(0, m.index).split('\n').length });
+/** 顶层逗号个数（不数括号/字符串里的）。用来识别"老的 4 参构造器"。 */
+function topLevelCommas(s) {
+  let depth = 0, n = 0;
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i];
+    if (c === '"') { i++; while (i < s.length && s[i] !== '"') { if (s[i] === '\\') i++; i++; } continue; }
+    if ('([{'.includes(c)) depth++;
+    else if (')]}'.includes(c)) depth--;
+    else if (c === ',' && depth === 0) n++;
+  }
+  return n;
+}
+
+const eggs = spawnEggRegistrations(itemSrc);
+if (eggs.length === 0) {
+  console.log('  ℹ 目前没有任何刷怪蛋物品（老柯的蛋如果删了，这段自然跳过）');
+}
+
+// ---------------------------------------------------------------- ① 实体类型必须经 Properties.spawnEgg 注入
+// ---------------------------------------------------------------- ② 属性必须注册
+// ---------------------------------------------------------------- ③ 模型 / 贴图 / 语言键 / 创造页签
+const accepted = new Set([...itemSrc.matchAll(/output\.accept\((\w+)\.get\(\)\)/g)].map((x) => x[1]));
+const fishIds = [...entSrc.matchAll(/FISH_IDS\s*=\s*\{([\s\S]*?)\}/g)]
+  .flatMap((x) => [...x[1].matchAll(/"([a-z_]+)"/g)].map((y) => y[1]));
+const fishAttrLoop = /for\s*\(\s*var\s+\w+\s*:\s*ModEntities\.FISHES\.values\(\)\s*\)/.test(mainSrc)
+  && /e\.put\(\s*\w+\.get\(\)/.test(mainSrc);
+
+for (const e of eggs) {
+  const vanilla = e.cls === 'SpawnEggItem' || e.cls === 'net.minecraft.world.item.SpawnEggItem';
+  const own = e.cls.startsWith('com.whitecobalt.anglertackle.');
+
+  if (/DeferredSpawnEggItem$/.test(e.cls)) {
+    bad(e.id + '（ModItems.java:' + e.line + '）还在用 ' + e.cls
+      + ' —— 该类在 26.1.2 已被删除（编译都过不了）；实体类型改用 properties.spawnEgg(type)');
+    continue;
+  }
+  if (!vanilla && !own) {
+    bad(e.id + '（ModItems.java:' + e.line + '）用的 ' + e.cls + ' 不是原版 SpawnEggItem，也不是本模组子类');
+    continue;
   }
 
-  if (eggs.length === 0) {
-    console.log('  ℹ 目前没有任何刷怪蛋物品（老柯的蛋如果删了，这段自然跳过）');
-  }
-
-  for (const e of eggs) {
-    // 本模组自己的子类也算合格 —— 但必须**读源码证明**它确实 extends DeferredSpawnEggItem。
-    // 不能简单地"名字以 SpawnEggItem 结尾就放行"：原版的 net.minecraft...SpawnEggItem
-    // 也满足这个形状，而它正是要禁止的那一个。
-    const own = e.cls.startsWith('com.whitecobalt.anglertackle.');
-    if (e.cls === 'DeferredSpawnEggItem' || e.cls === 'net.neoforged.neoforge.common.DeferredSpawnEggItem') {
-      ok(e.id + ' 用的是 DeferredSpawnEggItem');
-    } else if (own) {
-      const rel = 'src/main/java/' + e.cls.replace(/\./g, '/') + '.java';
-      if (!fs.existsSync(path.join(ROOT, rel))) {
-        bad(e.id + '（ModItems.java:' + e.line + '）用了本模组的 ' + e.cls + '，但 ' + rel + ' 不存在');
-      } else {
-        const ownSrc = read(rel);
-        if (/extends\s+(net\.neoforged\.neoforge\.common\.)?DeferredSpawnEggItem\b/.test(ownSrc)) {
-          ok(e.id + ' 用的是本模组子类 ' + e.cls.split('.').pop() + '（已确认 extends DeferredSpawnEggItem）');
-        } else {
-          bad(e.id + ' 的子类 ' + e.cls + ' 没有 extends DeferredSpawnEggItem —— '
-            + '它是原版 SpawnEggItem 那一系的话就踩回第 ① 条了');
-        }
-      }
+  // ①-a 原版 SpawnEggItem：参数里必须直接有 .spawnEgg(...)，且不再有多参构造器
+  if (vanilla) {
+    if (!/\.spawnEgg\s*\(/.test(e.args)) {
+      bad(e.id + '（ModItems.java:' + e.line + '）没有用 properties.spawnEgg(...) 注入实体类型'
+        + ' —— 26.1.2 的 SpawnEggItem 只剩 SpawnEggItem(Item.Properties)，'
+        + '实体类型只能经数据组件带进去；缺了它这个蛋生成不出任何东西');
+    } else if (topLevelCommas(e.args) > 0) {
+      bad(e.id + '（ModItems.java:' + e.line + '）的 SpawnEggItem 构造器还传了多个参数'
+        + ' —— 26.1.2 只有 SpawnEggItem(Item.Properties) 一个构造器，颜色改成每蛋一张贴图');
     } else {
-      bad(e.id + '（ModItems.java:' + e.line + '）用的是 ' + e.cls + '，应当用 DeferredSpawnEggItem');
+      ok(e.id + ' 的实体类型经 Item.Properties.spawnEgg(...) 注入（26.1.2 的唯一形态）');
     }
-
-    // 第一个实参必须是 supplier 本身：形如 com.x.y.ModEntities.XXX，
-    // **结尾不能有 .get()** —— 有 .get() 就是把第 ① 条的坑又踩回来了。
-    //
-    // ⚠ 鱼的蛋走的是另一条路：实体类型在 ModEntities.FISHES 这张 Map 里，
-    //   只能写 ModEntities.FISHES.get("pike")。这是 **Map 查表**，
-    //   不是 DeferredHolder.get()，不涉及"注册有没有解析完"，是安全的；
-    //   但必须单独认出来，否则 ^[\w.]+$ 会把它判成"看不懂"。
-    const first = (e.args.split(',')[0] || '').trim();
-    const fishForm = first.match(/^(?:[\w.]+\.)?FISHES\.get\("([a-z_]+)"\)$/);
-    if (fishForm) {
-      ok(e.id + ' 的实体参数是 FISHES 表查表（Map 查表，不依赖注册顺序）：' + first);
-      if (!new RegExp('"' + fishForm[1] + '"').test(entSrc)) {
-        bad(e.id + ' 查的鱼种 ' + fishForm[1] + ' 不在 ModEntities 里');
-      }
-      // 鱼的属性是在 AnglersTackle 里**循环**注册的，没有逐个 e.put(...) 可查
-      if (/for\s*\(\s*var\s+\w+\s*:\s*ModEntities\.FISHES\.values\(\)\s*\)/.test(mainSrc)
-          && /e\.put\(\s*\w+\.get\(\)/.test(mainSrc)) {
-        ok('鱼的属性已在 EntityAttributeCreationEvent 里循环注册（覆盖全部 21 种）');
+    // 实体类型从 spawnEgg(...) 里的 holder 取
+    const holder = (e.args.match(/\.spawnEgg\s*\(\s*(?:[\w.]*\.)?([A-Z][A-Z0-9_]*)\.get\(\)\s*\)/) || [])[1];
+    if (holder) {
+      if (!new RegExp('\\b' + holder + '\\s*=').test(entSrc)) {
+        bad(e.id + ' 注入的 ' + holder + ' 在 ModEntities.java 里找不到');
+      } else if (new RegExp('e\\.put\\(\\s*ModEntities\\.' + holder + '\\.get\\(\\)').test(mainSrc)) {
+        ok(holder + ' 的属性已在 EntityAttributeCreationEvent 里注册');
       } else {
-        bad('鱼的属性没有注册 —— 实体能生成但会是 NaN 血/立刻倒地，'
+        bad(holder + ' 的属性**没有**注册 —— 实体能生成但会是 NaN 血/立刻倒地，'
           + '报错里不会提"属性"两个字。去 AnglersTackle 加 EntityAttributeCreationEvent 监听');
       }
-    } else if (/\.get\(\)\s*$/.test(first)) {
-      bad(e.id + ' 的实体参数写了 ' + first + ' —— 去掉 .get()，直接传 DeferredHolder（它就是 Supplier）');
-    } else if (!/^[\w.]+$/.test(first)) {
-      bad(e.id + ' 的实体参数看不懂：' + first);
     } else {
-      ok(e.id + ' 的实体参数是 Supplier（' + first + '），不依赖注册顺序');
-    }
-
-    // 语言键 + 模型
-    if (('item.anglertackle.' + e.id) in zh && ('item.anglertackle.' + e.id) in en) {
-      ok(e.id + ' 中英文名齐全');
-    } else {
-      bad(e.id + ' 缺语言键（item.anglertackle.' + e.id + '）');
-    }
-    const modelPath = 'src/main/resources/assets/anglertackle/models/item/' + e.id + '.json';
-    if (fs.existsSync(path.join(ROOT, modelPath))) {
-      ok(e.id + ' 有模型 json');
-    } else {
-      bad(e.id + ' 缺模型 ' + modelPath);
-    }
-
-    // 实体类型 + 属性，缺一不可。
-    // 鱼的蛋在上面单独判过了（holder 不在 ModEntities 里，是 Map 查表）。
-    if (fishForm) continue;
-    const holder = first.split('.').pop();
-    if (new RegExp('"' + holder.toLowerCase().replace(/_/g, '_') + '"').test(entSrc) === false
-        && !entSrc.includes(holder + ' =')) {
-      bad(e.id + ' 指向的 ' + holder + ' 在 ModEntities.java 里找不到');
-    }
-    if (new RegExp('e\\.put\\(\\s*ModEntities\\.' + holder + '\\.get\\(\\)').test(mainSrc)) {
-      ok(holder + ' 的属性已在 EntityAttributeCreationEvent 里注册');
-    } else {
-      bad(holder + ' 的属性**没有**注册 —— 实体能生成但会是 NaN 血/立刻倒地，'
-        + '报错里不会提"属性"两个字。去 AnglersTackle 加 EntityAttributeCreationEvent 监听');
+      bad(e.id + ' 的 spawnEgg(...) 里读不出实体类型 holder（形如 ModEntities.X.get()）');
     }
   }
-}
 
-// ---------------------------------------------------------------- ③ 反向：实体有蛋但没进创造页签
-{
-  const accepted = new Set([...itemSrc.matchAll(/output\.accept\((\w+)\.get\(\)\)/g)].map((x) => x[1]));
-  const eggNames = [...itemSrc.matchAll(/DeferredItem<\s*[\w.]*SpawnEggItem\s*>\s+(\w+)\s*=/g)].map((x) => x[1]);
-  const missing = eggNames.filter((n) => !accepted.has(n));
-  if (missing.length === 0) {
-    ok('所有刷怪蛋都进了创造页签（' + eggNames.length + ' 个）');
+  // ①-b 本模组子类：必须 extends SpawnEggItem，且 super(properties.spawnEgg(...))
+  let fishForm = null;
+  if (own) {
+    const rel = 'src/main/java/' + e.cls.replace(/\./g, '/') + '.java';
+    if (!exists(rel)) {
+      bad(e.id + '（ModItems.java:' + e.line + '）用了本模组的 ' + e.cls + '，但 ' + rel + ' 不存在');
+      continue;
+    }
+    const ownSrc = read(rel);
+    if (!/extends\s+(?:net\.minecraft\.world\.item\.)?SpawnEggItem\b/.test(ownSrc)) {
+      bad(e.id + ' 的子类 ' + e.cls + ' 没有 extends SpawnEggItem');
+    } else if (/extends\s+(?:net\.neoforged\.neoforge\.common\.)?DeferredSpawnEggItem\b/.test(ownSrc)) {
+      bad(e.id + ' 的子类 ' + e.cls + ' 还 extends DeferredSpawnEggItem（该类在 26.1.2 已删除）');
+    } else if (!/super\s*\(\s*properties\.spawnEgg\s*\(/.test(ownSrc)) {
+      bad(e.id + ' 的子类 ' + e.cls + ' 的 super(...) 里没有 properties.spawnEgg(...)'
+        + ' —— 实体类型没进数据组件，蛋生成不出东西');
+    } else {
+      ok(e.id + ' 用的是本模组子类 ' + e.cls.split('.').pop() + '（extends SpawnEggItem + super(properties.spawnEgg(...))）');
+    }
+
+    // 子类的第一个实参：鱼的蛋是 FISHES 表查表（Map 查表，不依赖注册顺序）
+    const first = (e.args.split(',')[0] || '').trim();
+    fishForm = first.match(/^(?:[\w.]+\.)?FISHES\.get\("([a-z_]+)"\)$/);
+    if (fishForm) {
+      if (!fishIds.includes(fishForm[1])) {
+        bad(e.id + ' 查的鱼种 ' + fishForm[1] + ' 不在 ModEntities.FISH_IDS 里');
+      } else if (!fishAttrLoop) {
+        bad('鱼的属性没有注册 —— 实体能生成但会是 NaN 血/立刻倒地，'
+          + '报错里不会提"属性"两个字。去 AnglersTackle 加 EntityAttributeCreationEvent 监听');
+      } else {
+        ok(e.id + ' 的实体参数是 FISHES 表查表（Map 查表，不依赖注册顺序）：' + first);
+      }
+    }
+  }
+
+  // ③-a 物品模型定义（26.1.2 的入口）+ 模型 + 每蛋贴图
+  const defPath = 'src/main/resources/assets/anglertackle/items/' + e.id + '.json';
+  if (!exists(defPath)) {
+    bad(e.id + ' 缺物品模型定义 ' + defPath + '（26.1.2 的模型入口，缺了就是紫黑方块）');
   } else {
-    bad('这些刷怪蛋没进创造页签，游戏里拿不到：' + missing.join(', '));
+    const def = JSON.parse(read(defPath));
+    const modelId = def && def.model && def.model.model;
+    const rel = String(modelId || '').replace(/^anglertackle:/, '');
+    const modelPath = 'src/main/resources/assets/anglertackle/models/' + rel + '.json';
+    if (!modelId || !exists(modelPath)) {
+      bad(e.id + ' 的物品模型定义指向了不存在的模型：' + modelId + '（' + modelPath + '）');
+    } else {
+      const model = JSON.parse(read(modelPath));
+      const layer0 = model.textures && model.textures.layer0;
+      const texRel = String(layer0 || '').replace(/^anglertackle:/, '');
+      const texPath = 'src/main/resources/assets/anglertackle/textures/' + texRel + '.png';
+      if (!layer0 || !exists(texPath)) {
+        bad(e.id + ' 没有自己的贴图（layer0=' + layer0 + '，' + texPath + ' 不存在）'
+          + ' —— 26.1.2 不再有染色模板，每个蛋必须有一张图');
+      } else {
+        ok(e.id + ' 有物品模型定义 + 自己的贴图（' + texPath.replace('src/main/resources/assets/anglertackle/', '') + '）');
+      }
+    }
   }
 
-  // 鱼种 id → 蛋常量名，用来核对"每个鱼种都有一个蛋、且上架了"
-  const eggOf = {};
-  for (const m of itemSrc.matchAll(
-    /DeferredItem<\s*[\w.]*SpawnEggItem\s*>\s+(\w+)\s*=\s*\n?\s*ITEMS\.register\(\s*"([a-z_]+)_spawn_egg"/g)) {
-    eggOf[m[1]] = m[2];
-  }
-  const fishIds = [...entSrc.matchAll(/"([a-z_]+)"/g)].map((x) => x[1]);
-  const declared = [...entSrc.matchAll(/FISH_IDS\s*=\s*\{([\s\S]*?)\}/g)]
-    .flatMap((x) => [...x[1].matchAll(/"([a-z_]+)"/g)].map((y) => y[1]));
-  const noEgg = declared.filter((id) => !Object.values(eggOf).includes(id));
-  if (declared.length === 0) {
-    bad('读不出 ModEntities.FISH_IDS');
-  } else if (noEgg.length === 0) {
-    ok('21 个鱼种每个都有刷怪蛋（' + declared.length + ' 个）');
+  // ③-b 语言键
+  if (('item.anglertackle.' + e.id) in zh && ('item.anglertackle.' + e.id) in en) {
+    ok(e.id + ' 中英文名齐全');
   } else {
-    bad('这些鱼种没有刷怪蛋：' + noEgg.join(', '));
+    bad(e.id + ' 缺语言键（item.anglertackle.' + e.id + '）');
   }
-  void fishIds;
+
+  // ③-c 创造页签
+  if (accepted.has(e.name)) {
+    ok(e.id + ' 进了创造页签');
+  } else {
+    bad(e.id + '（常量 ' + e.name + '）没进创造页签，游戏里拿不到');
+  }
 }
 
 console.log('\n' + (fail === 0 ? '全部通过。' : fail + ' 项未通过（见上面 ❌）'));
-console.log('\n  背景：刷怪蛋看着是"一行物品注册"，实际牵扯三个注册表——');
-console.log('    物品 / 实体类型 / 实体属性。三者在不同事件里解析，顺序不保证。');
-console.log('    任何一处用了 .get() 提前取值，就会变成"某些机器上才炸"的偶发问题。');
+console.log('\n  背景：刷怪蛋看着是"一行物品注册"，实际牵扯四个地方——');
+console.log('    物品 / 实体类型（数据组件）/ 实体属性 / 每蛋贴图。');
+console.log('    26.1.2 起实体类型只能经 Properties.spawnEgg 注入，颜色只能靠贴图 ——');
+console.log('    任何一处漏了，表现都是"蛋拿在手上是紫黑格"或"放出来立刻倒地"。');
 process.exitCode = fail === 0 ? 0 : 1;

@@ -32,12 +32,17 @@ const r = build();
 if (!fs.existsSync(OUT)) {
   bad('docs/18-商店价目表.md 不存在 —— 跑 node tools/gen-shop-prices.js --write');
 } else {
-  const cur = fs.readFileSync(OUT, 'utf8');
-  if (cur === r.md) {
+  // ⚠ 比较前先归一换行：仓库里存的是 LF，而 core.autocrlf=true 的 Windows 检出
+  //   会把工作区文件换成 CRLF（git ls-files --eol 显示 i/lf w/crlf）。
+  //   那是**检出方式**，不是内容漂移 —— 归一后再逐行比对，语义强度不变。
+  const norm = (s) => String(s).replace(/\r\n/g, '\n');
+  const cur = norm(fs.readFileSync(OUT, 'utf8'));
+  const want = norm(r.md);
+  if (cur === want) {
     ok('文档与代码**逐行一致**（' + r.total + ' 件配件）');
   } else {
     bad('文档与代码不一致（生成物漂移）—— 修法：node tools/gen-shop-prices.js --write');
-    const A = cur.split('\n'), B = r.md.split('\n');
+    const A = cur.split('\n'), B = want.split('\n');
     for (let i = 0; i < Math.max(A.length, B.length); i++) {
       if (A[i] !== B[i]) {
         console.log('     第一处差异在第 ' + (i + 1) + ' 行：');

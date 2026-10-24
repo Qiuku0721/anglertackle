@@ -156,8 +156,10 @@ const LEAGUESVC = path.join(ATL_ROOT, 'src/main/java/com/whitecobalt/anglertackl
       bad('⑦ 结算没有写档案 —— 联赛板块永远是空的');
     }
     // 存/读成对
-    const hasSave = /tag\.put\("archive", arch\)/.test(ldata);
-    const hasLoad = /tag\.getList\("archive", Tag\.TAG_COMPOUND\)/.test(ldata);
+    // 26.1.2：LeagueData 改用 SavedDataType + Codec 持久化（不再手写 tag.put/getList）。
+    // 判据跟着换写法，语义不变：**历届档案必须存得下、也读得回**。
+    const hasSave = /SeasonRow\.CODEC\.listOf\(\)\.optionalFieldOf\("archive", List\.of\(\)\)/.test(ldata);
+    const hasLoad = /for \(SeasonRow sr : t\.archive\(\)\)/.test(ldata);
     if (hasSave && hasLoad) {
       ok('⑦ 档案存/读成对 ✓（重启后历届还在）');
     } else {

@@ -66,7 +66,12 @@ const DEVICES = [
       n++;
       const json = JSON.parse(read(file));
       if (json.type !== 'anglertackle:' + type) wrongType.push(file + ' 的 type=' + json.type);
-      const gotIn = json.ingredient && json.ingredient.item;
+      // 26.1.2 的配方材料改成新语法：普通物品直接写字符串，标签写 "#c:xxx"，
+      // "任选其一"写嵌套数组。这里两种形状都归一化（断言语义不变）。
+      const gotIn = typeof json.ingredient === 'string'
+        ? json.ingredient
+        : (json.ingredient && (json.ingredient.item
+            || (json.ingredient.tag ? '#' + json.ingredient.tag : undefined)));
       const gotOut = json.result && json.result.id;
       if (gotIn !== 'anglertackle:' + raw) wrongResult.push(file + ' 的输入=' + gotIn);
       if (gotOut !== 'anglertackle:' + out) wrongResult.push(file + ' 的产物=' + gotOut);

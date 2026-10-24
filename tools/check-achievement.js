@@ -82,8 +82,10 @@ if (/ATTACHMENT_TYPES\.register\("player_achievements"/.test(att)) {
 // B2. serialize：不序列化 ⇒ 数据只在内存里，退出游戏就没了。
 //     这类 bug 当下看起来完全正常（"奖励发了"，重启后全没），最难发现。
 const block = att.slice(att.indexOf('player_achievements'), att.indexOf('player_achievements') + 400);
-if (/\.serialize\(AchievementData\.CODEC\)/.test(block)) ok('serialize(AchievementData.CODEC) ✓（会持久化）');
-else no('player_achievements 少了 serialize —— 退出游戏后成就数据会消失');
+// 26.1.2：AttachmentType.Builder 的 serialize 只收 MapCodec（旧 Codec 重载已删除），
+// 所以注册点写 serialize(asMap(AchievementData.CODEC))（asMap = MapCodec.assumeMapUnsafe）。
+if (/\.serialize\(asMap\(AchievementData\.CODEC\)\)/.test(block)) ok('serialize(asMap(AchievementData.CODEC)) ✓（会持久化）');
+else no('player_achievements 少了 serialize(asMap(AchievementData.CODEC)) —— 退出游戏后成就数据会消失');
 
 // B3. copyOnDeath：成就是永久成果，死一次掉光不可接受（与称号/委托同一条口径）。
 if (/\.copyOnDeath\(\)/.test(block)) ok('copyOnDeath() ✓（死亡不掉）');
@@ -252,7 +254,11 @@ if (/(^|\n)[ \t]*com\.whitecobalt\.anglertackle\.client\.ClientAchievements\.cle
 //   会被"只调 super"绕过（后者正是我踩的那次）。判据一律先剔除注释 ✓。
 const screenSrc = read('src/main/java/com/whitecobalt/anglertackle/client/screen/AchievementScreen.java');
 const screenCode = screenSrc.replace(/\/\/[^\n]*/g, '').replace(/\/\*[\s\S]*?\*\//g, '');
-const hasBg = /(^|\n)[ \t]*this\.renderBackground\(/.test(screenCode);
+// ⚠ 26.1.2：renderBackground 被拆成 extractBackground（由 Screen.extractRenderStateWithTooltipAndSubtitles
+//   :109 **只调一次**）+ extractRenderState（:112，只画 renderables）。
+//   ⇒ 旧的"两次背景 ⇒ 界面朦胧"踩法现在只剩"屏幕自己再抽一次背景"这一种；
+//   super.extractRenderState() 本身**不重抽背景**（Screen.java:120），调用它是合法的。
+const hasBg = /(^|\n)[ \t]*this\.extractBackground\(/.test(screenCode);
 const hasSuper = /(^|\n)[ \t]*super\.render\(/.test(screenCode);
 // H6. ⚠ 三栏几何不许重叠（2026-10-15 用户截图："很明显有重叠部分"）：左栏右缘必须离
 //   中栏选中高亮的左缘（MID_X - SEL_PAD）还有余量。判据直接读源码里的常量算，不靠肉眼。
@@ -284,11 +290,16 @@ if (/(^|\n)[ \t]*com\.whitecobalt\.anglertackle\.achievement\.AchievementService
   ok('升级钩子挂在唯一经验入口上（addXp → syncLevel ✓）');
 } else no('addXp 里没调 AchievementService.syncLevel —— 等级类成就永远不会点亮');
 
-if (hasBg && !hasSuper) {
-  ok('渲染顺序对（自己调一次 renderBackground、不调 super.render ✓）');
+const hasEntry = /public\s+void\s+extractRenderState\s*\(\s*GuiGraphicsExtractor/.test(screenCode);
+if (!hasEntry) {
+  no('成就界面没有 extractRenderState(GuiGraphicsExtractor, ...) —— 26.1.2 的绘制入口，缺了就是空白');
+} else if (hasSuper) {
+  no('还在调旧的 super.render(GuiGraphics) —— 26.1.2 已改成 extractRenderState，旧入口不存在');
+} else if (hasBg) {
+  no('成就界面在 extractRenderState 里又抽了一次背景 —— 框架已经抽过（Screen.java:109），'
+    + '第二次那层全屏暗化会让界面糊（用户 2026-10-15 截图那次）');
 } else {
-  no('渲染顺序错：' + (hasBg ? '' : '少了 renderBackground；')
-    + (hasSuper ? '调了 super.render —— 全屏暗化会盖在面板和文字上，界面会糊' : ''));
+  ok('渲染顺序对（背景交给框架抽一次，界面只写 extractRenderState、不再自己抽背景 ✓）');
 }
 
 // ---------------------------------------------------------------- [I] 生效审计（用户 2026-10-15："检查实际生效内容…实际游戏能达成"）

@@ -93,7 +93,8 @@ if (/protected\s+InteractionResult\s+mobInteract\s*\(/.test(code)) {
 {
   // 用括号配对找出所有 `if (!level().isClientSide) { ... }` 的范围
   const guardRanges = [];
-  const guardRe = /if\s*\(\s*!\s*(?:this\.)?level\(\)\.isClientSide\s*\)\s*\{/g;
+  // 26.1.2：isClientSide 是方法 —— level().isClientSide()
+  const guardRe = /if\s*\(\s*!\s*(?:this\.)?level\(\)\.isClientSide\(\)\s*\)\s*\{/g;
   let gm;
   while ((gm = guardRe.exec(code)) !== null) {
     const start = gm.index + gm[0].length;
@@ -153,8 +154,9 @@ if (/protected\s+InteractionResult\s+mobInteract\s*\(/.test(code)) {
 
 // ---------------------------------------------------------------- ③ 两个 abstract 方法
 for (const [name, sig, why] of [
-  ['updateTrades', /protected\s+void\s+updateTrades\s*\(\s*\)/,
-    'AbstractVillager 的 abstract 方法，不实现编译不过'],
+  // 26.1.2：updateTrades 多了 ServerLevel 参数（基类在 getOffers 里传入）
+  ['updateTrades', /protected\s+void\s+updateTrades\s*\(\s*ServerLevel\s+\w+\s*\)/,
+    'AbstractVillager 的 abstract 方法（26.1.2 签名带 ServerLevel），不实现编译不过'],
   ['rewardTradeXp', /protected\s+void\s+rewardTradeXp\s*\(\s*MerchantOffer\s+\w+\s*\)/,
     'AbstractVillager 的 abstract 方法（名字像可选钩子，其实必须实现）'],
 ]) {

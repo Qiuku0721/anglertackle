@@ -63,7 +63,11 @@ if (enumIds.length === 0) bad('读不到 Dish 枚举的 id 列表');
   for (const [rel, text] of expected) {
     const p = path.join(RDIR, rel);
     if (!exists(p)) { missing.push(rel); continue; }
-    if (read(p) !== text) drift.push(rel);               // 生成物不许手改
+    // ⚠ 比较前归一换行：仓库里存的是 LF（git ls-files --eol = i/lf），而
+    //   core.autocrlf=true 的 Windows 检出把工作区文件换成 CRLF（w/crlf）。
+    //   那是**检出方式**，不是内容漂移 —— 归一后仍是逐字节比对，语义强度不变。
+    const norm = (s) => String(s).replace(/\r\n/g, '\n');
+    if (norm(read(p)) !== norm(text)) drift.push(rel);   // 生成物不许手改
   }
   // 反过来：磁盘上多出来的菜配方（旧的一层文件、或表里已删掉的组合）
   const dishIds = new Set([...expected.keys()].map((r) => r.split('/')[0]));

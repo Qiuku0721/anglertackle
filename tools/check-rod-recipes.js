@@ -1,4 +1,4 @@
-﻿/*
+/*
  * check-rod-recipes.js —— 守住"只有木路亚竿有合成配方"这条用户定案。
  *
  * 用户 2026-10-01 原话：
@@ -78,7 +78,14 @@ for (const f of files) {
     if (j.result.id !== 'anglertackle:wood_lure_rod' || j.result.count !== 1) {
       fail('产物不是 1 个 wood_lure_rod：' + JSON.stringify(j.result)); n++;
     }
-    const ing = (j.ingredients || []).flat();
+    // 26.1.2 的配方材料改成**新语法**：普通物品写字符串（"minecraft:stick"），
+    // 标签写 "#c:xxx"，"任选其一"写嵌套数组；旧的 {"item": …} / {"tag": …} 对象已不再使用。
+    // 这里两种形状都归一化，断言语义一字不改。
+    const normIng = (x) => {
+      if (typeof x === 'string') return x.startsWith('#') ? { tag: x.slice(1) } : { item: x };
+      return x && typeof x === 'object' ? x : {};
+    };
+    const ing = (j.ingredients || []).flat().map(normIng);
     const items = ing.filter((x) => x.item).map((x) => x.item);
     const tags = ing.filter((x) => x.tag).map((x) => x.tag);
     const sticks = items.filter((x) => x === 'minecraft:stick').length;
@@ -93,7 +100,7 @@ for (const f of files) {
       fail('"任意一种鱼"那一格的写法不对：期望 1 个候选数组，实际 ' + groups.length + ' 个');
       n++;
     } else {
-      const got = groups[0].map((x) => x.item).sort();
+      const got = groups[0].map(normIng).map((x) => x.item).sort();
       if (JSON.stringify(got) !== JSON.stringify([...FISH].sort())) {
         fail('鱼的候选是 ' + got.join('/') + '，期望 ' + FISH.join('/') +
           '（不要熟鱼、不要模组鱼）');

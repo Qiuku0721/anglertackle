@@ -126,15 +126,28 @@ console.log('  （逐鱼表展开：' + DISH_RECIPES.length + ' 条菜配方，'
     if (!/public boolean isSpecial\(\) \{\s*return false;\s*\}/.test(src)) {
       problems.push(name + ' 没有把 isSpecial() 覆写成 false —— 原版 ClientRecipeBook 会整条跳过它');
     }
-    if (!/public NonNullList<Ingredient> getIngredients\(\)/.test(src)) {
-      problems.push(name + ' 没有覆写 getIngredients() —— 空材料表 = isIncomplete() = 照样不进配方书');
+    // 26.1.2：Recipe 接口删掉了 getIngredients() / getResultItem()。
+    // 配方书与 JEI 现在看两样东西：
+    //   · placementInfo() —— 真实摆料（默认/占位写法会让"做不做得出来"判不出来）；
+    //   · display()       —— 画什么（返回空列表 = 配方书里那一格是空的）。
+    // 断言语义不变（甚至更直接）：材料与产物都必须**真的给出来**。
+    const place = /public PlacementInfo placementInfo\(\) \{([\s\S]*?)\n    \}/.exec(src);
+    if (!place) {
+      problems.push(name + ' 没有覆写 placementInfo() —— 配方书/JEI 拿不到真实摆料（等于空材料表）');
+    } else if (!/PlacementInfo\.create\(/.test(place[1])) {
+      problems.push(name + ' 的 placementInfo() 没有给出真实材料（不是 PlacementInfo.create(...)）'
+        + ' —— 配方书会认为这条配方摆不出来');
     }
-    if (!/public ItemStack getResultItem\(HolderLookup\.Provider/.test(src)) {
-      problems.push(name + ' 没有覆写 getResultItem() —— 配方书里那一格会是空的');
+    const disp = /public List<RecipeDisplay> display\(\) \{([\s\S]*?)\n    \}/.exec(src);
+    if (!disp) {
+      problems.push(name + ' 没有覆写 display() —— 配方书里那一格会是空的');
+    } else if (!/\w*CraftingRecipeDisplay\(|\w*SmeltingRecipeDisplay\(|\w*RecipeDisplay\(/.test(disp[1])
+        || !/ItemStackSlotDisplay|ItemSlotDisplay/.test(disp[1])) {
+      problems.push(name + ' 的 display() 没有给出产物格 —— 配方书那一格还是空的');
     }
   }
   if (problems.length) problems.forEach(no);
-  else ok('三个配方类都覆写了 isSpecial()→false / getIngredients() / getResultItem()');
+  else ok('三个配方类都覆写了 isSpecial()→false / placementInfo()（真实材料）/ display()（产物格）');
 }
 
 // ---------------------------------------------------------------- B 配方清单 = 逐鱼表展开

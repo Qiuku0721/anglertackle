@@ -199,8 +199,13 @@ walkTags('src/main/resources/data');
     bad('dish_substitute 里没有 %s —— 替代物名字没地方显示');
   } else {
     const recipe = stripComments(read(DISH_RECIPE));
-    if (!/Ingredient\.of\(n\.tag\(\)\)\.getItems\(\)/.test(recipe)) {
-      bad('substituteNames 不是从标签取名字的 —— 那就不是"现算"');
+    // 26.1.2：Ingredient.of(TagKey) 已删除（改用 Ingredient.of(HolderSet<Item>)，由
+    // BuiltInRegistries.ITEM.getOrThrow(tag) 现取），getItems() 改名 items()（Stream<Holder<Item>>）。
+    // 断言语义不变：这一行的名字必须**从标签现算**，而不是手抄一份列表。
+    if (!/tagIngredient\(n\.tag\(\)\)\.items\(\)/.test(recipe)
+        || !/Ingredient\.of\(\s*BuiltInRegistries\.ITEM\.getOrThrow\(\s*tag\s*\)\s*\)/.test(recipe)) {
+      bad('substituteNames 不是从标签取名字的（应为 tagIngredient(n.tag()).items()，'
+        + '且 tagIngredient 走 Ingredient.of(BuiltInRegistries.ITEM.getOrThrow(tag))）—— 那就不是"现算"');
     } else ok('替代文案由 Dish#substituteNames 从标签现算，中英语言键齐');
   }
 }
@@ -239,7 +244,13 @@ walkTags('src/main/resources/data');
       }
       // ④ 配料只许引用我们的物品/标签或原版（引用他们物品时用标签，避免硬编码他们的 id）
       const ing = doc.ingredients || (doc.ingredient ? [doc.ingredient] : []);
-      for (const one of ing) {
+      // 26.1.2 的配方材料是新语法：普通物品写字符串（"minecraft:sugar_cane"），
+      // 标签写 "#c:xxx"。旧的 {"item":…} / {"tag":…} 对象也照样认。
+      const norm = (x) => {
+        if (typeof x === 'string') return x.startsWith('#') ? { tag: x.slice(1) } : { item: x };
+        return x && typeof x === 'object' ? x : {};
+      };
+      for (const one of ing.flat().map(norm)) {
         const ref = one.item || one.tag;
         if (!ref) { problems.push(f + ' 有一条空配料'); continue; }
         const bare = String(ref).replace(/^#/, '');

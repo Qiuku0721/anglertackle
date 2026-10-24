@@ -570,8 +570,10 @@ function modeOf(id) {
   }
 
   // ⑦ 名次分不依赖在线：待投递队列必须**存得下、读得回**积分
-  const storeOk = /t\.putInt\("points", p\.points\)/.test(dataSrc);
-  const loadOk = /p\.points = t\.getInt\("points"\)/.test(dataSrc);
+  // 26.1.2：LeagueData 的持久化改成了 Codec（Pending ↔ PendingRow 记录），
+  // 不再手写 putInt/getInt。判据跟着换写法，语义不变：**积分必须存得下、也读得回**。
+  const storeOk = /Codec\.INT\.optionalFieldOf\("points", 0\)\.forGetter\(PendingRow::points\)/.test(dataSrc);
+  const loadOk = /pend\.points\s*=\s*p\.points\(\)/.test(dataSrc);
   if (storeOk && loadOk) {
     ok('离线待投递队列带上了积分（登录时补发：`docs/37` §5.2 的"绝不吞掉")✓');
   } else {

@@ -83,7 +83,9 @@ if (/hut_clue_found/.test(item) && /getX\(\)/.test(item)) {
 }
 if (/distance/.test(item) && /Math\.sqrt/.test(item)) ok('同时报了直线距离'); else no('没有报距离');
 if (/shrink\(1\)/.test(item)) ok('用掉一张（一次性道具）'); else no('没有消耗 —— 8 张纸 + 一条鱼可以无限用');
-if (/target == null[\s\S]{0,300}?return InteractionResultHolder\.success\(stack\)/.test(item)) {
+// 26.1.2：InteractionResultHolder.success(stack) 已并入 InteractionResult（SUCCESS /
+// .heldItemTransformedTo(stack)）；后者传的是原堆栈 = 没消耗，语义与旧写法一致。
+if (/target == null[\s\S]{0,400}?return InteractionResult\.SUCCESS(?:\.heldItemTransformedTo\(stack\))?;/.test(item)) {
   ok('找不到时不消耗（否则玩家连点几次就白扔了）');
 } else {
   no('"找不到"那条路径的行为不明确 —— 应当不消耗并把原因说清楚');
@@ -92,8 +94,13 @@ if (/target == null[\s\S]{0,300}?return InteractionResultHolder\.success\(stack\
 // ---------------------------------------------------------------- ③ 数据：配方 / 模型 / 贴图 / 语言
 {
   const j = JSON.parse(read(RECIPE));
-  const paper = (j.ingredients || []).filter((i) => i.item === 'minecraft:paper').length;
-  const tag = (j.ingredients || []).filter((i) => i.tag === 'anglertackle:fishes').length;
+  // 26.1.2 的配方材料是新语法：普通物品写字符串，标签写 "#namespace:path"。
+  const norm = (i) => {
+    if (typeof i === 'string') return i.startsWith('#') ? { tag: i.slice(1) } : { item: i };
+    return i && typeof i === 'object' ? i : {};
+  };
+  const paper = (j.ingredients || []).map(norm).filter((i) => i.item === 'minecraft:paper').length;
+  const tag = (j.ingredients || []).map(norm).filter((i) => i.tag === 'anglertackle:fishes').length;
   const out = j.result && j.result.id;
   if (paper === 8 && tag === 1 && out === 'anglertackle:hut_clue') {
     ok('配方：纸 ×8 + #anglertackle:fishes ×1 → hut_clue ×1（与用户口径一致）');

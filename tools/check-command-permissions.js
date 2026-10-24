@@ -18,7 +18,8 @@
  *      —— 手写就意味着"这条的权限由某个人当时随手决定"）。
  *   B. `OP_ONLY` 恰好 = {stage, coins, resetstock, repair}（**双向**：加进去要红、删出去也要红）。
  *   C. 这四个名字在树里真的有对应指令（拼错一个字母 = 那条指令其实没门槛，而白名单看着很齐全）。
- *   D. `lit()` 真的把 `hasPermission(2)` 挂上了，并且判据里用的是 `OP_ONLY`。
+ *   D. `lit()` 真的把 2 级门槛挂上了（26.1.2：`src.permissions().hasPermission(Permissions.COMMANDS_GAMEMASTER)`，
+ *      旧的 `hasPermission(2)` 已随 PermissionSet 改造删除），并且判据里用的是 `OP_ONLY`。
  *   E. 单条指令上不许再出现**第二处** `hasPermission(` （两处真源 = 以后改一处漏一处）。
  *   F. 每条 OP_ONLY 的旁边**必须有一句理由注释**（"为什么它影响平衡"）——
  *      没有理由的白名单，下一个人只会照着加，最后所有指令都要 OP。
@@ -148,10 +149,16 @@ if (!mBlock) {
     const body = f[1];
     if (!/OP_ONLY\.contains\(name\)/.test(body)) {
       bad('lit() 没有读 OP_ONLY（那白名单形同虚设）');
-    } else if (!/hasPermission\(2\)/.test(body)) {
-      bad('lit() 里没有 hasPermission(2) —— 白名单里的指令其实人人可用（造钱口子敞着）');
+    } else if (!/src\.permissions\(\)\.hasPermission\(\s*Permissions\.COMMANDS_GAMEMASTER\s*\)/.test(body)) {
+      // 26.1.2：CommandSourceStack 持 PermissionSet，旧的 hasPermission(int) 已删除；
+      // 2 级 = GAMEMASTER（Permissions.COMMANDS_GAMEMASTER，server/permissions/Permissions.java:7）。
+      bad('lit() 里没有按 26.1.2 的权限 API 判 2 级（src.permissions().hasPermission(Permissions.COMMANDS_GAMEMASTER)）'
+        + ' —— 白名单里的指令其实人人可用（造钱口子敞着）');
+    } else if (!/\bimport\s+net\.minecraft\.server\.permissions\.Permissions\s*;/.test(raw)) {
+      bad('用了 Permissions.COMMANDS_GAMEMASTER 却没有 import net.minecraft.server.permissions.Permissions'
+        + ' —— 编译就过不了（或者被同名常量骗过去了）');
     } else {
-      ok('lit() 用 OP_ONLY.contains(name) + hasPermission(2) 决定权限');
+      ok('lit() 用 OP_ONLY.contains(name) + permissions().hasPermission(Permissions.COMMANDS_GAMEMASTER) 决定权限（2 级 = GAMEMASTER）');
     }
   }
 }

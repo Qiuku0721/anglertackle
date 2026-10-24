@@ -34,7 +34,9 @@ console.log('=== 板凳接线检查 ===\n');
   } else {
     bad('CushionedStoolBlock 的 COLOR 没在 createBlockStateDefinition 里上报 ⇒ blockstate 变体全匹配不上 ⇒ 缺失模型（紫黑方块）');
   }
-  if (/DirectionProperty\s+FACING/.test(stool) && /builder\.add\([^)]*FACING[^)]*\)/.test(stool)) {
+  // 26.1.2：BlockStateProperties.HORIZONTAL_FACING 的类型是 EnumProperty<Direction>
+  // （以前是 DirectionProperty，BlockStateProperties.java:57）。
+  if (/EnumProperty<Direction>\s+FACING/.test(stool) && /builder\.add\([^)]*FACING[^)]*\)/.test(stool)) {
     ok('StoolBlock 有 FACING 属性且已上报');
   } else {
     bad('StoolBlock 的 FACING 没上报 ⇒ 四向 blockstate 匹配不上');
@@ -72,7 +74,8 @@ console.log('=== 板凳接线检查 ===\n');
   const stool = read(J + 'block/StoolBlock.java');
   const seat = read(J + 'entity/SeatEntity.java');
   const need = [
-    ['useItemOn', /protected ItemInteractionResult useItemOn\(/, '没覆写 useItemOn ⇒ 拿地毯右击变成坐下'],
+    // 26.1.2：useItemOn 返回 InteractionResult（旧的 ItemInteractionResult 已删除）
+    ['useItemOn', /protected InteractionResult useItemOn\(/, '没覆写 useItemOn ⇒ 拿地毯右击变成坐下'],
     ['getShape', /protected VoxelShape getShape\(/, '没覆写 getShape ⇒ 碰撞箱整格 ⇒ 站在空气上浮空'],
     ['onPassengerTurned', /public void onPassengerTurned\(/, '没实现 onPassengerTurned ⇒ 坐着时腿只能朝一个方向'],
   ];

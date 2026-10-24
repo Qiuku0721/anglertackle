@@ -194,14 +194,16 @@ if (table) {
 {
   const INJ = 'src/main/resources/data/anglertackle/loot_table/inject/village_fisher_fish.json';
   const MOD = 'src/main/resources/data/anglertackle/loot_modifiers/village_fisher_fish.json';
-  const GLM = 'src/main/resources/data/neoforge/loot_modifiers/global_loot_modifiers.json';
+  // 26.1.2：NeoForge 的 LootModifierManager 改成**扫目录**加载
+  // （LootModifierManager.java:32 FileToIdConverter.registry(…"loot_modifiers")），
+  // data/neoforge/loot_modifiers/global_loot_modifiers.json 这份索引已不存在。
+  // ⇒ "会不会被加载"等价于"文件在不在 data/anglertackle/loot_modifiers/ 里"（下面直接查 MOD）。
   const TARGET = 'minecraft:chests/village/village_fisher';
   if (!exists(INJ) || !exists(MOD)) {
     bad('缺村庄渔夫小屋的注入表/修饰符（' + INJ + ' / ' + MOD + '）—— 村庄箱子里永远没有 mod 鱼');
   } else {
     const inj = JSON.parse(read(INJ));
     const mod = JSON.parse(read(MOD));
-    const glm = JSON.parse(read(GLM));
 
     if (mod.type === 'neoforge:add_table') ok('修饰符类型是 neoforge:add_table');
     else bad('修饰符类型是 ' + mod.type + '（写错 = 修饰符解析不了 → 永远不掉，且没有日志）');
@@ -219,10 +221,11 @@ if (table) {
     if (mod.table === 'anglertackle:inject/village_fisher_fish') ok('指向我们自己的注入表');
     else bad('mod.table = ' + mod.table + '（id 不对，箱子会静默空着）');
 
-    if ((glm.entries || []).includes('anglertackle:village_fisher_fish')) {
-      ok('已登记进 global_loot_modifiers.json（没登记就根本不会被加载）');
+    // 26.1.2 按目录自动登记：文件名就是 id（anglertackle:village_fisher_fish）
+    if (fs.existsSync(path.join(ROOT, MOD))) {
+      ok('修饰符在 data/anglertackle/loot_modifiers/ 里（26.1.2 按目录自动登记，不需要索引文件）');
     } else {
-      bad('没登记进 global_loot_modifiers.json —— 修饰符不会被加载');
+      bad('修饰符不在 data/anglertackle/loot_modifiers/ 里 —— 不会被加载');
     }
 
     // 数值必须和"老柯小屋"那一池**完全一致**（用户口径："品质概率等数值相同"）

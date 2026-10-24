@@ -142,8 +142,10 @@ else no('加成没有读取 timeMultiplier');
   else if(iAdd<0) no('ChumItem 里找不到 addFreshEntity');
   else if(iReserve>iAdd) no('ChumItem 先 addFreshEntity 再 reserve —— 满员时实体已经出去了');
   else ok('ChumItem 先占名额再生成实体（满员时玩家连物品都不扣）');
-  if(/InteractionResultHolder\.fail/.test(ci)) ok('满员时返回 fail（不扣物品）');
-  else no('满员时没有返回 fail —— 窝料会被白吃掉');
+  // 26.1.2：InteractionResultHolder.fail(stack) 已并入 InteractionResult.FAIL
+  // （成功/消费那几支走 InteractionResult.SUCCESS / CONSUME.heldItemTransformedTo(stack)）。
+  if(/return\s+InteractionResult\.FAIL\s*;/.test(ci)) ok('满员时返回 FAIL（不扣物品）');
+  else no('满员时没有返回 FAIL —— 窝料会被白吃掉');
 
   // 名额到期时刻与实体寿命**同源**：两边都必须走 ChumEntity.lifeTicksOf
   const ce=read(CE);

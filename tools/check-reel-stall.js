@@ -372,12 +372,38 @@ assert(fallStalled === 0, '力竭时中立仍然**永远在落**（净变化严�
 const TH_SCALE = __gameplay('fatigueThresholdScale');
 const TH_HELPER = /private double fatigueThresholdNow\(\)\s*\{\s*return Math\.min\(1\.0,\s*this\.profile\.fatigueThreshold\(\)\s*\*\s*Tuning\.fatigueThresholdScale\(\)\);\s*\}/.test(sessSrc);
 const TH_USED = /this\.fishStamina <= this\.fishStaminaMax \* fatigueThresholdNow\(\)/.test(sessSrc);
-// 四个策略工厂里 new FightProfile(...) 的第 10 个参数就是 fatigueThreshold（0 起算 index 9）
+// 四个原型工厂现在有两种形状：三参（转调四参）和四参（多一个 fatigueRatio）。
+// 直接扫 `new FightProfile(FightProfile.Archetype.X, …)` 更稳：按**配平的括号**切参数、
+// 取第 10 个（index 9）= fatigueThreshold（record 组件顺序见 FightProfile.java:33）。
+function topLevelArgs(s) {
+  const out = [];
+  let depth = 0, cur = '';
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i];
+    if (c === '(' || c === '[' || c === '{') depth++;
+    else if (c === ')' || c === ']' || c === '}') depth--;
+    if (c === ',' && depth === 0) { out.push(cur); cur = ''; continue; }
+    cur += c;
+  }
+  out.push(cur);
+  return out.map((x) => x.trim());
+}
 const arcThreshold = {};
-for (const m of fishSrc2.matchAll(
-  /private static FightProfile (\w+)\(double pull, double stamina, double tensionGain\)\s*\{\s*return new FightProfile\(([\s\S]*?)\);\s*\}/g)) {
-  const args = m[2].replace(/\/\/[^\n]*/g, '').split(',').map((s) => s.trim());
-  arcThreshold[m[1]] = Number(args[9]);
+{
+  const re = /new FightProfile\(\s*FightProfile\.Archetype\.(\w+)\s*,/g;
+  let m;
+  while ((m = re.exec(fishSrc2)) !== null) {
+    const open = fishSrc2.indexOf('(', m.index);
+    let depth = 0, end = -1;
+    for (let i = open; i < fishSrc2.length; i++) {
+      if (fishSrc2[i] === '(') depth++;
+      else if (fishSrc2[i] === ')') { depth--; if (depth === 0) { end = i; break; } }
+    }
+    if (end < 0) continue;
+    const args = topLevelArgs(fishSrc2.slice(open + 1, end));
+    const v = Number(args[9]);
+    if (Number.isFinite(v)) arcThreshold[m[1].toLowerCase()] = v;
+  }
 }
 const ARC_NAMES = Object.keys(arcThreshold);
 console.log('\n  力竭阈值：' + ARC_NAMES.map((k) => k + ' ' + arcThreshold[k]).join(' / ')

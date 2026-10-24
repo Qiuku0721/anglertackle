@@ -368,7 +368,8 @@ else if (!/try \{[\s\S]*\} catch \(Throwable ignored\)/.test(applyBody[0])) {
 } else ok('apply() 整段包在 try/catch 里（吃一口菜绝不会因为这张表崩）');
 
 if (!/import net\.minecraft\.world\.effect\.MobEffects;/.test(java)) bad('没导入 MobEffects');
-if (!/MobEffects\.CONFUSION/.test(java)) bad('反胃用的是 MobEffects.CONFUSION（原版"反胃"）');
+// 26.1.2：MobEffects.CONFUSION 更名为 NAUSEA（同一个效果"反胃"；旧名已删除）。
+if (!/MobEffects\.NAUSEA/.test(java)) bad('反胃用的是 MobEffects.NAUSEA（26.1.2 对旧 CONFUSION 的更名，就是原版"反胃"）');
 if (!/MobEffects\.WITHER/.test(java)) bad('凋零用的是 MobEffects.WITHER');
 
 // ── M. 加工品（处理过 = 安全）：安全不是靠表，是靠"它压根不走这张表" ✏ 2026-10-11 ──

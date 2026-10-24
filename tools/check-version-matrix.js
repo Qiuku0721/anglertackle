@@ -86,7 +86,12 @@ function cmpVer(a, b) {
   //     而正确答案是"表要与主树一致 = 21.1.252"。判据写错方向就会变成假红。）
   const mainProps = fs.readFileSync(path.join(ROOT, 'gradle.properties'), 'utf8');
   const mainNeo = (/^\s*neo_version\s*=\s*(\S+)\s*$/m.exec(mainProps) || [, null])[1];
-  console.log('  （主树 gradle.properties 的 neo_version = ' + mainNeo + '）');
+  // ⚠ "基线必须与主树一致"这条只在**主树就是那条基线**时成立。
+  //   mc26.1.2 分支是从 1.21.1 派生出来的，主树的 minecraft_version 已经不是 1.21.1 ——
+  //   此时表里那条 1.21.1 只是历史记录（它的 NeoForge 版本仍要真实存在，②会查）。
+  const mainMc = (/^\s*minecraft_version\s*=\s*(\S+)\s*$/m.exec(mainProps) || [, null])[1];
+  console.log('  （主树 gradle.properties 的 neo_version = ' + mainNeo
+    + '，minecraft_version = ' + mainMc + '）');
 
   let bad = 0;
   const rows = Object.keys(table).sort((a, b) => {
@@ -111,9 +116,11 @@ function cmpVer(a, b) {
       // ④ 是不是这一线的"该用的那一版"
       const branch = neo.split('.').slice(0, 2).join('.');
       if (mc === '1.21.1') {
-        // 基线版：唯一判据是"与主树一致"
-        if (mainNeo && neo !== mainNeo) {
-          problems.push('这是基线版，必须与主树 gradle.properties 的 neo_version（' + mainNeo + '）一致');
+        // 基线版：判据是"与主树一致"，**但只在这棵主树就是该基线时**
+        if (mainMc === mc) {
+          if (mainNeo && neo !== mainNeo) {
+            problems.push('这是基线版，必须与主树 gradle.properties 的 neo_version（' + mainNeo + '）一致');
+          }
         }
       } else {
         const line = all.filter(v => v.startsWith(branch + '.') && /^\d+\.\d+\.\d+(-beta)?$/.test(v));

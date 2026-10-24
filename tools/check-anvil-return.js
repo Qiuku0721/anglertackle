@@ -44,8 +44,23 @@ if (repAt < 0) { no('AnvilEvents 里找不到 onAnvilRepair —— 取走时没�
 const upd = av.slice(0, repAt), rep = av.slice(repAt);
 
 // ① 发货点在"取走"事件里
-if (/AnvilRepairEvent/.test(rep)) ok('退旧件挂在 AnvilRepairEvent（取走产出物那一刻）上');
-else no('没有监听 AnvilRepairEvent —— 旧件没有发货时机');
+//
+// ⚠ 26.1.2 起 NeoForge 把 AnvilRepairEvent 并进了 {@code AnvilCraftEvent.Post}
+//   （AnvilMenu.onTake 的最后一步，并把"加工前"的左/右槽快照一起传进来）。
+//   断言的**语义**不变：必须是"取走产出物"事件上的订阅者，而且真的是
+//   NeoForge 的那个事件类（看 import），不是自己随便起的一个同名方法。
+//   注：rep 从 "public static void onAnvilRepair" 起切，注解在它前面 ⇒ 连同前缀一起看
+const takeAnn = av.slice(Math.max(0, repAt - 200), repAt);
+const takeEvt = /@SubscribeEvent\s*$/.test(takeAnn.replace(/\s+$/, ''))
+  && /^\s*public static void onAnvilRepair\s*\(\s*AnvilCraftEvent\.Post\s+\w+\s*\)/.test(rep);
+const takeImport = /import\s+net\.neoforged\.neoforge\.event\.entity\.player\.AnvilCraftEvent\s*;/.test(av);
+if (takeEvt && takeImport) {
+  ok('退旧件挂在 AnvilCraftEvent.Post（AnvilMenu.onTake 的"取走产出物"那一刻，带加工前槽位快照）上');
+} else if (!takeEvt) {
+  no('没有在"取走"事件（AnvilCraftEvent.Post）上订阅 —— 旧件没有发货时机');
+} else {
+  no('订阅的 AnvilCraftEvent 不是 NeoForge 那个类（import 对不上）—— 事件不会真的发过来');
+}
 
 // ② 预览事件里绝不许发货（那里的触发频率是"每动一下槽位"）
 if (/getInventory\(\)\.add\(|\.drop\(/.test(upd)) {

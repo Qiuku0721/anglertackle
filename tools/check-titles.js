@@ -251,8 +251,9 @@ const ids = [...defs.matchAll(/new Def\("([a-z_0-9]+)",\s*(\d),\s*(true|false)\)
   } else if (!/\.copyOnDeath\(\)/.test(block[0])) {
     bad('称号附件**自己那块**没有 copyOnDeath（玩家死一次称号全没 ✗）——'
       + '注意别被同文件里另外两个附件的 copyOnDeath 蒙过去');
-  } else if (!/serialize\(PlayerTitles\.CODEC\)/.test(block[0])) {
-    bad('称号附件的注册块里没有 serialize(PlayerTitles.CODEC) —— 称号不会存盘');
+  } else if (!/serialize\(asMap\(PlayerTitles\.CODEC\)\)/.test(block[0])) {
+    // 26.1.2：AttachmentType.Builder 的 serialize 只收 MapCodec（旧 Codec 重载已删除）
+    bad('称号附件的注册块里没有 serialize(asMap(PlayerTitles.CODEC)) —— 称号不会存盘');
   } else {
     ok('称号附件注册块自带 copyOnDeath + serialize（死一次不丢、且会存盘 ✓）');
   }
@@ -439,7 +440,8 @@ const ids = [...defs.matchAll(/new Def\("([a-z_0-9]+)",\s*(\d),\s*(true|false)\)
       if (!/case 264/.test(keyFn[0])) missing.push('↓(264)');
       if (!/case 257/.test(keyFn[0]) && !/case 335/.test(keyFn[0])) missing.push('Enter(257/335)');
     }
-    if (!/renderComponentTooltip\(/.test(scr)) missing.push('悬浮提示');
+    // 26.1.2：renderComponentTooltip 改名为 setComponentTooltipForNextFrame
+    if (!/setComponentTooltipForNextFrame\(/.test(scr) && !/renderComponentTooltip\(/.test(scr)) missing.push('悬浮提示');
     if (missing.length) {
       bad('界面交互不齐 —— 缺：' + missing.join('、')
         + '（用户："所有功能必须做到点击交互"）');
@@ -551,7 +553,8 @@ const ids = [...defs.matchAll(/new Def\("([a-z_0-9]+)",\s*(\d),\s*(true|false)\)
   // 点击：先判展开符号、再落到"选行"
   // ⚠ 用"取方法体 + 比下标"而不是一条长正则：中间隔了多少行注释不该影响判定
   //   （第一版写成 [\s\S]{0,600}? 就被自己的注释撑爆了）
-  const clickBody = (/public boolean mouseClicked\(double mx, double my, int button\) \{[\s\S]*?\n    \}/.exec(scr) || [''])[0];
+  // 26.1.2：mouseClicked 的签名换成 (MouseButtonEvent, boolean)；鼠标坐标从 event.x()/y() 取。
+  const clickBody = (/public boolean mouseClicked\((?:MouseButtonEvent \w+, boolean \w+|double mx, double my, int button)\) \{[\s\S]*?\n    \}/.exec(scr) || [''])[0];
   const iMarker = clickBody.indexOf('overMarker(mx, my, i)');
   const iSelect = clickBody.indexOf('selectIndex(i)');
   if (iMarker >= 0 && iSelect > iMarker) {
@@ -644,7 +647,8 @@ const ids = [...defs.matchAll(/new Def\("([a-z_0-9]+)",\s*(\d),\s*(true|false)\)
     }
 
     // ② 渲染处理器：挂在 Dist.CLIENT、用 setContent、只对玩家生效
-    const onTag = /public static void onNameTag\(RenderNameTagEvent event\) \{[\s\S]*?\n    \}/.exec(render);
+    // 26.1.2：RenderNameTagEvent 拆成子事件，可渲染判定在 CanRender 上（setContent 就在它上面）。
+    const onTag = /public static void onNameTag\(RenderNameTagEvent(?:\.\w+)? event\) \{[\s\S]*?\n    \}/.exec(render);
     if (!/@EventBusSubscriber\([^)]*value\s*=\s*Dist\.CLIENT/.test(render)) {
       bad('TitleNameplateEvents 没有挂在 Dist.CLIENT —— 渲染事件只存在于逻辑客户端，挂错等于没挂 ✗');
     } else if (!onTag || !/event\.setContent\(/.test(onTag[0])) {
@@ -695,9 +699,12 @@ const ids = [...defs.matchAll(/new Def\("([a-z_0-9]+)",\s*(\d),\s*(true|false)\)
     const logoutFn = /public static void onLogout\([\s\S]*?\n    \}/.exec(syncF);
     const twoArg = /public static void broadcastNameplates\(net\.minecraft\.server\.MinecraftServer server,\s*java\.util\.UUID skip\) \{[\s\S]*?\n    \}/.exec(modnet);
     const oneArg = /public static void broadcastNameplates\(net\.minecraft\.server\.MinecraftServer server\) \{[\s\S]*?\n    \}/.exec(modnet);
-    if (!loginFn || !/broadcastNameplates\(sp\.server\)/.test(loginFn[0])) {
+    // 26.1.2：ServerPlayer 的 server 字段改成 private，取法是 sp.level().getServer()
+    // （旧的 sp.server 已编译不过）。断言语义不变：进服必须广播一次整表。
+    const loginBcast = /broadcastNameplates\(sp\.(?:server|level\(\)\.getServer\(\))\)/;
+    if (!loginFn || !loginBcast.test(loginFn[0])) {
       bad('进服没有广播名牌整表 —— 晚进来的人看不到先来的人头上的称号（要等别人换一次佩戴）✗');
-    } else if (!logoutFn || !/broadcastNameplates\(sp\.server,\s*sp\.getUUID\(\)\)/.test(logoutFn[0])) {
+    } else if (!logoutFn || !/broadcastNameplates\(sp\.(?:server|level\(\)\.getServer\(\)),\s*sp\.getUUID\(\)\)/.test(logoutFn[0])) {
       bad('退服没有带 skip 广播 —— 原版是先发事件后移出列表，'
         + '不跳过的话退房那位的称号会赖在别人屏幕上直到下一次广播 ✗');
     } else if (!twoArg || !/skip != null && skip\.equals\(p\.getUUID\(\)\)/.test(twoArg[0])

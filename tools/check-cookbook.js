@@ -166,7 +166,11 @@ const food = read(FOOD);
 // ---------------------------------------------------------------- E 合成与进度
 {
   const recipe = JSON.parse(read(RECIPE));
-  const ings = recipe.ingredients || [];
+  // 26.1.2 的配方材料是新语法：普通物品写字符串，标签写 "#namespace:path"。
+  const ings = (recipe.ingredients || []).flat().map((i) => {
+    if (typeof i === 'string') return i.startsWith('#') ? { tag: i.slice(1) } : { item: i };
+    return i && typeof i === 'object' ? i : {};
+  });
   const hasBook = ings.some((i) => i.item === 'minecraft:book');
   const hasFish = ings.some((i) => i.tag === 'c:foods/cooked_fish');
   if (recipe.type !== 'minecraft:crafting_shapeless') {
@@ -272,8 +276,14 @@ const food = read(FOOD);
     //   只断言"文件里出现过"的话，把配料那一行换成空表也照样绿（负例抓过）
     bad('「做法」页的"配料"那一行不是由 dish.extraItems() 拼出来的 —— '
       + '配料清单会被写空或另抄');
-  } else if (!/getRecipeManager\(\)\.getRecipes\(\)/.test(code)) {
-    bad('「配料怎么来」不是现场问配方管理器 —— 手抄的合成式会在配方改动后撒谎');
+  } else if (!/getRecipeBook\(\)\.getCollections\(\)/.test(code)
+      || !/entry\.craftingRequirements\(\)/.test(code)) {
+    // 26.1.2：客户端不再持有整张配方的 RecipeManager 表（改由 ClientboundRecipeBookAddPacket
+    // 下发 RecipeDisplay），所以"现场问配方数据"的正确入口是玩家的配方书集合
+    // （getRecipeBook().getCollections() → RecipeDisplayEntry.craftingRequirements()）。
+    // 断言语义不变：配料必须**从真实配方数据现算**，不许手抄一份合成式（配方一改就会撒谎）。
+    bad('「配料怎么来」不是现场问配方数据（getRecipeBook().getCollections() + '
+      + 'entry.craftingRequirements()）—— 手抄的合成式会在配方改动后撒谎');
   } else if (!/screen\.anglertackle\.cookbook\.section\./.test(code)
       || !/screen\.anglertackle\.cookbook\.step\./.test(code)) {
     bad('「做法」页没有分节（基础/配料/步骤/来源）或没有加工步骤');

@@ -87,8 +87,12 @@ if (!/RecipeType/.test(reg)) {
   ok('ModRecipes 只注册序列化器，没有建自定义 RecipeType（建了就是上面那个静默失效）');
 } else no('ModRecipes 里出现了 RecipeType —— JSON 的 type 只需要序列化器，' +
   '另外建一个类型会让配方进不了 CRAFTING 表');
-if (/SERIALIZERS\.register\("rod_assembly"/.test(reg) && /SimpleCraftingRecipeSerializer/.test(reg)) {
-  ok('序列化器注册在 anglertackle:rod_assembly（用原版给 special 配方用的那个）');
+// 26.1.2：SimpleCraftingRecipeSerializer 已删除，RecipeSerializer 变成 record(MapCodec, StreamCodec)，
+// 所以自定义 special 配方的序列化器要自己 new（MapCodec + StreamCodec 两件套）。
+if (/SERIALIZERS\.register\("rod_assembly"/.test(reg)
+    && /new RecipeSerializer<>\(\s*MAP_CODEC\s*,\s*STREAM_CODEC\s*\)/.test(recipe)
+    && /MapCodec<RodAssemblyRecipe> MAP_CODEC/.test(recipe)) {
+  ok('序列化器注册在 anglertackle:rod_assembly（26.1.2 的 RecipeSerializer(MapCodec, StreamCodec)）');
 } else no('rod_assembly 序列化器没有注册（JSON 解析不出来的话，游戏里只有一行日志）');
 if (/ModRecipes\.register\(modBus\)/.test(main)) ok('主类里调了 ModRecipes.register（注册表真的挂上了）');
 else no('主类里没有 ModRecipes.register(modBus) —— 序列化器根本没注册');
@@ -98,9 +102,18 @@ if (/@Override\s+public boolean matches\(CraftingInput/.test(recipe)) ok('实现
 else no('没有实现 matches(CraftingInput, Level)');
 if (/@Override\s+public ItemStack assemble\(CraftingInput/.test(recipe)) ok('实现了 assemble(CraftingInput, …)');
 else no('没有实现 assemble(CraftingInput, …)');
-if (/canCraftInDimensions\(int[\s\S]{0,80}width \* height >= 2/.test(recipe)) {
-  ok('canCraftInDimensions 允许 2×2（随身合成栏只有四格，写 9 就用不了）');
-} else no('canCraftInDimensions 不允许 2×2 —— 随身合成栏里这条配方不会被采纳');
+// 26.1.2 删除了 Recipe#canCraftInDimensions（"这条配方要多大的格子"不再由配方申报）。
+// 随身 2×2 能不能用，现在只取决于 matches() 是否**按格子遍历**、有没有偷偷要求 3×3。
+// 断言语义不变（甚至更直接）：plan() 必须遍历 input.size() 的每个槽位，且不许读 width/height 卡尺寸。
+{
+  const planBody = /private static Plan plan\(CraftingInput input\) \{[\s\S]*?\n    \}/.exec(recipe);
+  if (planBody && /for \(int i = 0; i < input\.size\(\); i\+\+\)/.test(planBody[0])
+      && !/input\.width\(\)|input\.height\(\)/.test(planBody[0])) {
+    ok('matches() 按格子遍历（input.size()）、不卡 3×3 ⇒ 随身 2×2 合成栏照样采纳');
+  } else {
+    no('matches() 没有按格子遍历（或读了 width/height 卡尺寸）—— 随身 2×2 合成栏里这条配方不会被采纳');
+  }
+}
 
 const planReg = region(recipe, 'private static Plan plan(');
 if (planReg === null) {

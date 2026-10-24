@@ -50,11 +50,25 @@ if(/motionY\(\)\s*>\s*0/.test(CE)) ok('上升阶段不判落水');
 else no('没有"上升阶段不判落水"（站在水里抛会原地落）');
 
 // ③ 飞行中要画东西
-const fly=CR.match(/if\s*\(!entity\.isLanded\(\)\)\s*\{([\s\S]*?)\n        \}/);
-if(!fly) no('渲染器没有处理飞行分支');
-else if(/return\s*;/.test(fly[1])&&!/drawCube|drawRing/.test(fly[1]))
-  no('飞行分支直接 return，丢出去看不见实体');
-else ok('飞行中会画东西（drawCube）');
+// ⚠ 26.1.2：EntityRenderer 拆成 extractRenderState（抽状态）+ submit（画）。
+//   飞行分支现在按**状态**判（state.landed），判据跟着走；语义不变：
+//   飞行中必须真的画出来（不许在画之前 return）。
+const landedExtracted = /state\.landed\s*=\s*entity\.isLanded\(\)/.test(CR)
+  && /if\s*\(\s*!state\.landed\s*\)\s*\{/.test(CR);
+const fly = (() => {
+  const m = /if\s*\(\s*!state\.landed\s*\)\s*\{/.exec(CR);
+  if (!m) return null;
+  let depth = 0, j = m.index + m[0].length - 1;
+  for (; j < CR.length; j++) {
+    if (CR[j] === '{') depth++;
+    else if (CR[j] === '}') { depth--; if (depth === 0) break; }
+  }
+  return { body: CR.slice(m.index, j + 1) };
+})();
+if (!landedExtracted) no('渲染器没有处理飞行分支（extractRenderState 里没有 state.landed = entity.isLanded()，'
+  + '或 submit 里没有 if (!state.landed)）');
+else if (!/drawCube|drawRing/.test(fly.body)) no('飞行分支没有画东西，丢出去看不见实体');
+else ok('飞行中会画东西（submit 里 if (!state.landed) → drawCube）');
 if(/drawCube/.test(CR)) ok('有窝料团的绘制');
 else no('没有窝料团绘制');
 

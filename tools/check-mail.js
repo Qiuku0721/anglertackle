@@ -73,10 +73,16 @@ const tun = strip(read(TUN));
   } else if (!/\.copyOnDeath\(\)/.test(block[0])) {
     bad('邮箱附件那一块没有 copyOnDeath —— 死一次邮箱清空（里面可能正躺着没领的奖励）✗'
       + '（⚠ 注意别被同文件里别的附件的 copyOnDeath 蒙过去）');
-  } else if (!/serialize\(MailBox\.CODEC\)/.test(block[0])) {
-    bad('邮箱附件的注册块里没有 serialize(MailBox.CODEC) —— 邮件不会存盘');
+  } else if (!/serialize\(asMap\(MailBox\.CODEC\)\)/.test(block[0])) {
+    // 26.1.2：AttachmentType.Builder 的 serialize 只收 IAttachmentSerializer / MapCodec
+    // （旧的 Codec 版重载已删除），Codec 必须经 ModAttachments.asMap（MapCodec.assumeMapUnsafe）
+    // 适配。断言语义不变：这一块必须**真的把邮箱挂上持久化**，不能只剩 copyOnDeath。
+    bad('邮箱附件的注册块里没有 serialize(asMap(MailBox.CODEC)) —— 邮件不会存盘'
+      + '（26.1.2 的 serialize 只收 MapCodec）');
+  } else if (!/private static <T> MapCodec<T> asMap\(Codec<T> codec\)/.test(attr)) {
+    bad('ModAttachments 里的 asMap 助手不见了 —— serialize(asMap(...)) 就成了空壳');
   } else {
-    ok('邮箱附件：copyOnDeath + serialize 都在**它自己那一块**里 ✓');
+    ok('邮箱附件：copyOnDeath + serialize(asMap(...)) 都在**它自己那一块**里 ✓');
   }
   const opt = (box.match(/optionalFieldOf\(/g) || []).length
     + (entry.match(/optionalFieldOf\(/g) || []).length;
@@ -323,7 +329,9 @@ const tun = strip(read(TUN));
     }
     // ②d 悬浮提示（列表行 / 附件格 / 快捷键说明）
     //   （编号沿用旧注释里的 ②c，别被这里的顺序绕晕：下一条才是图鉴入口）
-    if (/renderComponentTooltip\(/.test(scr) || /renderTooltip\(/.test(scr)) {
+    // 26.1.2：GuiGraphics 的 renderTooltip / renderComponentTooltip 改名为
+    // setTooltipForNextFrame / setComponentTooltipForNextFrame（画在下一帧的 tooltip 槽里）。
+    if (/setComponentTooltipForNextFrame\(/.test(scr) || /setTooltipForNextFrame\(/.test(scr)) {
       ok('有悬浮提示（列表行 / 附件格 / 快捷键说明）✓');
     } else {
       bad('没有任何悬浮提示 —— 附件格里的物品看不出是什么');
@@ -446,14 +454,15 @@ const tun = strip(read(TUN));
     //   仍然在文件里 ⇒ 检查器照样绿（负例 mail-empty-list 第一次跑就是这么溜过去的 ✗，
     //   今天第三次同类：**"文件里存在某字符串" ≠ "那件事真的在做"**）。
     const drawn = new Set();
+    // 26.1.2：drawString 改名为 text(font, …)，判据两种写法都认（旧写法留在副本里时也要能抓到）
     for (const m of scr.matchAll(
-      /drawString\([\s\S]{0,300}?"(gui\.anglertackle\.mail_(?:empty|empty_hint|loading))"/g)) {
+      /\b(?:drawString|text)\([\s\S]{0,300}?"(gui\.anglertackle\.mail_(?:empty|empty_hint|loading))"/g)) {
       drawn.add(m[1]);
     }
     const needEmpty = ['gui.anglertackle.mail_empty', 'gui.anglertackle.mail_empty_hint'];
     const missEmpty = needEmpty.filter((k) => !drawn.has(k));
     if (missEmpty.length) {
-      bad('空状态没有在 drawString 里画出这几行字：' + missEmpty.join('、')
+      bad('空状态没有在 text(...) 里画出这几行字：' + missEmpty.join('、')
         + ' —— 空列表与"加载失败"长得一模一样 ✗');
     } else {
       ok('空状态真的画了两行字（正文 + 提示），不是空列表 ✓');
@@ -557,8 +566,11 @@ const tun = strip(read(TUN));
     bad("MailService 里找不到 announce()");
   } else {
     const a = strip(ann[0]);
-    const chat = /mail_arrived[^;]*,\s*false\)/.test(a);
-    const toast = /mail_arrived[^;]*,\s*true\)/.test(a);
+    // 26.1.2：Player#displayClientMessage(msg, actionBar) 已拆成
+    // sendSystemMessage(msg)（聊天栏，留在记录里）/ sendOverlayMessage(msg)（动作栏，两秒淡出）。
+    // 断言语义不变：**聊天栏那行必须有**（不然玩家错过就再也看不到），动作栏那行也必须发。
+    const chat = /sendSystemMessage\(\s*Component\.translatable\(\s*"message\.anglertackle\.mail_arrived"/.test(a);
+    const toast = /sendOverlayMessage\(\s*Component\.translatable\(\s*"message\.anglertackle\.mail_arrived"/.test(a);
     if (chat) ok("新信会往**聊天栏**发一行（留在记录里，不会两秒就消失）");
     else bad("新信只发动作栏 —— 玩家刚上鱼时必然错过，然后以为「要等下次登录」");
     if (toast) ok("同时也弹一次**动作栏**（一眼就能看到）");

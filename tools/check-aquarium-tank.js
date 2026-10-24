@@ -139,12 +139,14 @@ console.log('D. 交互接线');
     for (const [m, why] of [
       ['useItemOn', '手持鱼右键放入'],
       ['useWithoutItem', '空手右键取出'],
-      ['onRemove', '拆缸时把鱼放出来'],
+      // 26.1.2：BlockBehaviour#onRemove 已删除，等价钩子是 affectNeighborsAfterRemoval
+      // （只在旧方块确实被换掉时才调，LevelChunk.java:318-321）。
+      ['affectNeighborsAfterRemoval', '拆缸时把鱼放出来'],
     ]) {
       if (!block.includes(m)) { bad(`AquariumBlock 没有 ${m}（${why}）`); }
     }
-    if (!/onRemove[\s\S]*?AquariumTank\.releaseAll/.test(block)) {
-      bad('AquariumBlock.onRemove 没有调用 AquariumTank.releaseAll —— 拆缸会把鱼永久困在标记里');
+    if (!/affectNeighborsAfterRemoval[\s\S]*?AquariumTank\.releaseAll/.test(block)) {
+      bad('AquariumBlock.affectNeighborsAfterRemoval 没有调用 AquariumTank.releaseAll —— 拆缸会把鱼永久困在标记里');
     } else {
       ok('放鱼 / 取鱼 / 拆缸放生 三个入口都接到了 AquariumTank');
     }

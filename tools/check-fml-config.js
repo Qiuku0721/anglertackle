@@ -30,8 +30,11 @@ const DEFAULT_FILES = [
 ];
 
 /** 只有 fml.toml 才要求这些键（它是 NeoForge 的引导配置）。 */
-const FML_KEYS = ['earlyWindowControl', 'disableConfigWatcher', 'earlyWindowSquir',
-  'earlyWindowFBScale', 'maxThreads', 'versionCheck', 'disableOptimizedDFU'];
+// 26.1.2 生成的 fml.toml 里已经**没有** earlyWindowSquir / earlyWindowFBScale
+// （1.21.1 的那两个开关被早期窗口提供者设置取代：earlyWindowProvider / Width / Height），
+// 所以关键项清单跟着版本走，别把"这个版本根本不存在的键"当成缺项。
+const FML_KEYS = ['earlyWindowControl', 'disableConfigWatcher', 'maxThreads', 'versionCheck',
+  'disableOptimizedDFU', 'earlyWindowProvider'];
 
 const args = process.argv.slice(2).filter((a) => a.endsWith('.toml'));
 const files = args.length ? args : DEFAULT_FILES.filter((p) => fs.existsSync(p));

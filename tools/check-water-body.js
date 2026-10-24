@@ -464,7 +464,8 @@ else no('水体没有存成字段 —— 同一次抛投会算出不同水体');
     if (new RegExp('modTag\\("' + t + '"\\)').test(wb)) ok('代码里登记了标签 ' + t);
     else no('代码里没有 modTag("' + t + '") —— 这个名字必须和 data/…/biome/' + t + '.json 完全一致');
   }
-  if (/ResourceLocation\.parse\("anglertackle:" \+ path\)/.test(wb)) {
+  // 26.1.2：ResourceLocation 改名为 Identifier（ResourceLocation.parse → Identifier.parse）
+  if (/(?:ResourceLocation|Identifier)\.parse\("anglertackle:" \+ path\)/.test(wb)) {
     ok('标签走 anglertackle 命名空间（标签 id = 文件名）');
   } else no('标签的命名空间拼法变了 —— 拼错就是空标签，判定恒 false 且没有任何报错');
 

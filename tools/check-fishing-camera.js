@@ -278,11 +278,25 @@ const fovBody = handler('onComputeFov');
     } else {
       fail('ClientEvents 没有用 movementLocked() 当接管判据');
     }
-    if (/if\s*\(\s*state\.movementLocked\(\)\s*\)\s*\{/.test(codeEv)
-      && /leftImpulse\s*=\s*0\.0f/.test(codeEv) && /forwardImpulse\s*=\s*0\.0f/.test(codeEv)) {
-      ok('移动意图确实是在 movementLocked() 里清掉的');
+    // 26.1.2 的输入改成对象：LocalPlayer#input 上的 leftImpulse / forwardImpulse / jumping
+    // 三个字段都没了（ClientEvents 里那段注释写了）。现在的等价做法是**把输入对象换成零移动的**，
+    // 解锁时再换回来 —— 断言语义不变：移动意图必须真的在 movementLocked() 那段里被掐掉。
+    const lockBlock = (() => {
+      const m = /if\s*\(\s*state\.movementLocked\(\)\s*\)\s*\{/.exec(codeEv);
+      if (!m) return null;
+      let depth = 0, j = m.index + m[0].length - 1;
+      for (; j < codeEv.length; j++) {
+        if (codeEv[j] === '{') depth++;
+        else if (codeEv[j] === '}') { depth--; if (depth === 0) break; }
+      }
+      return codeEv.slice(m.index, j + 1);
+    })();
+    if (lockBlock && /mc\.player\.input\s*=\s*lockedInput/.test(lockBlock)
+        && /new\s+LockedInput\(/.test(lockBlock)) {
+      ok('移动意图确实是在 movementLocked() 里掐掉的（换成 LockedInput 零移动输入对象）');
     } else {
-      fail('找不到"在 movementLocked() 里清 leftImpulse/forwardImpulse"—— 锁没接上');
+      fail('找不到"在 movementLocked() 里换掉输入对象（new LockedInput / mc.player.input = lockedInput）"'
+        + '—— 锁没接上');
     }
 
     // 视角/条子只认 FIGHT（= 上鱼那一刻就收）—— 与"移动还锁一秒"**必须分开**
@@ -538,10 +552,12 @@ const fovBody = handler('onComputeFov');
     } else {
       fail('FirstJoinEvents 里没有 unclaimedKit() —— 玩家没注意到那句提示就永远不知道去哪领（⑤）');
     }
-    if (/if\s*\(unclaimedKit\(player\)\)\s*\{[\s\S]{0,200}?displayClientMessage\([\s\S]{0,200}?,\s*true\)/.test(code(join))) {
-      ok('没领礼包时用**动作栏**（true）再说一遍 —— 聊天栏那行会被后面的话顶上去');
+    // 26.1.2：displayClientMessage(msg, actionBar) 拆成 sendSystemMessage / sendOverlayMessage；
+    // 动作栏那支 = sendOverlayMessage。断言语义不变：**动作栏**必须再说一遍。
+    if (/if\s*\(unclaimedKit\(player\)\)\s*\{[\s\S]{0,300}?sendOverlayMessage\(/.test(code(join))) {
+      ok('没领礼包时用**动作栏**（sendOverlayMessage）再说一遍 —— 聊天栏那行会被后面的话顶上去');
     } else {
-      fail('那句提醒没有走动作栏（displayClientMessage(..., true)）—— 等于还是只发一条会滚走的聊天行');
+      fail('那句提醒没有走动作栏（sendOverlayMessage）—— 等于还是只发一条会滚走的聊天行');
     }
     if (/MailBox nudged = box\.withKitUnread\(\);/.test(join)
       && /PlayerData\.setMails\(player, nudged\)/.test(join)) {

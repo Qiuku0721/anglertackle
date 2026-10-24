@@ -139,7 +139,10 @@ function loadRecipe(id) {
   const p = 'src/main/resources/data/anglertackle/recipe/' + id + '.json';
   if (!exists(p)) return null;
   const json = JSON.parse(read(p));
-  const ingredients = (json.ingredients || []).map((ing) => {
+  // 26.1.2 的配方材料改成新语法：普通物品写字符串，标签写 "#namespace:path"，
+  // "任选其一"写嵌套数组（这里 flat 掉）。旧的 {"item":…} / {"tag":…} 对象也照样认。
+  const ingredients = (json.ingredients || []).flat().map((ing) => {
+    if (typeof ing === 'string') return ing.startsWith('#') ? 'tag:' + ing.slice(1) : 'item:' + ing;
     if (ing.item) return 'item:' + ing.item;
     if (ing.tag) return 'tag:' + ing.tag;
     return '???:' + JSON.stringify(ing);

@@ -83,7 +83,8 @@ if (src === null) {
     fail('找不到 rodTipPosition()');
   } else {
     const iExact = tip.indexOf('RodTipAnchor.worldTip');
-    const iFallback = tip.indexOf('getNearPlane()');
+    // 26.1.2：Camera#getNearPlane 需要显式 FOV（getNearPlane(fov)），所以按"方法调用"判而不是字面量
+    const iFallback = tip.search(/getNearPlane\s*\(/);
 
     // ---------------------------------------------------------- A 精确竿尖优先
     if (iExact >= 0 && iFallback >= 0 && iExact < iFallback) {
@@ -208,15 +209,19 @@ if (anchor === null) {
 
   // RodTipAnchor 只复刻了 BOW 那一条使用动画；竿要是换成别的动画，竿尖就会错位。
   const rodSrc = readCode('src/main/java/com/whitecobalt/anglertackle/item/RodItem.java');
-  if (rodSrc !== null && /getUseAnimation\s*\([^)]*\)\s*\{[^}]*UseAnim\.BOW/.test(rodSrc)) {
+  // 26.1.2：UseAnim 改名为 ItemUseAnimation（ItemUseAnimation.BOW）
+  if (rodSrc !== null && /getUseAnimation\s*\([^)]*\)\s*\{[^}]*ItemUseAnimation\.BOW/.test(rodSrc)) {
     ok('RodItem 的使用动画仍然是 BOW（与追踪器复刻的那条分支一致）');
   } else {
-    fail('RodItem 的 getUseAnimation 不是 UseAnim.BOW —— RodTipAnchor 只复刻了 BOW 分支，' +
+    fail('RodItem 的 getUseAnimation 不是 ItemUseAnimation.BOW —— RodTipAnchor 只复刻了 BOW 分支，' +
       '换成 EAT/BLOCK/SPEAR 等动画后竿的姿态会变，竿尖立刻错位');
   }
 
   // ---------------------------------------------------------- G5 物品自己的显示变换
-  if (/applyTransform\s*\(/.test(anchor)
+  // 26.1.2 不再暴露 BakedModel.applyTransform，物品显示变换只在 ItemStackRenderState.submit
+  // 内部应用 ⇒ 等价做法是"让物品模型系统自己算一遍，再把那一刻的姿态截下来"
+  // （updateForLiving + submit + 探测收集器）。断言语义不变：变换必须**来自物品模型**，不能写死。
+  if ((/applyTransform\s*\(/.test(anchor) || /updateForLiving\s*\(/.test(anchor))
       && /ItemDisplayContext\.FIRST_PERSON_RIGHT_HAND/.test(anchor)
       && /ItemDisplayContext\.FIRST_PERSON_LEFT_HAND/.test(anchor)) {
     ok('用了物品自己的 firstperson 显示变换（item/generated 与 item/handheld_rod 不一样，不能写死）');
@@ -225,10 +230,16 @@ if (anchor === null) {
   }
 
   // ---------------------------------------------------------- G6 模型空间居中
-  if (/translate\(\s*-0\.5F\s*,\s*-0\.5F\s*,\s*-0\.5F\s*\)/.test(anchor)) {
-    ok('照抄了 ItemRenderer 里把模型空间居中的 translate(−0.5,−0.5,−0.5)');
+  // 26.1.2：居中那一步**已经在 ItemTransform.apply 里面**（它自带 -0.5），
+  // 不再需要我们手写 translate(-0.5,-0.5,-0.5)。等价断言：竿尖必须写成 [0,1]³ 的模型空间坐标，
+  // 并且**乘在"物品真正被画出来时"的那个姿态上** —— 少了居中就会整体偏半格。
+  if (/\(float\)\s*\(\s*px \/ ICON_SIZE\s*\)/.test(anchor)
+      && /\(float\)\s*\(\s*1\.0 - py \/ ICON_SIZE\s*\)/.test(anchor)
+      && /tip\.mul\(\s*capturedItemPose\s*\)/.test(anchor)) {
+    ok('竿尖按 [0,1]³ 模型空间算，并乘在物品真实绘制姿态上（26.1.2 的居中在 ItemTransform 里）');
   } else {
-    fail('缺少 translate(−0.5,−0.5,−0.5) —— 物品模型空间是 [0,1]³，不居中会整体偏半格');
+    fail('竿尖没有按 [0,1]³ 模型空间算并乘上物品真实绘制姿态 —— 物品模型空间是 [0,1]³，'
+      + '不经过 ItemTransform 的居中会整体偏半格');
   }
 
   // ---------------------------------------------------------- G7 相机空间 → 世界
@@ -238,24 +249,22 @@ if (anchor === null) {
   //   —— **没被抓到**。和之前 `int side = 1;` 那次是同一类漏洞：只验"出现过"，
   //   不验"用上了"。所以这里改成验**返回表达式本身**：三个正交基必须各自乘在 tip 上，
   //   而且相机空间的 +x 是"右"（= −left）、−z 是"前"（= −look），符号不能反。
+  // 26.1.2：Camera 的 getLeftVector/getUpVector/getLookVector/getPosition 换成了
+  // CameraRenderState{pos, orientation} —— 相机空间向量交给 orientation.transform 转回世界。
+  // 断言语义不变（仍然是"三个分量必须真的参与运算、不许直接加在相机位置上"）：
   const world = body(anchor, 'worldTip');
-  const basisDecl = ['getLeftVector', 'getUpVector', 'getLookVector', 'getPosition'];
-  const missBasis = basisDecl.filter((m) => !anchor.includes(m));
-  if (missBasis.length > 0) {
-    fail('换算世界坐标时缺了相机的 ' + missBasis.join(' / ') +
-      ' —— 用"眼睛 + 固定偏移"就又是估算，转头/换 FOV 立刻错位');
-  } else if (!world) {
+  if (!world) {
     fail('找不到 worldTip()');
-  } else if (!/-\s*left\.\w\(\)\s*\*\s*tip\.\w/.test(world)
-      || !/up\.\w\(\)\s*\*\s*tip\.\w/.test(world)
-      || !/-\s*look\.\w\(\)\s*\*\s*tip\.\w/.test(world)) {
-    fail('worldTip() 的返回值没有真的把相机正交基乘上去（−left·x + up·y − look·z）—— ' +
-      '只是声明了 left/up/look 却不用，线头会随视角乱飞');
-  } else if (/getPosition\(\)\s*\.\s*add\(\s*tip\s*\)/.test(world)) {
-    fail('worldTip() 把相机空间偏移直接加在相机位置上 —— 相机空间不是世界空间，' +
-      '转头时线头会跟着转');
+  } else if (!/camera\.orientation\.transform\(\s*new Vector3f\(/.test(world)
+      || !/tip\.x/.test(world) || !/tip\.y/.test(world) || !/tip\.z/.test(world)) {
+    fail('换算世界坐标时没有用相机朝向（camera.orientation.transform(new Vector3f(tip.x, tip.y, tip.z))）'
+      + ' —— 用"眼睛 + 固定偏移"就又是估算，转头/换 FOV 立刻错位');
+  } else if (!/camera\.pos\.add\(/.test(world)) {
+    fail('worldTip() 没有加上相机位置（camera.pos.add(...)）');
+  } else if (/camera\.pos\.add\(\s*tip\s*\)/.test(world)) {
+    fail('worldTip() 把相机空间偏移直接加在相机位置上 —— 相机空间不是世界空间，转头时线头会跟着转');
   } else {
-    ok('相机空间→世界用的是相机正交基（−left·x + up·y − look·z），三个向量都参与了运算');
+    ok('相机空间→世界用的是相机朝向（orientation.transform）+ 相机位置，三个分量都参与了运算');
   }
 
   // ---------------------------------------------------------- G9 乘回 modelview
